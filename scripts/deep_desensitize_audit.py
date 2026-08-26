@@ -10,11 +10,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
+import sys
+from pathlib import Path
 import fitz  # PyMuPDF
 import cv2
 import numpy as np
 
 WORKSPACE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(WORKSPACE))
+from core.detector.rule_engine import RuleEngine, load_terms
 DRAWINGS_DIR = WORKSPACE / "Testing Drawings"
 RULES_FILE = WORKSPACE / "rules" / "sensitive_terms.txt"
 
@@ -28,7 +33,8 @@ def load_sensitive_terms():
     return terms
 
 def check_all_samples():
-    terms = load_sensitive_terms()
+    terms = load_terms(RULES_FILE)
+    rule_engine = RuleEngine(terms=terms, fuzzy=False)
     
     # 找到所有原始 PDF（排除已生成的 _desensitized）
     all_pdfs = sorted([p for p in DRAWINGS_DIR.glob("*.pdf") if not p.stem.endswith("_desensitized") and not p.name.endswith(".PDF_desensitized.PDF")])
@@ -40,9 +46,15 @@ def check_all_samples():
     
     report = []
     
+    ACCEPTANCE_DIR = WORKSPACE / "outputs" / "acceptance"
     for pdf_path in all_pdfs:
         sample_name = pdf_path.name
-        desens_path = pdf_path.with_name(f"{pdf_path.stem}_desensitized{pdf_path.suffix}")
+        # 优先从 outputs/acceptance/ 读取回归生成的结果，回退从图纸同目录读取
+        desens_path = ACCEPTANCE_DIR / f"{pdf_path.stem}_desensitized{pdf_path.suffix}"
+        if not desens_path.exists():
+            desens_path = ACCEPTANCE_DIR / f"{pdf_path.stem}_desensitized.pdf"
+        if not desens_path.exists():
+            desens_path = pdf_path.with_name(f"{pdf_path.stem}_desensitized{pdf_path.suffix}")
         if not desens_path.exists():
             # 兼容大写
             desens_path = pdf_path.with_name(f"{pdf_path.stem}_desensitized.PDF")
@@ -91,15 +103,24 @@ def check_all_samples():
             doc_desens = fitz.open(str(desens_path))
             for page_idx, page in enumerate(doc_desens):
                 res["desens_remaining_images"] += len(page.get_images())
-                for term in terms:
-                    matches = page.search_for(term)
-                    if matches:
-                        res["desens_remaining_hits"].append({
-                            "page": page_idx,
-                            "term": term,
-                            "count": len(matches),
-                            "rects": [[round(v, 1) for v in (r.x0, r.y0, r.x1, r.y1)] for r in matches]
-                        })
+                # 使用 RuleEngine 进行精准匹配判定
+                words = page.get_text("words")
+                blocks = page.get_text("blocks")
+                # 针对每一行文字进行 RuleEngine 检测
+                for b in blocks:
+                    block_text = b[4]
+                    for line in block_text.splitlines():
+                        if not line.strip():
+                            continue
+                        hits = rule_engine.match(line)
+                        for h in hits:
+                            matches = page.search_for(h.matched_text)
+                            res["desens_remaining_hits"].append({
+                                "page": page_idx,
+                                "term": h.matched_text,
+                                "count": len(matches) if matches else 1,
+                                "rects": [[round(v, 1) for v in (r.x0, r.y0, r.x1, r.y1)] for r in matches] if matches else []
+                            })
             doc_desens.close()
         except Exception as e:
             res["notes"].append(f"解析脱敏后 PDF 失败: {e}")
