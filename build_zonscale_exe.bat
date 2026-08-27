@@ -35,8 +35,8 @@ if not exist "dist_web\index.html" (
     popd
 )
 
-if not exist "packaging\windows\config\DocumentRules.spec" (
-    echo ERROR: Spec file not found: packaging\windows\config\DocumentRules.spec
+if not exist "packaging\windows\config\ZonScale.spec" (
+    echo ERROR: Spec file not found: packaging\windows\config\ZonScale.spec
     pause
     exit /b 1
 )
@@ -66,7 +66,7 @@ if exist "dist\ZonScale" rmdir /s /q "dist\ZonScale"
 
 echo.
 echo Building EXE (about 3-8 minutes)...
-python -m PyInstaller --noconfirm "packaging\windows\config\DocumentRules.spec"
+python -m PyInstaller --noconfirm "packaging\windows\config\ZonScale.spec"
 if errorlevel 1 (
     echo ERROR: PyInstaller build failed. See log above.
     pause

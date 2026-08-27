@@ -51,7 +51,7 @@ def test_word_pipeline_exact_replace(tmp_path):
     assert any(r.bold for r in runs if '[公司A]' in r.text)
 
 
-def test_word_pipeline_document_rules_passport_and_phone_scan():
+def test_word_pipeline_document_passport_and_phone_scan():
     doc = Document()
     doc.add_paragraph('护照号码 E12345678，手机 13800138000')
 
@@ -66,7 +66,7 @@ def test_word_pipeline_document_rules_passport_and_phone_scan():
 
 
 def test_word_pipeline_passport_two_letter_prefix():
-    """港澳/电子护照等 EL9115580 格式（DocumentRules 通用 1-2 字母 + 数字）。"""
+    """港澳/电子护照等 EL9115580 格式（通用 1-2 字母 + 数字）。"""
     doc = Document()
     doc.add_paragraph('本人护照号码：EL9115580，赴日签证申请')
 
@@ -90,7 +90,7 @@ def test_word_pipeline_hk_phone_and_asterisk_replacement():
     assert hk_match['replacement'] == '*' * len('+852 84957302')
 
 
-def test_word_pipeline_document_rules_redact_uses_stars(tmp_path):
+def test_word_pipeline_document_redact_uses_stars(tmp_path):
     doc_path = tmp_path / 'mask.docx'
     out_path = tmp_path / 'mask_out.docx'
     doc = Document()

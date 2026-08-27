@@ -236,7 +236,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
           </div>
         </div>
 
-        {/* DocumentRules PII + Word + 印章 */}
+        {/* PII + Word + 印章 */}
         <div className="flex-1 h-full memphis-card p-6 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between pb-4 border-b-2 border-mem-ink/10">
             <div className="flex items-center gap-2">

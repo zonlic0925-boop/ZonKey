@@ -360,7 +360,7 @@ def _render_pdf_pages(doc: fitz.Document, dpi: int = 120) -> list[dict[str, Any]
 
 
 def _detect_document_candidates(saved_path: Path, file_id: str, doc: fitz.Document) -> list[dict[str, Any]]:
-    """通用行政公文：DocumentRules PII + 印章（不含工程图纸企业词表）。"""
+    """通用行政公文：PII 正则 + 印章（不含工程图纸企业词表）。"""
     rule_engine = RuleEngine.load_document()
     doc_pipeline = DocPdfPipeline(rule_engine=rule_engine)
     candidates = []
@@ -420,7 +420,7 @@ def _detect_drawing_candidates(saved_path: Path, file_id: str) -> list[dict[str,
         page_idx = page_res.page_index
         for box_idx, rbox in enumerate(page_res.redact_boxes):
             terms = rbox.terms or []
-            # 工程图纸通道：过滤 PII 正则命中（仅 DocumentRules 公文使用 PII）
+            # 工程图纸通道：过滤 PII 正则命中（PII 仅用于行政公文 / Word）
             if any(str(t).startswith("[") for t in terms):
                 continue
             c_id = _candidate_id(file_id, page_idx, box_idx)

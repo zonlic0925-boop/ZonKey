@@ -91,7 +91,7 @@ def load_word_replace_rules(path: str | Path | None = None) -> list[WordReplaceR
 
 
 def load_pii_as_word_replace_rules(path: str | Path | None = None) -> list[WordReplaceRule]:
-    """将 DocumentRules PII 规则同步转为 Word 可执行的替换规则。"""
+    """将 PII 规则同步转为 Word 可执行的替换规则。"""
     p = Path(path) if path is not None else _PROJECT_ROOT / 'rules' / 'pii_rules.json'
     if not p.is_absolute():
         p = _PROJECT_ROOT / p

@@ -6,7 +6,7 @@ set "PROJECT_DIR=%SCRIPT_DIR%..\..\.."
 cd /d "%PROJECT_DIR%"
 if errorlevel 1 goto :fail_cd
 
-set "SPEC_FILE=%SCRIPT_DIR%..\config\DocumentRules.spec"
+set "SPEC_FILE=%SCRIPT_DIR%..\config\ZonScale.spec"
 set "PYINSTALLER_CONFIG_DIR=%PROJECT_DIR%\build\.pyinstaller-cache"
 
 echo ========================================================

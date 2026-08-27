@@ -1,5 +1,5 @@
 """
-DocumentRules 现代化统一规则管理控制台
+ZonScale 统一规则管理控制台
 集成企业敏感词、通用 PII 正则库、印章/图章特征、Word 智能替换与高级脱敏配置。
 """
 from __future__ import annotations
@@ -49,7 +49,7 @@ class RuleDialog(QDialog):
         pii_path: str | Path = "rules/pii_rules.json",
     ):
         super().__init__(parent)
-        self.setWindowTitle("脱敏规则与预设中心 - DocumentRules")
+        self.setWindowTitle("脱敏规则与预设中心 - ZonScale")
         self.resize(920, 640)
         self.setMinimumSize(800, 520)
 

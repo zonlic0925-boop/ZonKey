@@ -19,7 +19,7 @@
 ```powershell
 cd frontend && npm run build          # dist_web 构建
 python -m pytest -q tests/              # 后端单元测试
-python -m PyInstaller --noconfirm packaging\windows\config\DocumentRules.spec  # exe（可选）
+python -m PyInstaller --noconfirm packaging\windows\config\ZonScale.spec  # exe（可选）
 ```
 
 - 前端构建：`npm run build` → **PASS**（1837 modules）

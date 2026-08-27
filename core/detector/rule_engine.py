@@ -203,7 +203,7 @@ class RuleEngine:
 
     @classmethod
     def load_document(cls) -> RuleEngine:
-        """DocumentRules 公文专用：仅 PII 正则，不含工程图纸企业词表。"""
+        """行政公文专用：仅 PII 正则，不含工程图纸企业词表。"""
         pii_path = _PROJECT_ROOT / "rules" / "pii_rules.json"
         pii_rules = load_pii_rules(pii_path) if pii_path.exists() else []
         return cls(terms=[], regex_rules=pii_rules)
