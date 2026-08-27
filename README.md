@@ -19,7 +19,8 @@
 </p>
 
 <p align="center">
-  读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除 Fisher / Emerson / TopWorx / MKS 系列公司名、Logo 与保密标记。<br/>
+  读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除<strong>用户配置的</strong>敏感词、Logo 与保密标记。<br/>
+  产品<strong>不内置任何公司名或专有词表</strong>，全部规则由外部文件或规则中心自行维护。<br/>
   全程本地运行，不修改原始文件，输出 <code>原名_desensitized</code> 后缀副本。
 </p>
 
@@ -32,7 +33,7 @@
 | **数据安全** | 零云端、零外网请求，图纸与文档不出本机 |
 | **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位后抹除，不污染尺寸与公差 |
 | **办公文档** | 通用行政 PDF、Word 文档同一工作台处理 |
-| **规则治理** | 外部词表驱动，GUI 热重载，审计日志可追溯 |
+| **规则治理** | 外部词表 + Logo 模板，GUI 热重载；**零内置公司名**，由用户自行配置 |
 | **交付形态** | Windows exe 一键启动 · 支持局域网手机预览 |
 
 > **ZonScale** 与开源项目 [Desensitization](https://github.com/zonlic0925-boop/Desensitization) 是<strong>两个独立项目</strong>：Desensitization 聚焦 CLI / PyQt 图纸脱敏核心；ZonScale 是面向交付的现代化工作台产品（React UI + 桌面壳 + 多格式扩展）。
@@ -74,8 +75,8 @@
 <td>
 
 ### 规则 · 审计
-- `rules/sensitive_terms.txt` 外部词表
-- `rules/logos/` 视觉模板目录
+- `rules/sensitive_terms.txt` — 用户自备敏感词表（产品不预置任何公司名）
+- `rules/logos/` — 用户自备 Logo 视觉模板
 - 每次执行生成结构化审计 JSON
 
 </td>
