@@ -1,0 +1,64 @@
+﻿# Python 临时与编译产物
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+
+# IDE 与编辑器配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 项目业务输出与临时产物
+output/
+outputs/
+dist/
+dist_release/
+build/
+*.spec
+*.json
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+*.zip
+*.log
+
+# 前端依赖与构建产物
+frontend/node_modules/
+dist_web/
+temp_bridge_files/
+
+# 本地参考副本（禁止入库）
+legacy-reference/
+公司使用版本/
+
+# 客户图纸与测试样本（数据安全保护）
+Testing Drawings/
+*.pdf
+*.PDF
+
+# 外部非源码参考库与配置
+skills-master/
+.zcode/
+
+# 内部专有 Logo 样本（不得进入发布包）
+internal/
+
+# git filter-repo 临时文件（勿提交）
+.git-filter-replace-*.txt
+
+# Release 打包产物（仅上传到 GitHub Releases）
+release_assets/

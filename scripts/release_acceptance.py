@@ -1,0 +1,220 @@
+"""发布版验收（通用规则，不含特定企业内置词）。
+
+验收范围：
+1. 词表 / Logo 目录不含 FISHER / EMERSON 等特定企业出厂规则；
+2. 合成样本 + 用户自定义企业词（ACME）全链路脱敏；
+3. 通用保密标记（CONFIDENTIAL 等）属于发布版合法内置项，与特定企业无关。
+
+用法:
+  python scripts/release_acceptance.py
+  python scripts/release_acceptance.py --exe-dir dist/ZonScale
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import fitz
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from core.app_paths import get_app_root  # noqa: E402
+from core.detector.rule_engine import RuleEngine, load_terms  # noqa: E402
+from core.model import RedactMode  # noqa: E402
+from core.pipeline import Pipeline, PipelineConfig  # noqa: E402
+from core.redact.executor import redact_pdf  # noqa: E402
+
+_BANNED_BUILTIN_TERMS = {
+    "FISHER",
+    "EMERSON",
+    "TOPWORX",
+    "MKS",
+    "MARSHALLTOWN",
+    "FISHER CONTROLS",
+    "PROPERTY OF FISHER CONTROLS",
+    "PROPERTY OF EMERSON",
+    "PROPERTY OF TOPWORX",
+}
+
+OUTPUT_DIR = ROOT / "outputs" / "release_acceptance"
+
+
+def _check_rules_clean(rules_root: Path) -> dict:
+    terms_path = rules_root / "sensitive_terms.txt"
+    terms = [t.upper() for t in load_terms(terms_path)]
+    leaked_vendor = [
+        t for t in terms if t in _BANNED_BUILTIN_TERMS or any(b in t for b in _BANNED_BUILTIN_TERMS)
+    ]
+    logos = []
+    logos_dir = rules_root / "logos"
+    if logos_dir.is_dir():
+        for ext in ("*.png", "*.jpg", "*.jpeg", "*.bmp"):
+            logos.extend(logos_dir.glob(ext))
+    generic_terms = [t for t in terms if t not in _BANNED_BUILTIN_TERMS]
+    return {
+        "terms_path": str(terms_path),
+        "term_count": len(terms),
+        "generic_terms_sample": generic_terms[:8],
+        "vendor_leak": leaked_vendor,
+        "logo_files": [p.name for p in logos],
+        "pass": not leaked_vendor and not logos,
+    }
+
+
+def _synthetic_drawing_test(out_dir: Path) -> dict:
+    """合成图纸：用户自行添加 ACME + 通用 CONFIDENTIAL，验证抹除后零残留。"""
+    custom_terms = ["ACME AEROSPACE", "CONFIDENTIAL"]
+    src = out_dir / "synthetic_drawing.pdf"
+    dst = out_dir / "synthetic_drawing_desensitized.pdf"
+
+    doc = fitz.open()
+    page = doc.new_page(width=420, height=300)
+    page.draw_rect(fitz.Rect(40, 40, 260, 140), color=(0, 0, 0), width=1)
+    page.insert_text((50, 70), "CONFIDENTIAL - ACME AEROSPACE", fontname="helv", fontsize=12)
+    page.insert_text((50, 110), "PART NO: X-1001", fontname="helv", fontsize=10)
+    doc.save(str(src))
+    doc.close()
+
+    cfg = PipelineConfig(terms=custom_terms, use_ocr=False)
+    res = Pipeline(cfg).process(str(src))
+    redact_pdf(str(src), res.all_redact_boxes(), RedactMode.ERASE, str(dst))
+
+    doc_out = fitz.open(str(dst))
+    text = doc_out[0].get_text()
+    doc_out.close()
+
+    leftovers = []
+    for term in custom_terms:
+        if term.lower() in text.lower():
+            leftovers.append(term)
+    protected_ok = "PART NO: X-1001" in text
+
+    return {
+        "input": str(src),
+        "output": str(dst),
+        "hits": len(res.all_hits()),
+        "redact_boxes": len(res.all_redact_boxes()),
+        "leftover_terms": leftovers,
+        "protected_annotation_kept": protected_ok,
+        "pass": not leftovers and protected_ok and bool(res.all_redact_boxes()),
+    }
+
+
+def _verify_output_pdf_terms(pdf_path: Path, terms: list[str]) -> list[str]:
+    leftovers: list[str] = []
+    doc = fitz.open(str(pdf_path))
+    try:
+        text = "\n".join(doc[i].get_text("text") for i in range(doc.page_count)).lower()
+        for term in terms:
+            if term.lower() in text:
+                leftovers.append(term)
+    finally:
+        doc.close()
+    return leftovers
+
+
+def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> dict:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    rules_root = get_app_root() / "rules"
+    report: dict = {
+        "task": "release_acceptance",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "note": "CONFIDENTIAL/PROPRIETARY 等为国际通用图纸保密标记，非特定企业内置规则",
+        "banned_vendor_terms": sorted(_BANNED_BUILTIN_TERMS),
+        "checks": {},
+    }
+
+    report["checks"]["source_rules"] = _check_rules_clean(rules_root)
+
+    if exe_dir:
+        bundled_rules = exe_dir / "_internal" / "rules"
+        if not bundled_rules.is_dir():
+            bundled_rules = exe_dir / "rules"
+        report["checks"]["exe_bundled_rules"] = _check_rules_clean(bundled_rules)
+        report["checks"]["exe_exists"] = {
+            "path": str(exe_dir / "ZonScale.exe"),
+            "pass": (exe_dir / "ZonScale.exe").is_file(),
+        }
+
+    if app_dir:
+        macos_root = app_dir / "Contents" / "MacOS"
+        bundled_rules = macos_root / "rules"
+        if not bundled_rules.is_dir():
+            bundled_rules = app_dir / "Contents" / "Resources" / "rules"
+        if bundled_rules.is_dir():
+            report["checks"]["app_bundled_rules"] = _check_rules_clean(bundled_rules)
+        mac_bin = macos_root / "ZonScale"
+        report["checks"]["app_exists"] = {
+            "path": str(mac_bin),
+            "pass": mac_bin.is_file(),
+        }
+
+    report["checks"]["synthetic_pipeline"] = _synthetic_drawing_test(OUTPUT_DIR)
+
+    generic_only = load_terms(rules_root / "sensitive_terms.txt")
+    report["checks"]["generic_terms_in_rules"] = {
+        "terms": generic_only,
+        "pass": all(
+            t.upper() not in _BANNED_BUILTIN_TERMS and not any(b in t.upper() for b in _BANNED_BUILTIN_TERMS)
+            for t in generic_only
+        ),
+    }
+
+    all_pass = all(
+        c.get("pass") is True
+        for c in report["checks"].values()
+        if isinstance(c, dict) and "pass" in c
+    )
+    report["all_pass"] = all_pass
+
+    out_json = OUTPUT_DIR / "release_acceptance_report.json"
+    out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    return report
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="发布版通用规则验收")
+    parser.add_argument("--exe-dir", type=Path, default=None, help="Windows 构建目录 dist/ZonScale")
+    parser.add_argument("--app-dir", type=Path, default=None, help="macOS 构建产物 dist/ZonScale.app")
+    args = parser.parse_args()
+
+    exe_dir = args.exe_dir if args.exe_dir and args.exe_dir.is_dir() else None
+    app_dir = args.app_dir if args.app_dir and args.app_dir.is_dir() else None
+    if exe_dir is None and app_dir is None:
+        default_exe = ROOT / "dist" / "ZonScale"
+        exe_dir = default_exe if default_exe.is_dir() else None
+    report = run_acceptance(exe_dir, app_dir)
+
+    print("=" * 60)
+    print("发布版验收报告（通用规则，不含 FISHER/EMERSON 等企业出厂词）")
+    print("=" * 60)
+    for name, check in report["checks"].items():
+        status = "PASS" if check.get("pass") else "FAIL"
+        print(f"[{status}] {name}")
+        if name == "synthetic_pipeline":
+            print(f"       合成样本输出: {check.get('output')}")
+            print(f"       残留敏感词: {check.get('leftover_terms') or '无'}")
+        if name in ("source_rules", "exe_bundled_rules", "app_bundled_rules"):
+            print(f"       词表条目数: {check.get('term_count')}")
+            print(f"       通用词示例: {check.get('generic_terms_sample')}")
+            if check.get("vendor_leak"):
+                print(f"       非法企业词: {check['vendor_leak']}")
+            if check.get("logo_files"):
+                print(f"       非法 Logo: {check['logo_files']}")
+
+    print("-" * 60)
+    print(f"报告文件: {OUTPUT_DIR / 'release_acceptance_report.json'}")
+    if report["all_pass"]:
+        print("结论: 全部通过")
+        return 0
+    print("结论: 存在失败项")
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

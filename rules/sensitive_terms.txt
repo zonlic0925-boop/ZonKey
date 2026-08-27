@@ -1,0 +1,13 @@
+# 敏感词表示例 — 请按你的项目自行添加，每行一词
+# 匹配方式：大小写不敏感子串匹配；长度 < 5 字符的词自动启用整词边界匹配
+#
+# 以下为常见保密标记示例（非任何特定公司专有词表）：
+CONFIDENTIAL
+PROPRIETARY
+RESTRICTED
+DO NOT COPY
+DO NOT DISTRIBUTE
+INTERNAL USE ONLY
+SECRET
+HELD IN STRICT CONFIDENCE
+RETAINED IN CONFIDENCE
