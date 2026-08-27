@@ -19,8 +19,8 @@
 </p>
 
 <p align="center">
-  读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除<strong>用户配置的</strong>敏感词、Logo 与保密标记。<br/>
-  产品<strong>不内置任何公司名或专有词表</strong>，全部规则由外部文件或规则中心自行维护。<br/>
+  读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除敏感词、Logo 与保密标记。<br/>
+  脱敏规则由你在规则中心<strong>自行选择并维护</strong>——公司名、Logo 模板、保密词等均可按需配置。<br/>
   全程本地运行，不修改原始文件，输出 <code>原名_desensitized</code> 后缀副本。
 </p>
 
@@ -33,10 +33,8 @@
 | **数据安全** | 零云端、零外网请求，图纸与文档不出本机 |
 | **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位后抹除，不污染尺寸与公差 |
 | **办公文档** | 通用行政 PDF、Word 文档同一工作台处理 |
-| **规则治理** | 外部词表 + Logo 模板，GUI 热重载；**零内置公司名**，由用户自行配置 |
+| **规则治理** | 规则中心 + 外部词表 / Logo 模板，按需自选公司名等脱敏规则，支持 GUI 热重载 |
 | **交付形态** | Windows exe 一键启动 · 支持局域网手机预览 |
-
-> **ZonScale** 与开源项目 [Desensitization](https://github.com/zonlic0925-boop/Desensitization) 是<strong>两个独立项目</strong>：Desensitization 聚焦 CLI / PyQt 图纸脱敏核心；ZonScale 是面向交付的现代化工作台产品（React UI + 桌面壳 + 多格式扩展）。
 
 ---
 
@@ -75,8 +73,9 @@
 <td>
 
 ### 规则 · 审计
-- `rules/sensitive_terms.txt` — 用户自备敏感词表（产品不预置任何公司名）
-- `rules/logos/` — 用户自备 Logo 视觉模板
+- 规则中心 — 自行选择并保存公司名、PII、Word 替换等脱敏规则
+- `rules/sensitive_terms.txt` — 外部敏感词表（可选）
+- `rules/logos/` — 外部 Logo 视觉模板（可选）
 - 每次执行生成结构化审计 JSON
 
 </td>
@@ -211,5 +210,5 @@ Zonscale/
 **zonlic** — 一個在香港生存的普通人
 
 <p align="center">
-  <sub>Private repository · ZonScale © zonlic · 与 Desensitization 开源项目独立维护</sub>
+  <sub>Private repository · ZonScale © zonlic</sub>
 </p>
