@@ -1,137 +1,214 @@
-﻿# 📐 工程图纸智能脱敏系统 (Engineering Drawing Desensitizer)
+﻿<p align="center">
+  <img src="frontend/public/zonscale-icon.svg" width="88" alt="ZonScale" />
+</p>
+
+<h1 align="center">ZonScale</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-blue.svg?style=flat-square" alt="Python Version" />
-  <img src="https://img.shields.io/badge/GUI-PyQt5-green.svg?style=flat-square" alt="PyQt5" />
-  <img src="https://img.shields.io/badge/PDF_Engine-PyMuPDF_1.27+-orange.svg?style=flat-square" alt="PyMuPDF" />
-  <img src="https://img.shields.io/badge/OCR-RapidOCR_ONNX-purple.svg?style=flat-square" alt="RapidOCR" />
-  <img src="https://img.shields.io/badge/Tests-74%20Passed-brightgreen.svg?style=flat-square" alt="Tests" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License" />
+  <strong>工程图纸与文档 · 本地离线智能脱敏工作台</strong><br/>
+  <em>by zonlic</em>
 </p>
 
 <p align="center">
-  <strong>一款专为工业制造、工程设计行业打造的本地离线 PDF 图纸脱敏桌面工具。</strong><br>
-  结合矢量解析、深度 OCR 与计算机视觉三通道检测，配备自研表格框线智能归位算法，实现<strong>严格不越框污染图纸有效尺寸、公差与技术要求</strong>的精准脱敏。
+  <img src="https://img.shields.io/badge/Status-Private%20Repository-64748b?style=flat-square" alt="Private Repository" />
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11" />
+  <img src="https://img.shields.io/badge/UI-React%20%2B%20FastAPI-0D9488?style=flat-square" alt="React + FastAPI" />
+  <img src="https://img.shields.io/badge/PDF-PyMuPDF%201.27-E63946?style=flat-square" alt="PyMuPDF" />
+  <img src="https://img.shields.io/badge/OCR-RapidOCR%20ONNX-7C3AED?style=flat-square" alt="RapidOCR" />
+  <img src="https://img.shields.io/badge/Network-100%25%20Offline-059669?style=flat-square" alt="Offline" />
+</p>
+
+<p align="center">
+  读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除 Fisher / Emerson / TopWorx / MKS 系列公司名、Logo 与保密标记。<br/>
+  全程本地运行，不修改原始文件，输出 <code>原名_desensitized</code> 后缀副本。
 </p>
 
 ---
 
-## ✨ 核心特性
+## 为什么选 ZonScale
 
-- 🔒 **100% 纯本地离线计算**：零云端请求、零外部网络交互，完全杜绝企业核心技术资产与客户工程图纸的外泄风险。
-- ⚡ **三通道多模态智能检测**：
-  - **矢量文本通道 (Vector Channel)**：基于 PyMuPDF 底层字符 Span 流，毫秒级精准捕获原始文字坐标。
-  - **栅格 OCR 通道 (OCR Channel)**：内置 RapidOCR-onnxruntime 离线轻量级引擎，高效识别扫描件、光栅图与批注文字。
-  - **图形视觉通道 (Visual Channel)**：XObject 图片对象分析 + OpenCV 多尺度模板匹配，快速锁定敏感 Logo。
-- 🎯 **自研表格框线智能归位 (Box Finder)**：
-  - 传统 OCR 框容易发生边缘溢出或局部残留。本系统可自动检测图纸标题栏/表格的最小封闭单元格，将检测框向上吸附归位至单元格物理边界；
-  - 确保擦除范围严密受限于方框内部，**绝不越框污染图纸几何线、尺寸标注与技术要求**。
-- ✂️ **物理级矢量真删除 (ERASE 模式)**：
-  - 底层调用 PDF Redaction 物理删除内容流（Content Stream），彻底移除敏感文本与矢量数据，无法被逆向提取；同时支持可选的“安全覆盖 (COVER)”遮挡模式。
-- ⚙️ **灵活解耦的外部规则库**：
-  - 支持通过外部配置文件 ules/sensitive_terms.txt 或 GUI 界面自由配置敏感词表与视觉模板，开箱即用。
+| 维度 | ZonScale |
+| --- | --- |
+| **数据安全** | 零云端、零外网请求，图纸与文档不出本机 |
+| **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位后抹除，不污染尺寸与公差 |
+| **办公文档** | 通用行政 PDF、Word 文档同一工作台处理 |
+| **规则治理** | 外部词表驱动，GUI 热重载，审计日志可追溯 |
+| **交付形态** | Windows exe 一键启动 · 支持局域网手机预览 |
+
+> **ZonScale** 与开源项目 [Desensitization](https://github.com/zonlic0925-boop/Desensitization) 是<strong>两个独立项目</strong>：Desensitization 聚焦 CLI / PyQt 图纸脱敏核心；ZonScale 是面向交付的现代化工作台产品（React UI + 桌面壳 + 多格式扩展）。
 
 ---
 
-## 🏗️ 系统架构设计
+## 功能模块
 
-`mermaid
-flowchart TD
-    A[客户原始 PDF 工程图纸] --> B{多模态检测引擎}
-    
-    subgraph Detection [三通道检测]
-        B -->|矢量层提取| C1[PyMuPDF 矢量文本检测]
-        B -->|300 DPI 离线渲染| C2[RapidOCR 栅格文字识别]
-        B -->|XObject / 模板匹配| C3[OpenCV 图形/Logo 检索]
-    end
-    
-    C1 --> D[空间坐标系统一 & IoU 去重融合]
-    C2 --> D
-    C3 --> D
-    
-    D --> E[规则匹配过滤 - 敏感词库 / 保密标记]
-    E --> F[自研 BoxFinder 智能框线归位]
-    
-    F -->|单元格吸附| G[安全脱敏执行器 (PDF Redaction)]
-    
-    G --> H[输出: 原名_desensitized.pdf]
-`
+<table>
+<tr>
+<td width="50%">
+
+### 工程图纸脱敏
+- 文字层 PDF → 矢量通道（Span 坐标）
+- 纯栅格 PDF → 300 DPI + RapidOCR
+- 混合 PDF → 双通道 IoU 融合
+- Logo → XObject + 模板匹配
+- 框线归位 → 单元格内抹除，越框即标「待人工确认」
+
+</td>
+<td width="50%">
+
+### 通用行政公文
+- 扫描件 / 电子版 PDF 统一入口
+- 敏感词命中预览与勾选
+- 导出脱敏 PDF，支持自定义目录
+
+</td>
+</tr>
+<tr>
+<td>
+
+### Word 文档脱敏
+- `.docx` 段落级敏感词识别
+- 高亮预览 + 批量替换导出
+- 与图纸规则库共享词表
+
+</td>
+<td>
+
+### 规则 · 审计
+- `rules/sensitive_terms.txt` 外部词表
+- `rules/logos/` 视觉模板目录
+- 每次执行生成结构化审计 JSON
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 🚀 快速上手
+## 系统架构
 
-### 环境要求
-- 操作系统：Windows 10/11, macOS, Linux
-- Python 版本：Python 3.10 或 3.11
+```mermaid
+flowchart LR
+  subgraph Input["输入"]
+    A[工程图纸 PDF]
+    B[行政 PDF]
+    C[Word 文档]
+  end
 
-### 1. 克隆与安装依赖
+  subgraph Core["ZonScale Core · 本地离线"]
+    D[规则引擎]
+    E[三通道检测]
+    F[框线归位 BoxFinder]
+    G[抹除执行 ERASE / COVER]
+  end
 
-`ash
-# 克隆仓库
-git clone https://github.com/zonlic0925-boop/Desensitization.git
-cd Desensitization
+  subgraph UI["现代化工作台"]
+    H[React 前端]
+    I[FastAPI Bridge]
+    J[PyWebView 桌面壳]
+  end
 
-# 安装依赖
+  A --> E
+  B --> E
+  C --> D
+  E --> D --> F --> G
+  H <--> I <--> Core
+  J --> H
+  G --> K[输出 *_desensitized.*]
+```
+
+---
+
+## 快速开始
+
+### 方式一 · Windows 可执行文件（推荐）
+
+1. 下载或构建 `dist/ZonScale/ZonScale.exe`
+2. 双击 **启动现代化脱敏工作台.bat** 或直接运行 exe
+3. 浏览器 / 内嵌窗口访问 `http://127.0.0.1:8765`
+
+### 方式二 · 源码开发模式
+
+```powershell
+# 克隆（需仓库访问权限）
+git clone https://github.com/zonlic0925-boop/Zonscale.git
+cd Zonscale
+
+# Python 依赖
 pip install -r requirements.txt
-`
 
-### 2. 启动图形交互界面 (GUI)
+# 前端构建
+cd frontend
+npm install
+npm run build
+cd ..
 
-- **Windows 一键启动**：双击根目录下的 启动系统.bat。
-- **命令行启动**：
-  `ash
-  python main_ui.py
-  `
+# 启动现代化工作台
+python run_modern_app.py
+# 或
+.\启动现代化脱敏工作台.bat
+```
 
----
+### 方式三 · 经典 PyQt 图纸脱敏（CLI / 旧版 UI）
 
-## 🖥️ 界面与交互能力
-
-- **单张精细预览与即时脱敏**：
-  - 支持单页/多页图纸分页浏览与多级缩放；
-  - 实时高亮显示检测到的敏感命中项（不同颜色区分矢量、OCR、Logo）；
-  - 支持单图纸即时脱敏并直接查看脱敏后矢量渲染效果。
-- **批量一键流水线处理**：
-  - 支持批量添加图纸文件或文件夹导入；
-  - 实时显示批处理进度条与成功/失败/跳过统计日志。
-- **内置推荐通用保密规则**：
-  - 界面提供 ✨ 恢复推荐通用保密规则 按钮，一键载入国际工程图纸通用保密词（如 CONFIDENTIAL, PROPRIETARY, RESTRICTED, INTERNAL USE ONLY 等）。
+```powershell
+pip install -r requirements.txt
+python main_ui.py          # PyQt5 图形界面
+python main.py input.pdf   # CLI 批处理
+```
 
 ---
 
-## ⚙️ 规则配置说明
+## 技术栈
 
-本系统遵循代码与业务数据解耦原则，所有脱敏规则均可通过文件或界面动态更新：
-
-1. **敏感词库配置 (ules/sensitive_terms.txt)**：
-   每行一个敏感词或正则表达式，系统自动忽略空行与 # 注释行：
-   `	ext
-   # 常用保密词
-   CONFIDENTIAL
-   PROPRIETARY
-   RESTRICTED
-   DO NOT DISTRIBUTE
-   
-   # 自定义公司或供应商名称
-   ACME CORPORATION
-   SAMPLE TECH
-   `
-2. **图形 Logo 模板 (ules/logos/)**：
-   将需要检测的企业 Logo（PNG/JPG 格式）放入该目录，系统将在图纸检测时自动进行多尺度模板匹配与定位。
+| 层级 | 选型 |
+| --- | --- |
+| 前端 | React · TypeScript · Tailwind CSS · Vite |
+| 桥接 | FastAPI · Uvicorn |
+| 桌面 | PyWebView · PyInstaller |
+| PDF | PyMuPDF 1.27 · OpenCV |
+| OCR | RapidOCR ONNX Runtime |
+| 文档 | python-docx |
+| 测试 | pytest |
 
 ---
 
-## 🧪 单元测试
+## 目录结构（节选）
 
-项目包含完善的自动化测试套件（覆盖检测器、规则引擎、管道流、执行器、UI及发布契约）：
-
-`ash
-pytest
-`
+```
+Zonscale/
+├── core/                 # 脱敏核心：检测 · 归位 · 执行 · 管道
+├── frontend/             # React 现代化 UI
+├── server_bridge.py      # FastAPI 本地桥接
+├── desktop_app.py        # PyWebView 桌面入口
+├── rules/                # 敏感词表与 Logo 模板（可配置）
+├── packaging/            # Windows / macOS 打包脚本
+├── tests/                # 单元测试与发布契约
+└── run_modern_app.py     # 开发模式启动器
+```
 
 ---
 
-## 📄 开源许可证
+## 数据安全承诺
 
-本项目采用 [MIT License](LICENSE) 许可协议。
+- **不联网**：运行时无外部 API、无云 OCR、无模型上传
+- **不改原文件**：只在用户指定目录写入 `_desensitized` 副本
+- **样本隔离**：客户图纸目录 `Testing Drawings/` 已加入 `.gitignore`，不会进入版本库
+- **私有仓库**：本仓库为 Private，仅供授权协作者访问
+
+---
+
+## 验收标准（产品级）
+
+1. **文本层零命中**：输出 PDF 全文检索敏感词 → 0 命中
+2. **渲染目检**：抹除块不越框线、不污染框外标注
+3. **样本回归**：`Testing Drawings/` 全量三通道跑通并归档审计
+
+---
+
+## 作者
+
+**zonlic** — 一個在香港生存的普通人
+
+<p align="center">
+  <sub>Private repository · ZonScale © zonlic · 与 Desensitization 开源项目独立维护</sub>
+</p>
