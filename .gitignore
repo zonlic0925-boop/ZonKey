@@ -56,3 +56,6 @@ skills-master/
 
 # 内部专有 Logo 样本（不得进入发布包）
 internal/
+
+# git filter-repo 临时文件（勿提交）
+.git-filter-replace-*.txt
