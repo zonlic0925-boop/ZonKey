@@ -12,7 +12,9 @@ _DISCRIMINATOR_STOPWORDS = {
     'process', 'management', 'controls', 'company', 'usa', 'kentucky', 'industrial',
 }
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+from core.app_paths import get_app_root
+
+_PROJECT_ROOT = get_app_root()
 
 def load_pii_rules(path: str | Path) -> list[dict[str, Any]]:
     p = Path(path)
@@ -21,7 +23,22 @@ def load_pii_rules(path: str | Path) -> list[dict[str, Any]]:
     if not p.exists():
         return []
     try:
-        return json.loads(p.read_text(encoding='utf-8'))
+        data = json.loads(p.read_text(encoding='utf-8'))
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            pii = data.get("pii_rules", {})
+            if isinstance(pii, list):
+                return pii
+            if isinstance(pii, dict):
+                rules_list = []
+                for k, v in pii.items():
+                    if isinstance(v, dict):
+                        item = dict(v)
+                        item.setdefault("key", k)
+                        rules_list.append(item)
+                return rules_list
+        return []
     except Exception:
         return []
 
@@ -113,9 +130,8 @@ class RuleEngine:
         for term, pat in self._patterns:
             if pat.search(text):
                 found.add(term)
-        for name, rx in self._compiled_regex:
-            if rx.search(text):
-                found.add(f'[{name}]')
+        for _start, _end, _matched, name in self._iter_regex_spans(text):
+            found.add(f'[{name}]')
         if not found and self._fuzzy:
             found.update(self._match_fuzzy(text))
         return sorted(found)
@@ -127,10 +143,70 @@ class RuleEngine:
         for term, pat in self._patterns:
             for m in pat.finditer(text):
                 spans.append((m.start(), m.end(), term))
-        for name, rx in self._compiled_regex:
-            for m in rx.finditer(text):
-                spans.append((m.start(), m.end(), f'[{name}]'))
+        for start, end, _matched, name in self._iter_regex_spans(text):
+            spans.append((start, end, f'[{name}]'))
         return spans
+
+    def iter_regex_matches(self, text: str) -> list[tuple[str, str]]:
+        """Return unique (matched_substring, rule_name) pairs from enabled regex rules.
+
+        Longer matches win over overlapping shorter ones, so broad patterns
+        (landline/passport fragments) cannot shadow a full ID card number.
+        """
+        return [(matched, name) for _s, _e, matched, name in self._iter_regex_spans(text)]
+
+    def _iter_regex_spans(self, text: str) -> list[tuple[int, int, str, str]]:
+        if not text:
+            return []
+        candidates: list[tuple[int, int, str, str]] = []
+        for rule in self._regex_rules:
+            if not isinstance(rule, dict) or not rule.get('enabled', True):
+                continue
+            pattern = rule.get('pattern', '')
+            name = str(rule.get('name', 'PII'))
+            if not pattern:
+                continue
+            try:
+                for match in re.finditer(pattern, text, re.IGNORECASE):
+                    found = match.group(0)
+                    if found:
+                        candidates.append((match.start(), match.end(), found, name))
+            except re.error:
+                continue
+
+        # Longer first, then leftmost — drop any overlap with an already kept span.
+        candidates.sort(key=lambda item: (-(item[1] - item[0]), item[0]))
+        kept: list[tuple[int, int, str, str]] = []
+        occupied: list[tuple[int, int]] = []
+        for start, end, found, name in candidates:
+            if any(not (end <= a or start >= b) for a, b in occupied):
+                continue
+            occupied.append((start, end))
+            kept.append((start, end, found, name))
+        kept.sort(key=lambda item: item[0])
+        return kept
+
+    @classmethod
+    def load_default(cls) -> RuleEngine:
+        terms_path = _PROJECT_ROOT / "rules" / "sensitive_terms.txt"
+        pii_path = _PROJECT_ROOT / "rules" / "pii_rules.json"
+        terms = load_terms(terms_path) if terms_path.exists() else []
+        pii_rules = load_pii_rules(pii_path) if pii_path.exists() else []
+        return cls(terms=terms, regex_rules=pii_rules)
+
+    @classmethod
+    def load_drawing(cls) -> RuleEngine:
+        """工程图纸专用：仅 sensitive_terms.txt，不含 PII 正则。"""
+        terms_path = _PROJECT_ROOT / "rules" / "sensitive_terms.txt"
+        terms = load_terms(terms_path) if terms_path.exists() else []
+        return cls(terms=terms, regex_rules=[])
+
+    @classmethod
+    def load_document(cls) -> RuleEngine:
+        """DocumentRules 公文专用：仅 PII 正则，不含工程图纸企业词表。"""
+        pii_path = _PROJECT_ROOT / "rules" / "pii_rules.json"
+        pii_rules = load_pii_rules(pii_path) if pii_path.exists() else []
+        return cls(terms=[], regex_rules=pii_rules)
 
     def _match_fuzzy(self, text: str) -> list[str]:
         text_lower = text.lower()

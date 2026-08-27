@@ -71,14 +71,21 @@ def to_audit_dict(result: FileResult) -> dict:
 class Pipeline:
     def __init__(self, config: PipelineConfig | None = None):
         cfg = config or PipelineConfig()
-        terms = cfg.terms if cfg.terms is not None else load_terms(cfg.terms_file)
-        engine = RuleEngine(terms)
+        if cfg.terms is not None:
+            engine = RuleEngine(terms=cfg.terms)
+        else:
+            engine = RuleEngine.load_drawing()
         self._engine = engine
         self._vector = VectorChannel(engine)
         self._ocr = OcrChannel(engine) if cfg.use_ocr else None
         self._logo_matcher = LogoMatcher() if cfg.use_logo_matcher else None
         self._image_verify = cfg.image_verify
         self._boxfinder = cfg.boxfinder
+
+    @property
+    def rule_engine(self) -> RuleEngine:
+        """提供统一规则引擎访问接口。"""
+        return self._engine
 
     def process(self, source: str, *, with_ocr: bool | None = None) -> FileResult:
         if not Path(source).exists():

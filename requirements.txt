@@ -1,0 +1,17 @@
+# ZonScale 运行时依赖（Python 3.11）
+PyMuPDF==1.27.1
+numpy>=2.0,<3
+opencv-python>=4.10
+rapidocr-onnxruntime==1.4.4
+onnxruntime>=1.19
+Pillow>=10.0
+python-docx>=1.1
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+pydantic>=2.0
+pywebview>=6.0
+
+# Mac / Windows 打包额外依赖（构建机安装）
+# pyinstaller>=6.0
+# pyobjc-core pyobjc-framework-Cocoa pyobjc-framework-WebKit  # 仅 macOS

@@ -5,18 +5,28 @@ from typing import Callable, List, Optional
 import fitz
 from core.detector.rule_engine import RuleEngine
 from core.detector.seal_detector import SealDetector
+from core.errors import OcrUnavailableError
 from core.model import (
-    Box, Channel, 
-    FileResult, PageResult, RedactBox, RedactMode, SensitiveHit, 
+    Box, Channel,
+    FileResult, PageResult, RedactBox, RedactMode, SensitiveHit,
 )
 
 logger = logging.getLogger(__name__)
 
+
 class DocPdfPipeline:
-    def __init__(self, rule_engine: RuleEngine, seal_detector: Optional[SealDetector] = None, dpi: int = 200) -> None:
+    def __init__(
+        self,
+        rule_engine: RuleEngine,
+        seal_detector: Optional[SealDetector] = None,
+        dpi: int = 200,
+        use_ocr: bool = True,
+    ) -> None:
         self.rule_engine = rule_engine
         self.seal_detector = seal_detector or SealDetector()
         self.dpi = dpi
+        self.use_ocr = use_ocr
+        self._ocr_channel = None
 
     def process_pdf(
         self,
@@ -35,11 +45,8 @@ class DocPdfPipeline:
         doc = fitz.open(in_p)
         pages_res: List[PageResult] = []
         for pidx, page in enumerate(doc):
-            hits: List[SensitiveHit] = []
+            hits: List[SensitiveHit] = self.collect_page_hits(page, pidx, enable_seal=enable_seal)
             redact_boxes: List[RedactBox] = []
-            hits.extend(self._search_text_page(page, pidx))
-            if enable_seal and self.seal_detector:
-                hits.extend(self.seal_detector.detect(page, pidx))
             for h in hits:
                 redact_boxes.append(RedactBox(
                     page_index=pidx,
@@ -55,13 +62,69 @@ class DocPdfPipeline:
                 page_index=pidx,
                 hits=hits,
                 redact_boxes=redact_boxes,
-                
             ))
             if progress_callback:
                 progress_callback(pidx + 1, len(doc))
         doc.save(str(out_p), garbage=4, deflate=True)
         doc.close()
         return FileResult(source_path=in_p, output_path=out_p, pages=pages_res)
+
+    def collect_page_hits(
+        self,
+        page: fitz.Page,
+        page_index: int,
+        *,
+        enable_seal: bool = False,
+    ) -> List[SensitiveHit]:
+        """矢量文本 + OCR 双通道（混合/扫描公文）+ 可选印章，IoU 去重后返回。"""
+        hits = self._search_text_page(page, page_index)
+        if self.use_ocr:
+            hits = self._merge_hits(hits, self._search_ocr_page(page, page_index))
+        if enable_seal and self.seal_detector:
+            hits = self._merge_hits(hits, self.seal_detector.detect(page, page_index))
+        return hits
+
+    def _search_ocr_page(self, page: fitz.Page, page_index: int) -> List[SensitiveHit]:
+        try:
+            from core.detector.ocr_channel import OcrChannel, get_ocr_engine
+            get_ocr_engine()
+        except OcrUnavailableError as exc:
+            logger.warning("公文 OCR 不可用: %s", exc.message)
+            return []
+        if self._ocr_channel is None:
+            from core.detector.ocr_channel import OcrChannel
+            self._ocr_channel = OcrChannel(self.rule_engine)
+        return self._ocr_channel.detect(page, page_index)
+
+    @staticmethod
+    def _merge_hits(existing: List[SensitiveHit], extra: List[SensitiveHit]) -> List[SensitiveHit]:
+        merged = list(existing)
+        for h in extra:
+            if DocPdfPipeline._is_duplicate_hit(h, merged):
+                continue
+            merged.append(h)
+        return merged
+
+    @staticmethod
+    def _is_duplicate_hit(candidate: SensitiveHit, existing: List[SensitiveHit]) -> bool:
+        for hi in existing:
+            if hi.page_index != candidate.page_index:
+                continue
+            if hi.source_box.iou(candidate.source_box) > 0.45:
+                return True
+            hi_terms = {t for t in (hi.matched_terms or []) if t}
+            c_terms = {t for t in (candidate.matched_terms or []) if t}
+            if hi_terms & c_terms:
+                return True
+            hi_blob = " ".join([hi.text or "", *(hi.matched_terms or [])])
+            for term in c_terms:
+                if len(term) >= 6 and term in hi_blob:
+                    return True
+            c_blob = " ".join([candidate.text or "", *(candidate.matched_terms or [])])
+            for term in hi_terms:
+                if len(term) >= 6 and term in c_blob:
+                    return True
+        return False
 
     def _search_text_page(self, page: fitz.Page, page_index: int) -> List[SensitiveHit]:
         hits: List[SensitiveHit] = []
@@ -76,22 +139,46 @@ class DocPdfPipeline:
                     confidence=1.0,
                 ))
         page_text = page.get_text("text")
-        spans = self.rule_engine.find_spans(page_text)
-        for st, end, mtext in spans:
-            for r in page.search_for(mtext):
+        search_cache: dict[str, list] = {}
+        for matched_text, rule_name in self.rule_engine.iter_regex_matches(page_text):
+            if matched_text not in search_cache:
+                try:
+                    rects = page.search_for(matched_text)
+                except RuntimeError as exc:
+                    logger.warning("search_for failed for %r: %s", matched_text, exc)
+                    rects = []
+                if not rects:
+                    rects = self._rects_from_text_dict(page, matched_text)
+                search_cache[matched_text] = rects
+            for r in search_cache[matched_text]:
                 hits.append(SensitiveHit(
                     page_index=page_index,
                     source_box=Box(r.x0, r.y0, r.x1, r.y1),
                     channel=Channel.VECTOR_TEXT,
-                    matched_terms=[mtext],
-                    text=mtext,
+                    matched_terms=[matched_text],
+                    text=f"[{rule_name}]",
                     confidence=1.0,
                 ))
-        unique: List[SensitiveHit] = []
-        for h in hits:
-            if not any(hi.source_box.iou(h.source_box) > 0.8 for hi in unique):
-                unique.append(h)
-        return unique
+        return self._merge_hits([], hits)
+
+    @staticmethod
+    def _rects_from_text_dict(page: fitz.Page, needle: str) -> list[fitz.Rect]:
+        if not needle:
+            return []
+        rects: list[fitz.Rect] = []
+        try:
+            blocks = page.get_text("dict").get("blocks", [])
+        except Exception:
+            return rects
+        for block in blocks:
+            for line in block.get("lines", []):
+                for span in line.get("spans", []):
+                    text = span.get("text", "")
+                    if needle in text:
+                        bbox = span.get("bbox")
+                        if bbox and len(bbox) == 4:
+                            rects.append(fitz.Rect(bbox))
+        return rects
 
     def _apply_redactions_to_page(self, page: fitz.Page, redact_boxes: List[RedactBox], config: object) -> None:
         mode = getattr(config, "redact_mode", RedactMode.ERASE)

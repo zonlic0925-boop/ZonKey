@@ -332,6 +332,49 @@ class PreviewView(QGraphicsView):
 
     def paintEvent(self, event) -> None:  # noqa: N802
         super().paintEvent(event)
+        # 空态提示渲染 (Apple Minimalist Empty State)
+        if not self.has_content():
+            painter = QPainter(self.viewport())
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            rect = self.viewport().rect()
+
+            # 居中空态提示框
+            w = min(rect.width() - 40, 320)
+            h = min(rect.height() - 40, 160)
+            if w > 80 and h > 60:
+                cx = rect.center().x() - w / 2
+                cy = rect.center().y() - h / 2
+                card_rect = QRectF(cx, cy, w, h)
+                
+                # 绘制半透明圆角卡片
+                painter.setPen(QPen(QColor("#CBD5E1"), 1.5, Qt.DashLine))
+                painter.setBrush(QColor(255, 255, 255, 140))
+                painter.drawRoundedRect(card_rect, 12, 12)
+
+                # 绘制标题与副标题
+                painter.setPen(QColor("#475569"))
+                font_title = painter.font()
+                font_title.setPointSize(11)
+                font_title.setBold(True)
+                painter.setFont(font_title)
+                painter.drawText(
+                    QRectF(cx, cy + 30, w, 26),
+                    Qt.AlignCenter,
+                    self._title,
+                )
+
+                painter.setPen(QColor("#94A3B8"))
+                font_sub = painter.font()
+                font_sub.setPointSize(9)
+                font_sub.setBold(False)
+                painter.setFont(font_sub)
+                painter.drawText(
+                    QRectF(cx, cy + 60, w, 40),
+                    Qt.AlignCenter,
+                    "请在左侧添加文件\n或直接拖拽图纸进入",
+                )
+            painter.end()
+
         if self._rubber_rect is not None:
             x, y, w, h = self._rubber_rect
             if w > 0 and h > 0:

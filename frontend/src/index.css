@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Caveat:wght@500;600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Righteous&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-mem-cream text-mem-ink font-body antialiased;
+  }
+}
+
+@layer components {
+  /* 孟菲斯卡片：白底 + 粗描边 + 偏移阴影 */
+  .memphis-card {
+    @apply bg-white border-[3px] border-mem-ink rounded-2xl shadow-memphis;
+  }
+
+  .memphis-card-flat {
+    @apply bg-white border-2 border-mem-ink rounded-xl;
+  }
+
+  /* 主操作按钮 */
+  .memphis-btn-primary {
+    @apply px-5 py-2.5 rounded-xl font-semibold text-sm
+           bg-mem-coral text-white border-[3px] border-mem-ink
+           shadow-memphis-sm hover:translate-x-[-1px] hover:translate-y-[-1px]
+           hover:shadow-memphis transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0;
+  }
+
+  /* 次要按钮 */
+  .memphis-btn-secondary {
+    @apply px-4 py-2 rounded-xl font-medium text-sm
+           bg-mem-teal text-mem-ink border-[3px] border-mem-ink
+           shadow-memphis-sm hover:translate-x-[-1px] hover:translate-y-[-1px]
+           hover:shadow-memphis transition-all duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* 幽灵/工具按钮 */
+  .memphis-btn-ghost {
+    @apply px-3 py-1.5 rounded-lg font-medium text-sm
+           bg-white text-mem-ink border-2 border-mem-ink
+           hover:bg-mem-yellow/40 transition-colors;
+  }
+
+  /* 输入框 */
+  .memphis-input {
+    @apply px-4 py-2.5 rounded-xl bg-white border-2 border-mem-ink
+           text-sm text-mem-ink placeholder:text-mem-ink/40
+           focus:outline-none focus:ring-2 focus:ring-mem-teal focus:border-mem-teal;
+  }
+
+  /* 面板容器 */
+  .memphis-panel {
+    @apply bg-white/90 border-[3px] border-mem-ink rounded-2xl shadow-memphis;
+  }
+
+  /* 导航 Tab 激活态 */
+  .memphis-tab-active {
+    @apply bg-mem-yellow border-[3px] border-mem-ink shadow-memphis-sm text-mem-ink font-semibold;
+  }
+
+  .memphis-tab-inactive {
+    @apply bg-white border-2 border-mem-ink/30 text-mem-ink/60
+           hover:border-mem-ink hover:text-mem-ink hover:bg-mem-teal/20;
+  }
+
+  /* Toast 通知 */
+  .memphis-toast {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl
+           bg-white border-[3px] border-mem-ink shadow-memphis-lg;
+  }
+
+  /* ZonScale 品牌字标 */
+  .brand-wordmark {
+    @apply font-brand uppercase tracking-[0.14em];
+    background: linear-gradient(120deg, #1a1a2e 0%, #0f766e 42%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(1px 1px 0 rgba(26, 26, 46, 0.15));
+  }
+
+  .brand-credit {
+    @apply font-brand-script text-mem-ink/50 leading-none;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF9F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A1A2E;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B;
+}

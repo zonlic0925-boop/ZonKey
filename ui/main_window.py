@@ -1,11 +1,10 @@
-"""PyQt5 主窗口：图纸脱敏一键批量处理界面。
+"""PyQt5 主窗口：工程图纸脱敏工具（Apple HIG 风格）。
 
 UI 只做展示与交互接线，不持有业务语义：
-- 点击文件 = 纯预览（渲染源 PDF 页，不触发检测，2026-08-17 用户实机要求）；
-- 检测 + 执行只发生在「一键脱敏」（用户授权自动执行全部敏感命中含待人工项
-  ——2026-08-17 用户明确授权）→ core.pipeline.Pipeline
-- 命名规则、FALLBACK 规则、词表等全部由 core 决定。
-- 预览：脱敏前/脱敏后双视图，滚轮平移、Ctrl+滚轮/按钮缩放（后台线程渲染）。
+- 点击文件 = 纯预览（渲染源 PDF 页，不触发检测）；
+- 检测 + 执行只发生在「一键脱敏」→ core.pipeline.Pipeline；
+- 内置 Fisher / Emerson / TopWorx / MKS 词表与 Logo 模板（rules/ 真源）；
+- 预览：脱敏前/脱敏后双视图，滚轮平移、Ctrl+滚轮/按钮缩放。
 """
 
 from __future__ import annotations
@@ -20,9 +19,9 @@ from PyQt5.QtGui import QColor, QFont, QKeySequence
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
-    QComboBox,
     QDialog,
     QFileDialog,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -34,25 +33,18 @@ from PyQt5.QtWidgets import (
     QRadioButton,
     QShortcut,
     QSplitter,
-    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
-from core.router import AppMode, TaskRouter
-from core.doc_pdf.pipeline import DocPdfPipeline
-from core.word.pipeline import WordPipeline
-from core.detector.rule_engine import RuleEngine
-from ui.rule_dialog import RuleDialog, UnifiedRuleDialog
-from ui.word_view import WordView, WordCompareView
-from ui.image_merge_dialog import ImageMergeDialog
 
 from core.model import Box, RedactMode
 from core.pipeline import Pipeline, PipelineConfig
 from core.redact.executor import export_to_zip, output_path_for
 from ui.preview import PreviewView, ZOOM_MAX, ZOOM_MIN
+from ui.theme import THEME_QSS
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +56,11 @@ COL_CHANNELS = 4
 
 BOX_ID_ROLE = Qt.UserRole
 
-COLOR_AUTO = QColor(0, 160, 0)      # 自动执行（已归位）
-COLOR_MANUAL = QColor(220, 40, 40)  # 待人工（一键模式下同样执行）
-COLOR_EXECUTED = QColor(30, 90, 220)  # 已执行
+COLOR_AUTO = QColor(16, 185, 129)       # Apple Emerald — 自动执行
+COLOR_MANUAL = QColor(239, 68, 68)     # Apple Coral — 待人工
+COLOR_EXECUTED = QColor(0, 113, 227)   # Apple Tech Blue — 已执行
+
+_APP_FONT = "SF Pro Display, SF Pro Text, PingFang SC, Segoe UI Variable Display, Segoe UI, Microsoft YaHei UI, sans-serif"
 
 STATE_PENDING = "待处理"
 STATE_RUNNING = "处理中"
@@ -116,7 +110,12 @@ def get_default_output_dir() -> str:
 
 
 class OneClickWorker(QThread):
-    """一键脱敏线程：支持工程图纸、通用PDF与Word文档全类型脱敏。"""
+    """一键脱敏线程：串行检测+执行全部文件。
+
+    一键模式 = 用户授权自动执行全部敏感命中（含待人工项）：
+    confirm_box_ids 传全部 manual 框 id，核心 redact_result 语义不变。
+    """
+
     file_done = pyqtSignal(str, object, str)
     all_done = pyqtSignal()
 
@@ -127,7 +126,6 @@ class OneClickWorker(QThread):
         mode: RedactMode,
         use_ocr: bool,
         output_dir: str | None = None,
-        app_mode: AppMode = AppMode.DRAWING,
     ):
         super().__init__()
         self._pipeline = pipeline
@@ -135,44 +133,33 @@ class OneClickWorker(QThread):
         self._mode = mode
         self._use_ocr = use_ocr
         self._output_dir = output_dir
-        self._app_mode = app_mode
 
     def run(self) -> None:
         for source in self._files:
             try:
-                target_mode = TaskRouter.detect_mode_for_file(source, self._app_mode)
+                result = self._pipeline.process(source, with_ocr=self._use_ocr)
+                manual_ids = {
+                    rb.box_id
+                    for rb in result.all_redact_boxes()
+                    if rb.manual_required
+                }
                 out = output_path_for(source, out_dir=self._output_dir)
-
-                if target_mode == AppMode.WORD:
-                    wp = WordPipeline(rule_engine=self._pipeline.rule_engine)
-                    res = wp.process_document(source, out)
-                    self.file_done.emit(source, res, "")
-                elif target_mode == AppMode.DOC_PDF:
-                    d_pipe = DocPdfPipeline(rule_engine=self._pipeline.rule_engine)
-                    res = d_pipe.process_pdf(source, out)
-                    self.file_done.emit(source, res, "")
-                else:
-                    result = self._pipeline.process(source, with_ocr=self._use_ocr)
-                    manual_ids = {
-                        rb.box_id
-                        for rb in result.all_redact_boxes()
-                        if rb.manual_required
-                    }
-                    audit = str(Path(out).with_name(f"{Path(out).stem}_audit.json"))
-                    self._pipeline.redact_result(
-                        result, self._mode, output=out, audit_path=audit,
-                        confirm_box_ids=manual_ids,
-                    )
-                    self.file_done.emit(source, result, "")
+                audit = str(Path(out).with_name(f"{Path(out).stem}_audit.json"))
+                self._pipeline.redact_result(
+                    result, self._mode, output=out, audit_path=audit,
+                    confirm_box_ids=manual_ids,
+                )
+                self.file_done.emit(source, result, "")
             except Exception as exc:  # noqa: BLE001
                 self.file_done.emit(source, None, f"{type(exc).__name__}: {exc}")
         self.all_done.emit()
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("图纸脱敏工具")
-        self.resize(1440, 860)
+        self.setWindowTitle("工程图纸脱敏系统")
+        self.resize(1480, 900)
         self._pipeline = Pipeline()
         self._result = None
         self._one_click: OneClickWorker | None = None
@@ -187,71 +174,112 @@ class MainWindow(QMainWindow):
         self._output_dir = get_default_output_dir()
         self._undo_stacks: dict[str, list[dict]] = {}
         self._redo_stacks: dict[str, list[dict]] = {}
-        self._app_mode: AppMode = AppMode.DRAWING
         self._build_ui()
 
     # ---------- UI 构建 ----------
 
     def _build_ui(self) -> None:
+        self.setStyleSheet(THEME_QSS)
         central = QWidget()
         root = QVBoxLayout(central)
+        root.setContentsMargins(20, 16, 20, 16)
+        root.setSpacing(14)
+
+        root.addWidget(self._build_header())
         root.addLayout(self._build_toolbar())
+
         splitter = QSplitter(Qt.Horizontal)
+        splitter.setHandleWidth(3)
+
         left_panel = QSplitter(Qt.Vertical)
-        left_panel.addWidget(self._build_file_panel())
-        left_panel.addWidget(self._build_result_panel())
-        left_panel.setSizes([300, 220])
+        left_panel.setHandleWidth(3)
+        left_panel.addWidget(self._wrap_card(self._build_file_panel(), "文件队列"))
+        left_panel.addWidget(self._wrap_card(self._build_result_panel(), "处理结果"))
+        left_panel.setSizes([320, 200])
         splitter.addWidget(left_panel)
-        splitter.addWidget(self._build_view_panel())
-        splitter.addWidget(self._build_table_panel())
-        splitter.setSizes([300, 700, 440])
+
+        splitter.addWidget(self._wrap_card(self._build_view_panel(), "图纸预览"))
+        splitter.addWidget(self._wrap_card(self._build_table_panel(), "敏感命中"))
+        splitter.setSizes([280, 760, 400])
         root.addWidget(splitter, 1)
-        root.addLayout(self._build_action_bar())
+
+        root.addWidget(self._build_action_bar())
         self.setCentralWidget(central)
-        self.statusBar().showMessage("请添加 PDF 图纸文件，点击「一键脱敏」")
+        self.statusBar().showMessage("引擎就绪 · 本地离线 · 内置 Fisher / Emerson / TopWorx / MKS 规则")
+
+    def _wrap_card(self, inner: QWidget, title: str) -> QFrame:
+        """Apple HIG 卡片容器：连续圆角 + 分层标题。"""
+        card = QFrame()
+        card.setObjectName("surfaceCard")
+        card.setProperty("class", "card")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(16, 14, 16, 14)
+        layout.setSpacing(10)
+        heading = QLabel(title)
+        heading.setFont(QFont(_APP_FONT.split(",")[0], 13, QFont.DemiBold))
+        heading.setStyleSheet("color: #0F172A; letter-spacing: -0.2px;")
+        layout.addWidget(heading)
+        layout.addWidget(inner, 1)
+        return card
+
+    def _build_header(self) -> QFrame:
+        """顶部品牌区：大标题 + 聚焦留白。"""
+        header = QFrame()
+        header.setObjectName("brandHeaderFrame")
+        row = QHBoxLayout(header)
+        row.setContentsMargins(4, 4, 4, 8)
+        row.setSpacing(16)
+
+        title_col = QVBoxLayout()
+        title_col.setSpacing(2)
+        title = QLabel("工程图纸脱敏")
+        title.setFont(QFont(_APP_FONT.split(",")[0], 22, QFont.Bold))
+        title.setStyleSheet("color: #0F172A; letter-spacing: -0.6px;")
+        subtitle = QLabel("本地离线 · Fisher · Emerson · TopWorx · MKS")
+        subtitle.setFont(QFont(_APP_FONT.split(",")[1].strip(), 12))
+        subtitle.setStyleSheet("color: #64748B;")
+        title_col.addWidget(title)
+        title_col.addWidget(subtitle)
+        row.addLayout(title_col)
+        row.addStretch(1)
+
+        badge = QLabel("内置规则已启用")
+        badge.setProperty("class", "badge-success")
+        badge.setFont(QFont(_APP_FONT.split(",")[1].strip(), 11, QFont.DemiBold))
+        row.addWidget(badge, alignment=Qt.AlignVCenter)
+        return header
 
     def _build_toolbar(self) -> QHBoxLayout:
         bar = QHBoxLayout()
-        # 模式切换选择器：🏭 工程图纸 / 📄 通用PDF / 📝 Word文档 / 🖼️ 图片合并
-        bar.addWidget(QLabel("模式:"))
-        self._mode_combo = QComboBox()
-        self._mode_combo.addItem("🏭 工程图纸 (Drawing)", AppMode.DRAWING)
-        self._mode_combo.addItem("📄 通用PDF (Doc_PDF)", AppMode.DOC_PDF)
-        self._mode_combo.addItem("📝 Word文档 (Word)", AppMode.WORD)
-        self._mode_combo.addItem("🖼️ 图片合并 (Image_Merge)", AppMode.IMAGE_MERGE)
-        self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
-        bar.addWidget(self._mode_combo)
+        bar.setSpacing(10)
 
-        self._add_btn = QPushButton("添加文件…")
+        self._add_btn = QPushButton("添加 PDF")
+        self._add_btn.setProperty("class", "secondary")
         self._add_btn.clicked.connect(self.on_add_files)
         bar.addWidget(self._add_btn)
 
-        self._img_merge_btn = QPushButton("🖼️ 图片合并…")
-        self._img_merge_btn.setToolTip("打开图片按顺序合并为 PDF 对话框")
-        self._img_merge_btn.clicked.connect(self.on_image_merge)
-        bar.addWidget(self._img_merge_btn)
-
         self._file_label = QLabel("未选择文件")
         self._file_label.setMinimumWidth(180)
+        self._file_label.setStyleSheet("color: #475569; font-size: 12px;")
         bar.addWidget(self._file_label)
-        bar.addSpacing(5)
+        bar.addSpacing(8)
 
-        out_box = QHBoxLayout()
-        out_lbl = QLabel("输出目录:")
+        out_lbl = QLabel("输出")
+        out_lbl.setStyleSheet("color: #64748B; font-size: 12px;")
         self._out_dir_label = QLabel(self._output_dir)
-        self._out_dir_label.setStyleSheet("color: #0066cc;")
+        self._out_dir_label.setStyleSheet("color: #0071E3; font-size: 12px;")
         self._out_dir_label.setToolTip(self._output_dir)
-        self._out_dir_label.setMaximumWidth(180)
-        self._choose_dir_btn = QPushButton("更改…")
+        self._out_dir_label.setMaximumWidth(240)
+        self._choose_dir_btn = QPushButton("更改")
         self._choose_dir_btn.clicked.connect(self.on_choose_output_dir)
-        out_box.addWidget(out_lbl)
-        out_box.addWidget(self._out_dir_label)
-        out_box.addWidget(self._choose_dir_btn)
-        bar.addLayout(out_box)
-        bar.addSpacing(5)
+        bar.addWidget(out_lbl)
+        bar.addWidget(self._out_dir_label)
+        bar.addWidget(self._choose_dir_btn)
+        bar.addSpacing(12)
 
         mode_box = QGroupBox("抹除模式")
         mode_layout = QHBoxLayout(mode_box)
+        mode_layout.setContentsMargins(12, 6, 12, 6)
         self._mode_erase = QRadioButton("真删除")
         self._mode_cover = QRadioButton("黑块覆盖")
         self._mode_erase.setChecked(True)
@@ -259,13 +287,12 @@ class MainWindow(QMainWindow):
         mode_layout.addWidget(self._mode_cover)
         bar.addWidget(mode_box)
 
-        self._ocr_check = QCheckBox("启用 OCR")
+        self._ocr_check = QCheckBox("OCR 通道")
         self._ocr_check.setChecked(True)
         bar.addWidget(self._ocr_check)
-        bar.addSpacing(5)
 
-        self._rules_btn = QPushButton("⚙️ 管理脱敏规则…")
-        self._rules_btn.setToolTip("查看、添加或修改敏感词、PII 正则及印章配置")
+        self._rules_btn = QPushButton("管理规则")
+        self._rules_btn.setToolTip("查看、添加或修改敏感词表与 Logo 模板说明")
         self._rules_btn.clicked.connect(self.on_manage_rules)
         bar.addWidget(self._rules_btn)
         bar.addStretch(1)
@@ -274,9 +301,10 @@ class MainWindow(QMainWindow):
     def _build_file_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        title = QLabel("文件队列（点击即预览）")
-        title.setFont(QFont("", 11, QFont.Bold))
-        layout.addWidget(title)
+        layout.setContentsMargins(0, 0, 0, 0)
+        hint = QLabel("点击文件即可预览，不触发检测")
+        hint.setStyleSheet("color: #94A3B8; font-size: 11px;")
+        layout.addWidget(hint)
         self._file_list = QListWidget()
         self._file_list.currentItemChanged.connect(self._on_file_selected)
         layout.addWidget(self._file_list, 1)
@@ -285,9 +313,7 @@ class MainWindow(QMainWindow):
     def _build_result_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        title = QLabel("处理结果")
-        title.setFont(QFont("", 11, QFont.Bold))
-        layout.addWidget(title)
+        layout.setContentsMargins(0, 0, 0, 0)
         self._result_list = QListWidget()
         layout.addWidget(self._result_list, 1)
         return panel
@@ -295,9 +321,7 @@ class MainWindow(QMainWindow):
     def _build_table_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        title = QLabel("敏感命中清单")
-        title.setFont(QFont("", 11, QFont.Bold))
-        layout.addWidget(title)
+        layout.setContentsMargins(0, 0, 0, 0)
         self._table = QTableWidget(0, 5)
         self._table.setHorizontalHeaderLabels(["状态", "页", "框坐标", "词条/证据", "通道"])
         self._table.horizontalHeader().setStretchLastSection(True)
@@ -306,42 +330,36 @@ class MainWindow(QMainWindow):
         self._table.itemSelectionChanged.connect(self._on_table_selection_changed)
         layout.addWidget(self._table, 1)
 
-        # 操作按钮条
         ops = QHBoxLayout()
-        self._undo_btn = QPushButton("↩️ 撤销 (Ctrl+Z)")
+        ops.setSpacing(8)
+        self._undo_btn = QPushButton("撤销")
         self._undo_btn.setToolTip("撤销上一步抹除框更改 (Ctrl+Z)")
         self._undo_btn.setEnabled(False)
         self._undo_btn.clicked.connect(self._on_undo)
         ops.addWidget(self._undo_btn)
 
-        self._del_box_btn = QPushButton("❌ 取消此抹除框")
-        self._del_box_btn.setToolTip("移除选中的抹除框（误报时使用，或按 Delete 键）")
+        self._del_box_btn = QPushButton("取消选中")
+        self._del_box_btn.setToolTip("移除选中的抹除框（Delete 键）")
         self._del_box_btn.setEnabled(False)
         self._del_box_btn.clicked.connect(self._on_delete_selected_box)
         ops.addWidget(self._del_box_btn)
 
-        self._clear_all_btn = QPushButton("🗑️ 清空所有抹除框")
-        self._clear_all_btn.setToolTip("清空当前图纸的所有抹除框")
+        self._clear_all_btn = QPushButton("清空全部")
         self._clear_all_btn.setEnabled(False)
         self._clear_all_btn.clicked.connect(self._on_clear_all_boxes)
         ops.addWidget(self._clear_all_btn)
 
-        self._apply_current_btn = QPushButton("⚡ 立即脱敏当前图纸")
-        self._apply_current_btn.setFont(QFont("", 10, QFont.Bold))
-        self._apply_current_btn.setToolTip("将当前调整后的抹除框重新执行到脱敏后图纸")
+        self._apply_current_btn = QPushButton("立即脱敏当前")
+        self._apply_current_btn.setProperty("class", "secondary")
         self._apply_current_btn.setEnabled(False)
         self._apply_current_btn.clicked.connect(self._on_apply_current_document)
         ops.addWidget(self._apply_current_btn)
-
         layout.addLayout(ops)
         return panel
 
     def _build_view_panel(self) -> QWidget:
-        self._view_stack = QStackedWidget()
-
-        # 0: 图纸 / PDF 双视口对比预览组件
-        self._drawing_view_widget = QWidget()
-        layout = QVBoxLayout(self._drawing_view_widget)
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
         nav = QHBoxLayout()
         self._prev_btn = QPushButton("上一页")
         self._next_btn = QPushButton("下一页")
@@ -367,13 +385,11 @@ class MainWindow(QMainWindow):
         nav.addWidget(self._zoom_label)
 
         nav.addSpacing(12)
-        self._manual_draw_btn = QPushButton("✏️ 框选手选抹除")
+        self._manual_draw_btn = QPushButton("手选抹除")
         self._manual_draw_btn.setCheckable(True)
-        self._manual_draw_btn.setToolTip("开启后在脱敏前图纸上按住鼠标左键拖拽画框，松开即可添加手动抹除区域")
+        self._manual_draw_btn.setToolTip("在脱敏前图纸上拖拽画框，添加手动抹除区域")
         self._manual_draw_btn.toggled.connect(self._on_toggle_manual_draw)
         nav.addWidget(self._manual_draw_btn)
-        self._draw_btn = self._manual_draw_btn  # 兼容别名
-
         layout.addLayout(nav)
         self._split_views = QSplitter(Qt.Horizontal)
         self._before_view = PreviewView("脱敏前")
@@ -407,34 +423,129 @@ class MainWindow(QMainWindow):
         self._shortcut_del = QShortcut(QKeySequence.Delete, self)
         self._shortcut_del.activated.connect(self._on_delete_selected_box)
 
-        # 1: Word 文档双栏对比视口
-        self._word_view = WordView()
+        return panel
 
-        # 组装到堆叠视口中
-        self._view_stack.addWidget(self._drawing_view_widget)  # index 0: Drawing & Doc_PDF
-        self._view_stack.addWidget(self._word_view)            # index 1: Word
+    def _build_action_bar(self) -> QFrame:
+        """底部主操作岛：聚焦一键脱敏。"""
+        bar_frame = QFrame()
+        bar_frame.setObjectName("floatingPill")
+        bar = QHBoxLayout(bar_frame)
+        bar.setContentsMargins(16, 10, 16, 10)
+        bar.setSpacing(12)
 
-        return self._view_stack
-
-    def _build_action_bar(self) -> QHBoxLayout:
-        bar = QHBoxLayout()
-        self._run_all_btn = QPushButton("一键脱敏（检测 + 批量执行）")
-        self._run_all_btn.setFont(QFont("", 12, QFont.Bold))
+        self._run_all_btn = QPushButton("一键脱敏")
+        self._run_all_btn.setObjectName("btnOneClick")
+        self._run_all_btn.setProperty("class", "primary")
+        self._run_all_btn.setFont(QFont(_APP_FONT.split(",")[0], 14, QFont.Bold))
+        self._run_all_btn.setMinimumHeight(44)
         self._run_all_btn.setEnabled(False)
         self._run_all_btn.clicked.connect(self.on_one_click)
         bar.addWidget(self._run_all_btn, 3)
 
-        self._export_zip_btn = QPushButton("打包导出为 ZIP…")
-        self._export_zip_btn.setFont(QFont("", 11))
+        self._export_zip_btn = QPushButton("打包导出 ZIP")
         self._export_zip_btn.setEnabled(False)
         self._export_zip_btn.clicked.connect(self.on_export_zip)
         bar.addWidget(self._export_zip_btn, 1)
-        return bar
+        return bar_frame
 
     # ---------- 文件队列与一键脱敏 ----------
 
     def on_manage_rules(self) -> None:
-        dlg = RuleDialog(self)
+        terms_path = Path("rules/sensitive_terms.txt").resolve()
+        generic_template = (
+            "# 工程图纸脱敏 — 内置企业敏感词表\n"
+            "# 每行一个敏感词/声明短语（不区分大小写，支持 # 注释）\n\n"
+            "# --- Fisher Controls ---\n"
+            "Fisher Controls Intl. LLC\n"
+            "Fisher Controls International LLC\n"
+            "Fisher Controls\n"
+            "FISHER\n"
+            "PROPERTY OF FISHER CONTROLS\n\n"
+            "# --- Emerson ---\n"
+            "Emerson Process Management\n"
+            "Emerson Electric Co\n"
+            "Emerson Louisville, Kentucky, USA\n"
+            "EMERSON\n"
+            "PROPERTY OF EMERSON\n\n"
+            "# --- TopWorx ---\n"
+            "TopWorx, Inc.\n"
+            "TopWorx\n"
+            "TOPWORX\n"
+            "PROPERTY OF TOPWORX\n\n"
+            "# --- MKS ---\n"
+            "MKS\n\n"
+            "# --- 通用保密标记 ---\n"
+            "CONFIDENTIAL\n"
+            "PROPRIETARY\n"
+            "RESTRICTED\n"
+            "DO NOT COPY\n"
+            "SECRET\n"
+            "HELD IN STRICT CONFIDENCE\n"
+            "RETAINED IN CONFIDENCE\n"
+        )
+        initial_text = ""
+        if terms_path.is_file():
+            try:
+                initial_text = terms_path.read_text(encoding="utf-8")
+            except Exception as exc:
+                logger.warning("读取规则文件失败: %s", exc)
+
+        if not initial_text.strip():
+            initial_text = generic_template
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("脱敏规则管理")
+        dlg.resize(580, 480)
+        dlg_layout = QVBoxLayout(dlg)
+
+        tip_lbl = QLabel(
+            "编辑敏感词表（每行一条，支持 # 注释）。\n"
+            "Logo 模板位于 rules/logos/ 目录（Fisher / Emerson / TopWorx），保存后立即热重载。"
+        )
+        tip_lbl.setStyleSheet("color: #64748B; font-size: 12px; margin-bottom: 4px;")
+        dlg_layout.addWidget(tip_lbl)
+
+        text_edit = QTextEdit()
+        text_edit.setPlainText(initial_text)
+        dlg_layout.addWidget(text_edit, 1)
+
+        btn_box = QHBoxLayout()
+        reset_btn = QPushButton("恢复内置企业规则")
+        reset_btn.setToolTip("恢复 Fisher / Emerson / TopWorx / MKS 及通用保密词")
+        save_btn = QPushButton("💾 保存规则")
+        cancel_btn = QPushButton("取消")
+        save_btn.setFont(QFont("", 10, QFont.Bold))
+        btn_box.addWidget(reset_btn)
+        btn_box.addStretch(1)
+        btn_box.addWidget(save_btn)
+        btn_box.addWidget(cancel_btn)
+        dlg_layout.addLayout(btn_box)
+
+        def _do_reset():
+            text_edit.setPlainText(generic_template)
+
+        reset_btn.clicked.connect(_do_reset)
+
+        def _do_save():
+            content = text_edit.toPlainText().strip()
+            if not content:
+                QMessageBox.warning(dlg, "提示", "规则词表不能为空！")
+                return
+            try:
+                # 确保上层目录存在，避免对已存在的目录重复 mkdir 触发 Windows WinError 5
+                parent_dir = terms_path.parent
+                if not parent_dir.exists():
+                    parent_dir.mkdir(parents=True, exist_ok=True)
+                terms_path.write_text(content, encoding="utf-8")
+                # 重新加载规则引擎（热重载）
+                self._pipeline = Pipeline()
+                QMessageBox.information(dlg, "保存成功", "脱敏规则已保存并已实时热重载！")
+                dlg.accept()
+            except Exception as e:
+                QMessageBox.critical(dlg, "错误", f"保存规则失败: {e}")
+
+        save_btn.clicked.connect(_do_save)
+        cancel_btn.clicked.connect(dlg.reject)
         dlg.exec_()
 
     def on_choose_output_dir(self) -> None:
@@ -447,35 +558,9 @@ class MainWindow(QMainWindow):
         self._out_dir_label.setText(self._output_dir)
         self._out_dir_label.setToolTip(self._output_dir)
 
-    def _on_mode_changed(self, index: int) -> None:
-        mode_data = self._mode_combo.itemData(index)
-        if mode_data:
-            self._app_mode = mode_data
-        
-        if self._app_mode == AppMode.WORD:
-            self._view_stack.setCurrentWidget(self._word_view)
-        elif self._app_mode == AppMode.IMAGE_MERGE:
-            # 弹出图片合并对话框
-            self.on_image_merge()
-            # 界面保持当前或切回图纸视口
-            self._view_stack.setCurrentWidget(self._drawing_view_widget)
-        else:
-            self._view_stack.setCurrentWidget(self._drawing_view_widget)
-
-    def on_image_merge(self) -> None:
-        dlg = ImageMergeDialog(self)
-        dlg.exec_()
-
     def on_add_files(self) -> None:
-        if self._app_mode == AppMode.WORD:
-            file_filter = "Word 文档 (*.docx *.doc);;所有文件 (*.*)"
-        elif self._app_mode == AppMode.IMAGE_MERGE:
-            file_filter = "图片文件 (*.jpg *.jpeg *.png *.bmp *.tiff *.webp);;所有文件 (*.*)"
-        else:
-            file_filter = "PDF 文件 (*.pdf);;Word 文档 (*.docx *.doc);;所有支持文件 (*.pdf *.docx *.doc);;所有文件 (*.*)"
-
         paths, _ = QFileDialog.getOpenFileNames(
-            self, "选择待脱敏文件（可多选）", "", file_filter
+            self, "选择 PDF 图纸（可多选）", "", "PDF 文件 (*.pdf)"
         )
         if not paths:
             return
@@ -496,25 +581,22 @@ class MainWindow(QMainWindow):
             self._file_list.setCurrentRow(0)
 
     def on_one_click(self) -> None:
-        pending = [
-            f for f in self._batch_files
-            if self._batch_status.get(f) != STATE_DONE
-        ]
+        pending = [p for p in self._batch_files
+                   if self._batch_status.get(p) in (STATE_PENDING, STATE_FAILED)]
         if not pending:
+            QMessageBox.information(self, "一键脱敏", "所有文件已处理完成")
             return
-        for f in pending:
-            self._batch_status[f] = STATE_RUNNING
-            self._refresh_file_item(f)
         mode = RedactMode.COVER if self._mode_cover.isChecked() else RedactMode.ERASE
-        use_ocr = self._ocr_check.isChecked()
-        self._set_busy(True, f"正在脱敏处理 {len(pending)} 个文件…")
+        for p in pending:
+            self._batch_status[p] = STATE_RUNNING
+            self._refresh_file_item(p)
+        self._set_busy(True, "正在一键脱敏…")
         self._one_click = OneClickWorker(
             self._pipeline,
             pending,
             mode,
-            use_ocr,
+            self._ocr_check.isChecked(),
             output_dir=self._output_dir,
-            app_mode=self._app_mode,
         )
         self._one_click.file_done.connect(self._on_one_click_done)
         self._one_click.all_done.connect(self._on_one_click_all_done)
@@ -594,21 +676,6 @@ class MainWindow(QMainWindow):
             return
         self._selected_file = path
         self._file_label.setText(Path(path).name)
-
-        target_mode = TaskRouter.detect_mode_for_file(path, self._app_mode)
-        if target_mode == AppMode.WORD:
-            self._view_stack.setCurrentWidget(self._word_view)
-            out = output_path_for(path, out_dir=self._output_dir)
-            out_p = out if Path(out).is_file() else None
-            self._word_view.load_document(path, out_p)
-            cnt = 0
-            if path in self._results and isinstance(self._results[path], dict):
-                cnt = self._results[path].get("total_replacements", 0)
-            self.statusBar().showMessage(f"Word 文档已加载: {Path(path).name} (脱敏命中: {cnt})")
-            return
-        else:
-            self._view_stack.setCurrentWidget(self._drawing_view_widget)
-
         if path in self._results:
             self._show_result(self._results[path])
         else:
@@ -647,17 +714,7 @@ class MainWindow(QMainWindow):
     # ---------- 结果展示 ----------
 
     def _show_result(self, result) -> None:
-        if isinstance(result, dict):
-            self._result = None
-            self._table.setRowCount(0)
-            cnt = result.get("total_replacements", 0)
-            self.statusBar().showMessage(f"Word 脱敏完成：替换敏感项 {cnt} 处")
-            out_p = result.get("output_path")
-            if self._selected_file:
-                self._word_view.load_document(self._selected_file, out_p)
-            return
-
-        # 展示检测结果：清单填充 + 预览切换（保留按钮忙碌状态由调用方决定）。：清单填充 + 预览切换（保留按钮忙碌状态由调用方决定）。"""
+        """展示检测结果：清单填充 + 预览切换（保留按钮忙碌状态由调用方决定）。"""
         self._result = result
         self._selected_box_id = None
         self._current_page = 0

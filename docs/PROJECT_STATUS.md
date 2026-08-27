@@ -1,8 +1,34 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-17（ES-09805 回归修复轮结束）。命令与结果均为本次实际执行。
+> 更新于：2026-08-26（ZonScale 现代化 UI + exe 打包 + 多语言）。命令与结果均为本次实际执行。
 
-## 阶段进度
+## 2026-08-26 进度（ZonScale 现代化工作台）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 品牌重塑 ZonScale · by zonlic | ✅ | 艺术字标、龙鳞图标、窗口/页面标题统一 |
+| React + FastAPI 孟菲斯 UI | ✅ | `frontend/` + `server_bridge.py` + `dist_web/` |
+| Windows exe 打包 | ✅ | `dist/ZonScale/ZonScale.exe`（PyInstaller + pywebview） |
+| exe 导出 PDF / 选路径 | ✅ | Windows 原生另存为 + 文件夹浏览（ctypes，非 tkinter） |
+| 支持作者弹窗 | ✅ | 支付宝/微信收款码 + 趣味打赏文案 |
+| 三语切换 简体/繁體/EN | ✅ | Header 语言按钮，localStorage 记忆；作者简介固定繁体「一個在香港生存的普通人」 |
+| 核心脱敏回归（CLI） | ✅ 历史 | 31 样本全绿（2026-08-17 基线） |
+
+### 现代化 UI 验收命令（2026-08-26）
+
+```powershell
+cd frontend && npm run build          # dist_web 构建
+python -m pytest -q tests/              # 后端单元测试
+python -m PyInstaller --noconfirm packaging\windows\config\DocumentRules.spec  # exe（可选）
+```
+
+- 前端构建：`npm run build` → **PASS**（1837 modules）
+- exe 启动：`dist\ZonScale\ZonScale.exe` → HTTP 8765 **200**
+- 语言切换：简体 / 繁體 / EN，刷新后保持；`document.title` 随语言更新
+
+---
+
+## 阶段进度（历史基线 2026-08-17）
 
 | 阶段 | 状态 | 备注 |
 |---|---|---|
@@ -23,7 +49,7 @@
 | pytest 单元测试 | ✅ 完成 | 78 passed（rule_engine / box_finder / executor / pipeline / image_verify / shrink / ui / logo_matcher / manual_box） |
 | PyQt5 UI（ui/） | ✅ 完成 | 一键模式 + 批量 + 自定义输出 + 双预览自由缩放拖动 |
 | 用户文档（docs/） | ⏳ 未开始 | 后续 |
-| PyInstaller 打包 | 📌 后置阶段 | 本期范围外 |
+| PyInstaller 打包 | ✅ 完成 | `dist/ZonScale/ZonScale.exe`，2026-08-26 验收 |
 
 ## 架构概览
 

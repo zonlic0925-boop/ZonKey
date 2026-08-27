@@ -10,6 +10,7 @@ import cv2
 import fitz  # PyMuPDF
 import numpy as np
 
+from core.app_paths import get_app_root
 from core.model import Box, Channel, SensitiveHit
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class LogoMatcher:
         if template_dir is None:
             template_dir = logo_dir
         if template_dir is None:
-            template_dir = Path(__file__).resolve().parent.parent.parent / "rules" / "logos"
+            template_dir = get_app_root() / "rules" / "logos"
         self.template_dir = Path(template_dir)
         self.templates: List[LogoTemplate] = []
         self._load_templates()
@@ -68,7 +69,7 @@ class LogoMatcher:
             return []
 
         if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGRY2GRAY)
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
             gray = image
 
@@ -149,7 +150,7 @@ class LogoMatcher:
 
         img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
         if pix.n >= 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY if pix.n == 3 else cv2.COLOR_RGA2GRAY)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY if pix.n == 3 else cv2.COLOR_RGBA2GRAY)
         else:
             gray = img
 

@@ -132,7 +132,7 @@ class FileResult:
 @dataclass
 class WordReplaceRule:
     find: str
-    replace: str = '[已脱敏]'
+    replace: str = '*'
     mode: str = 'exact'  # exact or regex
     enabled: bool = True
 
