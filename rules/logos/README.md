@@ -1,20 +1,14 @@
-﻿# 企业 Logo 模板目录
+﻿# Logo 视觉模板目录
 
-本目录存放 Fisher / Emerson / TopWorx 等公司 Logo 模板，供 LogoMatcher 多尺度模板匹配检测。
+本目录用于存放**你自己项目**需要检测的企业 Logo 模板，供 `LogoMatcher` 多尺度模板匹配使用。
 
-## 当前内置模板
+## 开源版说明
 
-| 文件 | 对应品牌 |
-|------|----------|
-| `fisher_logo.png` | Fisher Controls |
-| `emerson_logo_raster.png` | Emerson（栅格版） |
-| `emerson_logo_vector.png` | Emerson（矢量版） |
-| `emerson_logo_vector_alt.png` | Emerson（备用矢量版） |
-| `topworx_logo.jpeg` | TopWorx |
+公开仓库**不包含任何预置 Logo 图片**。请将你需要的 Logo 裁剪为清晰、背景尽量干净的 PNG/JPG，放入此目录后再运行检测。
 
 ## 维护说明
 
-1. 将 Logo 裁剪为清晰、无背景干扰的图片
-2. 支持格式：`.png`、`.jpg`、`.jpeg`、`.bmp`
-3. 命名建议：使用品牌名（如 `fisher_logo.png`），系统以文件名为识别标签
-4. 新增 Logo 后无需改代码，重启检测即可生效
+1. 支持格式：`.png`、`.jpg`、`.jpeg`、`.bmp`
+2. 命名建议：使用可识别的品牌简称（如 `acme_logo.png`），系统以文件名为识别标签
+3. 新增 Logo 后无需改代码，重启检测或热重载规则即可生效
+4. **请勿将客户原始图纸或未授权品牌资产提交到公开仓库**

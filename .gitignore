@@ -41,7 +41,7 @@ frontend/node_modules/
 dist_web/
 temp_bridge_files/
 
-# 外部参考副本（非 ZonScale 主线）
+# 本地参考副本（禁止入库）
 legacy-reference/
 公司使用版本/
 
