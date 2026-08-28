@@ -95,12 +95,12 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'color-space-compare', labelKey: 'tools.colorSpaceCompare', availability: 'planned' },
   ],
   media_center: [
-    { id: 'bpm-detect', labelKey: 'tools.bpmDetect', availability: 'planned' },
-    { id: 'audio-clip', labelKey: 'tools.audioClip', availability: 'planned' },
-    { id: 'audio-convert', labelKey: 'tools.audioConvert', availability: 'planned' },
-    { id: 'audio-extract', labelKey: 'tools.audioExtract', availability: 'planned' },
+    { id: 'bpm-detect', labelKey: 'tools.bpmDetect', availability: 'ready' },
+    { id: 'audio-clip', labelKey: 'tools.audioClip', availability: 'ready' },
+    { id: 'audio-convert', labelKey: 'tools.audioConvert', availability: 'ready' },
+    { id: 'audio-extract', labelKey: 'tools.audioExtract', availability: 'ready' },
     { id: 'video-convert', labelKey: 'tools.videoConvert', availability: 'planned' },
-    { id: 'video-frame', labelKey: 'tools.videoFrame', availability: 'planned' },
+    { id: 'video-frame', labelKey: 'tools.videoFrame', availability: 'ready' },
     { id: 'video-gif', labelKey: 'tools.videoGif', availability: 'planned' },
   ],
   text_center: [
