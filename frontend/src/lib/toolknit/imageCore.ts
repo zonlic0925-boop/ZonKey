@@ -1,253 +1,365 @@
-import JSZip from 'jszip';
+/**
+ * 图像工坊核心 — 校验层按 ToolKnit image-batch-core.js / icon-gen-core.js 移植；
+ * Canvas 操作（转换/压缩/裁剪/换色/拼接/图标/取色）按 ToolKnit 的工具语义实现
+ * （其算法位于 Tauri UI 层，无法直接移植）。
+ */
 
-export interface ExtractedColor {
-  hex: string;
-  rgb: { r: number; g: number; b: number };
-  hsl: { h: number; s: number; l: number };
-  pixels: number;
-  percentage: number;
-}
+export const IMAGE_BATCH_LIMITS = Object.freeze({
+  maxFiles: 100,
+  maxBytesPerFile: 20 * 1024 * 1024,
+  maxPixelsPerFile: 40_000_000,
+});
 
-export function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map(x => {
-    const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  }).join('');
-}
+const SUPPORTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif']);
+const COMPRESSIBLE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 
-export function rgbToHsl(r: number, g: number, b: number) {
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  const delta = max - min;
-  const lightness = (max + min) / 2;
-  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
-  let hue = 0;
-  if (delta !== 0) {
-    if (max === rn) hue = ((gn - bn) / delta + (gn < bn ? 6 : 0)) / 6;
-    else if (max === gn) hue = ((bn - rn) / delta + 2) / 6;
-    else hue = ((rn - gn) / delta + 4) / 6;
+export type ImageBatchErrorCode =
+  | 'missing_input' | 'too_many_files' | 'unsupported_input' | 'duplicate_input'
+  | 'invalid_file_size' | 'file_too_large' | 'invalid_target_format'
+  | 'invalid_compression_quality' | 'unsupported_compression_input';
+
+export class ImageBatchError extends Error {
+  code: ImageBatchErrorCode;
+  constructor(code: ImageBatchErrorCode, message: string) {
+    super(message);
+    this.name = 'ImageBatchError';
+    this.code = code;
   }
-  return {
-    h: Math.round(hue * 360),
-    s: Math.round(saturation * 100),
-    l: Math.round(lightness * 100)
-  };
 }
 
-export async function extractPaletteFromImage(file: File, count: number = 6): Promise<ExtractedColor[]> {
+export function getImageExtension(fileName: string): string {
+  if (typeof fileName !== 'string') return '';
+  const match = /\.([^.\\/]+)$/.exec(fileName.trim());
+  return match ? match[1].toLowerCase() : '';
+}
+
+export function isSupportedImageFileName(fileName: string): boolean {
+  return SUPPORTED_EXTENSIONS.has(getImageExtension(fileName));
+}
+
+export function isCompressibleImageFileName(fileName: string): boolean {
+  return COMPRESSIBLE_EXTENSIONS.has(getImageExtension(fileName));
+}
+
+export function validateImageBatchSelection(files: File[]): File[] {
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new ImageBatchError('missing_input', 'Select at least one image file.');
+  }
+  if (files.length > IMAGE_BATCH_LIMITS.maxFiles) {
+    throw new ImageBatchError('too_many_files', `A batch can contain at most ${IMAGE_BATCH_LIMITS.maxFiles} image files.`);
+  }
+  const seen = new Set<string>();
+  files.forEach((file, index) => {
+    const name = typeof file?.name === 'string' ? file.name.trim() : '';
+    if (!name || !isSupportedImageFileName(name)) {
+      throw new ImageBatchError('unsupported_input', `Unsupported image file at position ${index + 1}.`);
+    }
+    const identity = `file:${name}\u0000${file?.size ?? ''}`;
+    if (seen.has(identity)) throw new ImageBatchError('duplicate_input', `Duplicate image file: ${name}`);
+    seen.add(identity);
+    if (file.size > IMAGE_BATCH_LIMITS.maxBytesPerFile) {
+      throw new ImageBatchError('file_too_large', `Image file exceeds the ${IMAGE_BATCH_LIMITS.maxBytesPerFile}-byte limit.`);
+    }
+  });
+  return files;
+}
+
+export function validateImageCompressionSelection(files: File[]): File[] {
+  const validated = validateImageBatchSelection(files);
+  validated.forEach((file, index) => {
+    if (!isCompressibleImageFileName(file.name)) {
+      throw new ImageBatchError('unsupported_compression_input', `Image format cannot be compressed safely at position ${index + 1}.`);
+    }
+  });
+  return validated;
+}
+
+export type TargetFormat = 'jpg' | 'png' | 'webp';
+
+// ===== Canvas 基础 =====
+
+export async function loadImageBitmap(file: Blob): Promise<ImageBitmap> {
+  return createImageBitmap(file);
+}
+
+function toBlob(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      try {
-        const canvas = document.createElement('canvas');
-        const maxSide = 200;
-        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-        canvas.width = Math.max(1, Math.round(img.width * scale));
-        canvas.height = Math.max(1, Math.round(img.height * scale));
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('Cannot get canvas context');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        const colorMap = new Map<string, { r: number; g: number; b: number; count: number }>();
-        let validPixels = 0;
-
-        for (let i = 0; i < imageData.length; i += 4) {
-          const a = imageData[i + 3];
-          if (a < 128) continue;
-          const r = Math.round(imageData[i] / 16) * 16;
-          const g = Math.round(imageData[i + 1] / 16) * 16;
-          const b = Math.round(imageData[i + 2] / 16) * 16;
-          const key = `${r},${g},${b}`;
-          const existing = colorMap.get(key);
-          if (existing) {
-            existing.count++;
-          } else {
-            colorMap.set(key, { r, g, b, count: 1 });
-          }
-          validPixels++;
-        }
-
-        const sorted = Array.from(colorMap.values())
-          .sort((a, b) => b.count - a.count)
-          .slice(0, count);
-
-        const result: ExtractedColor[] = sorted.map(c => {
-          return {
-            hex: rgbToHex(c.r, c.g, c.b),
-            rgb: { r: c.r, g: c.g, b: c.b },
-            hsl: rgbToHsl(c.r, c.g, c.b),
-            pixels: c.count,
-            percentage: validPixels > 0 ? Number(((c.count / validPixels) * 100).toFixed(1)) : 0
-          };
-        });
-
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = url;
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('canvas-encode-failed'))),
+      mime,
+      quality,
+    );
   });
 }
 
-export async function stitchImages(
-  files: { file: File; width: number; height: number }[],
-  options: {
-    mode: 'vertical' | 'horizontal';
-    spacing: number;
-    background: string;
-    format: 'png' | 'jpeg';
-    quality: number;
-  }
-): Promise<Blob> {
-  const images = await Promise.all(
-    files.map(f => new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(f.file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = url;
-    }))
-  );
-
+function drawSource(source: ImageBitmap | HTMLCanvasElement, width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  const spacing = options.spacing || 0;
-
-  if (options.mode === 'vertical') {
-    const maxWidth = Math.max(...images.map(img => img.width));
-    const totalHeight = images.reduce((sum, img) => sum + img.height, 0) + spacing * (images.length - 1);
-    canvas.width = maxWidth;
-    canvas.height = totalHeight;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Cannot get canvas context');
-    ctx.fillStyle = options.background || '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    let currentY = 0;
-    for (const img of images) {
-      const x = (maxWidth - img.width) / 2;
-      ctx.drawImage(img, x, currentY);
-      currentY += img.height + spacing;
-    }
-  } else {
-    const maxHeight = Math.max(...images.map(img => img.height));
-    const totalWidth = images.reduce((sum, img) => sum + img.width, 0) + spacing * (images.length - 1);
-    canvas.width = totalWidth;
-    canvas.height = maxHeight;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Cannot get canvas context');
-    ctx.fillStyle = options.background || '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    let currentX = 0;
-    for (const img of images) {
-      const y = (maxHeight - img.height) / 2;
-      ctx.drawImage(img, currentX, y);
-      currentX += img.width + spacing;
-    }
-  }
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob);
-      else reject(new Error('Stitch export failed'));
-    }, options.format === 'jpeg' ? 'image/jpeg' : 'image/png', options.quality / 100);
-  });
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d')!;
+  context.drawImage(source as CanvasImageSource, 0, 0, width, height);
+  return canvas;
 }
 
-export function buildIcoBuffer(pngBlobsWithSizes: { size: number; bytes: Uint8Array }[]): Uint8Array {
-  const count = pngBlobsWithSizes.length;
-  const headerSize = 6;
-  const dirEntrySize = 16;
-  let offset = headerSize + dirEntrySize * count;
+// ===== 格式转换 =====
 
-  let totalSize = offset;
-  for (const item of pngBlobsWithSizes) {
-    totalSize += item.bytes.length;
-  }
+const MIME: Record<TargetFormat, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 
-  const buffer = new ArrayBuffer(totalSize);
-  const view = new DataView(buffer);
-
-  view.setUint16(0, 0, true);
-  view.setUint16(2, 1, true);
-  view.setUint16(4, count, true);
-
-  for (let i = 0; i < count; i++) {
-    const { size, bytes } = pngBlobsWithSizes[i];
-    const entryOffset = headerSize + i * dirEntrySize;
-    view.setUint8(entryOffset + 0, size >= 256 ? 0 : size);
-    view.setUint8(entryOffset + 1, size >= 256 ? 0 : size);
-    view.setUint8(entryOffset + 2, 0);
-    view.setUint8(entryOffset + 3, 0);
-    view.setUint16(entryOffset + 4, 1, true);
-    view.setUint16(entryOffset + 6, 32, true);
-    view.setUint32(entryOffset + 8, bytes.length, true);
-    view.setUint32(entryOffset + 12, offset, true);
-
-    const u8 = new Uint8Array(buffer, offset, bytes.length);
-    u8.set(bytes);
-    offset += bytes.length;
-  }
-
-  return new Uint8Array(buffer);
+export async function convertImage(file: File, target: TargetFormat): Promise<{ blob: Blob; fileName: string }> {
+  validateImageBatchSelection([file]);
+  const baseName = file.name.replace(/\.[^.\\/]+$/, '');
+  const bitmap = await loadImageBitmap(file);
+  const blob = await toBlob(drawSource(bitmap, bitmap.width, bitmap.height), MIME[target], target === 'png' ? undefined : 0.92);
+  bitmap.close();
+  return { blob, fileName: `${baseName}.${target}` };
 }
 
-export async function generateIcons(
+// ===== 质量压缩 =====
+
+export type CompressionQuality = 'high' | 'medium' | 'low';
+const QUALITY_SETTINGS: Record<CompressionQuality, { quality: number; maxDimension: number }> = {
+  high: { quality: 0.85, maxDimension: Number.POSITIVE_INFINITY },
+  medium: { quality: 0.6, maxDimension: 2560 },
+  low: { quality: 0.4, maxDimension: 1600 },
+};
+
+export async function compressImage(
   file: File,
-  sizes: number[] = [16, 32, 48, 64, 128, 256]
-): Promise<{ zipBlob: Blob; icoBlob: Blob; previews: { size: number; url: string }[] }> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    const url = URL.createObjectURL(file);
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => reject(new Error('Failed to load image'));
-    image.src = url;
-  });
+  quality: CompressionQuality,
+  outputFormat: 'jpg' | 'webp' = 'jpg',
+): Promise<{ blob: Blob; fileName: string }> {
+  validateImageCompressionSelection([file]);
+  const settings = QUALITY_SETTINGS[quality];
+  const bitmap = await loadImageBitmap(file);
+  const scale = Math.min(1, settings.maxDimension / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const blob = await toBlob(drawSource(bitmap, width, height), MIME[outputFormat], settings.quality);
+  bitmap.close();
+  const baseName = file.name.replace(/\.[^.\\/]+$/, '');
+  return { blob, fileName: `${baseName}_${quality}.${outputFormat}` };
+}
 
-  const zip = new JSZip();
-  const pngDataList: { size: number; bytes: Uint8Array }[] = [];
-  const previews: { size: number; url: string }[] = [];
+// ===== 裁剪 =====
 
-  for (const size of sizes) {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0, size, size);
-      const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'));
-      if (blob) {
-        const buffer = await blob.arrayBuffer();
-        const u8 = new Uint8Array(buffer);
-        pngDataList.push({ size, bytes: u8 });
-        zip.file(`icon-${size}x${size}.png`, u8);
-        previews.push({ size, url: URL.createObjectURL(blob) });
-      }
+export async function cropImage(
+  file: File,
+  rect: { x: number; y: number; width: number; height: number },
+): Promise<{ blob: Blob; fileName: string }> {
+  const bitmap = await loadImageBitmap(file);
+  const { x, y, width, height } = rect;
+  if (
+    !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(width) || !Number.isFinite(height) ||
+    width < 1 || height < 1 || x < 0 || y < 0 || x + width > bitmap.width || y + height > bitmap.height
+  ) {
+    bitmap.close();
+    throw new ImageBatchError('invalid_file_size', 'Crop rectangle is outside the image bounds.');
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+  const context = canvas.getContext('2d')!;
+  context.drawImage(bitmap as CanvasImageSource, Math.round(x), Math.round(y), Math.round(width), Math.round(height), 0, 0, canvas.width, canvas.height);
+  const blob = await toBlob(canvas, 'image/png');
+  bitmap.close();
+  const baseName = file.name.replace(/\.[^.\\/]+$/, '');
+  return { blob, fileName: `${baseName}_crop.png` };
+}
+
+// ===== 多通道色彩替换 =====
+
+export interface ColorReplaceOptions {
+  /** 十六进制颜色 #RRGGBB */
+  from: string;
+  to: string;
+  /** 0-255 容差 */
+  tolerance: number;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) throw new ImageBatchError('invalid_target_format', 'Invalid hex color.');
+  const value = Number.parseInt(match[1], 16);
+  return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
+}
+
+export async function replaceColor(file: File, options: ColorReplaceOptions): Promise<{ blob: Blob; fileName: string; replacedPixels: number }> {
+  const [fr, fg, fb] = hexToRgb(options.from);
+  const [tr, tg, tb] = hexToRgb(options.to);
+  const bitmap = await loadImageBitmap(file);
+  const canvas = drawSource(bitmap, bitmap.width, bitmap.height);
+  bitmap.close();
+  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  const toleranceSq = options.tolerance * options.tolerance * 3;
+  let replacedPixels = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    const dr = data[i] - fr;
+    const dg = data[i + 1] - fg;
+    const db = data[i + 2] - fb;
+    if (dr * dr + dg * dg + db * db <= toleranceSq) {
+      data[i] = tr;
+      data[i + 1] = tg;
+      data[i + 2] = tb;
+      replacedPixels += 1;
     }
   }
+  context.putImageData(imageData, 0, 0);
+  const blob = await toBlob(canvas, 'image/png');
+  const baseName = file.name.replace(/\.[^.\\/]+$/, '');
+  return { blob, fileName: `${baseName}_recolored.png`, replacedPixels };
+}
 
-  const icoU8 = buildIcoBuffer(pngDataList);
-  const icoBlob = new Blob([icoU8.buffer as ArrayBuffer], { type: 'image/x-icon' });
-  zip.file('favicon.ico', icoU8);
+// ===== 多图拼接 =====
 
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
-  return { zipBlob, icoBlob, previews };
+export type StitchDirection = 'horizontal' | 'vertical' | 'grid';
+
+export async function stitchImages(files: File[], direction: StitchDirection, gap = 8): Promise<{ blob: Blob; fileName: string }> {
+  if (files.length < 2) throw new ImageBatchError('missing_input', 'Select at least two images to stitch.');
+  const bitmaps = await Promise.all(files.map((file) => loadImageBitmap(file)));
+  try {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d')!;
+    if (direction === 'horizontal') {
+      const height = Math.max(...bitmaps.map((b) => b.height));
+      const width = bitmaps.reduce((sum, b) => sum + b.width, 0) + gap * (bitmaps.length - 1);
+      canvas.width = width;
+      canvas.height = height;
+      let x = 0;
+      for (const bitmap of bitmaps) {
+        context.drawImage(bitmap as CanvasImageSource, x, (height - bitmap.height) / 2);
+        x += bitmap.width + gap;
+      }
+    } else if (direction === 'vertical') {
+      const width = Math.max(...bitmaps.map((b) => b.width));
+      const height = bitmaps.reduce((sum, b) => sum + b.height, 0) + gap * (bitmaps.length - 1);
+      canvas.width = width;
+      canvas.height = height;
+      let y = 0;
+      for (const bitmap of bitmaps) {
+        context.drawImage(bitmap as CanvasImageSource, (width - bitmap.width) / 2, y);
+        y += bitmap.height + gap;
+      }
+    } else {
+      const columns = Math.ceil(Math.sqrt(bitmaps.length));
+      const rows = Math.ceil(bitmaps.length / columns);
+      const cellWidth = Math.max(...bitmaps.map((b) => b.width));
+      const cellHeight = Math.max(...bitmaps.map((b) => b.height));
+      canvas.width = columns * cellWidth + gap * (columns - 1);
+      canvas.height = rows * cellHeight + gap * (rows - 1);
+      bitmaps.forEach((bitmap, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        context.drawImage(
+          bitmap as CanvasImageSource,
+          column * (cellWidth + gap),
+          row * (cellHeight + gap),
+        );
+      });
+    }
+    const blob = await toBlob(canvas, 'image/png');
+    return { blob, fileName: `stitched_${direction}.png` };
+  } finally {
+    bitmaps.forEach((bitmap) => bitmap.close());
+  }
+}
+
+// ===== 应用图标生成 =====
+
+export const ICON_SIZES = [16, 32, 48, 64, 128, 180, 192, 256, 512] as const;
+
+export async function generateIcons(file: File): Promise<{ size: number; blob: Blob; fileName: string }[]> {
+  const bitmap = await loadImageBitmap(file);
+  try {
+    const outputs: { size: number; blob: Blob; fileName: string }[] = [];
+    for (const size of ICON_SIZES) {
+      const canvas = drawSource(bitmap, size, size);
+      const blob = await toBlob(canvas, 'image/png');
+      outputs.push({ size, blob, fileName: `icon_${size}x${size}.png` });
+    }
+    return outputs;
+  } finally {
+    bitmap.close();
+  }
+}
+
+// ===== 主题取色（k-means 聚类） =====
+
+export interface PaletteColor {
+  hex: string;
+  ratio: number;
+}
+
+export async function extractPalette(file: File, colorCount = 6): Promise<PaletteColor[]> {
+  const bitmap = await loadImageBitmap(file);
+  const sampleWidth = Math.min(160, bitmap.width);
+  const sampleHeight = Math.max(1, Math.round((bitmap.height / bitmap.width) * sampleWidth));
+  const canvas = drawSource(bitmap, sampleWidth, sampleHeight);
+  bitmap.close();
+  const { data } = canvas.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, sampleWidth, sampleHeight);
+
+  const samples: [number, number, number][] = [];
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 128) continue;
+    samples.push([data[i], data[i + 1], data[i + 2]]);
+  }
+  if (!samples.length) return [];
+
+  let centroids = samples.filter((_, i) => i % Math.max(1, Math.floor(samples.length / colorCount)) === 0).slice(0, colorCount);
+  const assignments = new Array<number>(samples.length).fill(0);
+  for (let iteration = 0; iteration < 8; iteration += 1) {
+    for (let s = 0; s < samples.length; s += 1) {
+      let best = 0;
+      let bestDist = Number.POSITIVE_INFINITY;
+      for (let c = 0; c < centroids.length; c += 1) {
+        const dr = samples[s][0] - centroids[c][0];
+        const dg = samples[s][1] - centroids[c][1];
+        const db = samples[s][2] - centroids[c][2];
+        const dist = dr * dr + dg * dg + db * db;
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = c;
+        }
+      }
+      assignments[s] = best;
+    }
+    const sums = centroids.map(() => [0, 0, 0, 0]);
+    for (let s = 0; s < samples.length; s += 1) {
+      const a = assignments[s];
+      sums[a][0] += samples[s][0];
+      sums[a][1] += samples[s][1];
+      sums[a][2] += samples[s][2];
+      sums[a][3] += 1;
+    }
+    centroids = centroids.map((centroid, c) =>
+      sums[c][3] > 0
+        ? [sums[c][0] / sums[c][3], sums[c][1] / sums[c][3], sums[c][2] / sums[c][3]]
+        : centroid,
+    );
+  }
+
+  const counts = new Array<number>(centroids.length).fill(0);
+  assignments.forEach((a) => {
+    counts[a] += 1;
+  });
+  const palette = centroids
+    .map((centroid, c) => ({
+      hex:
+        '#' +
+        centroid
+          .map((channel) => Math.round(channel).toString(16).padStart(2, '0'))
+          .join(''),
+      ratio: counts[c] / samples.length,
+    }))
+    .sort((a, b) => b.ratio - a.ratio);
+  // 合并收敛到同色的重复质心
+  const merged = new Map<string, number>();
+  for (const color of palette) {
+    merged.set(color.hex, (merged.get(color.hex) ?? 0) + color.ratio);
+  }
+  return [...merged.entries()]
+    .map(([hex, ratio]) => ({ hex, ratio }))
+    .sort((a, b) => b.ratio - a.ratio);
 }
