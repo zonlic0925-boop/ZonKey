@@ -104,9 +104,9 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'video-gif', labelKey: 'tools.videoGif', availability: 'planned' },
   ],
   text_center: [
-    { id: 'markdown-editor', labelKey: 'tools.markdownEditor', availability: 'planned' },
-    { id: 'text-stats', labelKey: 'tools.textStats', availability: 'planned' },
-    { id: 'text-format', labelKey: 'tools.textFormat', availability: 'planned' },
+    { id: 'markdown-editor', labelKey: 'tools.markdownEditor', availability: 'ready' },
+    { id: 'text-stats', labelKey: 'tools.textStats', availability: 'ready' },
+    { id: 'text-format', labelKey: 'tools.textFormat', availability: 'ready' },
     { id: 'transcription', labelKey: 'tools.transcription', availability: 'planned' },
     { id: 'typing-test', labelKey: 'tools.typingTest', availability: 'planned' },
   ],
