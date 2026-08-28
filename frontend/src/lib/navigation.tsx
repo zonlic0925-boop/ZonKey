@@ -66,13 +66,13 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
   ],
   pdf_center: [
     { id: 'pdf-editor', labelKey: 'tools.pdfEditor', availability: 'planned' },
-    { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'planned' },
-    { id: 'pdf-split', labelKey: 'tools.pdfSplit', availability: 'planned' },
+    { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'ready' },
+    { id: 'pdf-split', labelKey: 'tools.pdfSplit', availability: 'ready' },
     { id: 'pdf-to-image', labelKey: 'tools.pdfToImage', availability: 'planned' },
-    { id: 'pdf-rotate', labelKey: 'tools.pdfRotate', availability: 'planned' },
+    { id: 'pdf-rotate', labelKey: 'tools.pdfRotate', availability: 'ready' },
     { id: 'pdf-encrypt', labelKey: 'tools.pdfEncrypt', availability: 'planned' },
     { id: 'pdf-decrypt', labelKey: 'tools.pdfDecrypt', availability: 'planned' },
-    { id: 'pdf-compress', labelKey: 'tools.pdfCompress', availability: 'planned' },
+    { id: 'pdf-compress', labelKey: 'tools.pdfCompress', availability: 'ready' },
     { id: 'pdf-enhance', labelKey: 'tools.pdfEnhance', availability: 'planned' },
   ],
   ppt_center: [
