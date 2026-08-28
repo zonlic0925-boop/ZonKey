@@ -7,6 +7,7 @@ import { PdfCenter } from './components/pdfcenter/PdfCenter';
 import { ImageCenter } from './components/imagecenter/ImageCenter';
 import { PptCenter } from './components/pptcenter/PptCenter';
 import { MediaCenter } from './components/mediacenter/MediaCenter';
+import { SystemCenter } from './components/systemcenter/SystemCenter';
 import { DocPdfView } from './components/DocPdfView';
 import { WordView } from './components/WordView';
 import { RuleCenter } from './components/RuleCenter';
@@ -144,7 +145,12 @@ export default function App() {
             <MediaCenter tool={activeTool} />
           </div>
         )}
-        {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && activeCenter !== 'text_center' && activeCenter !== 'pdf_center' && activeCenter !== 'image_center' && activeCenter !== 'ppt_center' && activeCenter !== 'media_center' && (
+        {activeCenter === 'system_tools' && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <SystemCenter tool={activeTool} />
+          </div>
+        )}
+        {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && activeCenter !== 'text_center' && activeCenter !== 'pdf_center' && activeCenter !== 'image_center' && activeCenter !== 'ppt_center' && activeCenter !== 'media_center' && activeCenter !== 'system_tools' && (
           <CenterPlaceholder center={centerMeta} toolCount={tools.length} />
         )}
       </main>

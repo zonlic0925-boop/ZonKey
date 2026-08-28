@@ -124,14 +124,14 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'hash-crypto', labelKey: 'tools.hashCrypto', availability: 'ready' },
   ],
   system_tools: [
-    { id: 'hardware-overview', labelKey: 'tools.hardwareOverview', availability: 'planned' },
-    { id: 'hardware-cpu-memory', labelKey: 'tools.hardwareCpuMemory', availability: 'planned' },
-    { id: 'hardware-gpu-display', labelKey: 'tools.hardwareGpuDisplay', availability: 'planned' },
-    { id: 'hardware-mainboard', labelKey: 'tools.hardwareMainboard', availability: 'planned' },
-    { id: 'hardware-storage', labelKey: 'tools.hardwareStorage', availability: 'planned' },
-    { id: 'hardware-power-sensors', labelKey: 'tools.hardwarePowerSensors', availability: 'planned' },
-    { id: 'large-file-cleanup', labelKey: 'tools.largeFileCleanup', availability: 'planned' },
-    { id: 'c-drive-cleanup', labelKey: 'tools.cDriveCleanup', availability: 'planned' },
+    { id: 'hardware-overview', labelKey: 'tools.hardwareOverview', availability: 'ready' },
+    { id: 'hardware-cpu-memory', labelKey: 'tools.hardwareCpuMemory', availability: 'ready' },
+    { id: 'hardware-gpu-display', labelKey: 'tools.hardwareGpuDisplay', availability: 'ready' },
+    { id: 'hardware-mainboard', labelKey: 'tools.hardwareMainboard', availability: 'ready' },
+    { id: 'hardware-storage', labelKey: 'tools.hardwareStorage', availability: 'ready' },
+    { id: 'hardware-power-sensors', labelKey: 'tools.hardwarePowerSensors', availability: 'ready' },
+    { id: 'large-file-cleanup', labelKey: 'tools.largeFileCleanup', availability: 'ready' },
+    { id: 'c-drive-cleanup', labelKey: 'tools.cDriveCleanup', availability: 'ready' },
   ],
 };
 
