@@ -50,7 +50,7 @@ export default function App() {
 
       <Header
         activeTab={activeTab}
-        onTabChange={(tab) => {
+        onTabChange={(tab: any) => {
           setActiveTab(tab);
           refresh();
         }}

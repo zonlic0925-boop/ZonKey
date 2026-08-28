@@ -50,6 +50,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+try:
+    from backend_system_tools import router as system_tools_router
+    app.include_router(system_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load system_tools router: {e}")
+
 TEMP_DIR = PROJECT_ROOT / "temp_bridge_files"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 

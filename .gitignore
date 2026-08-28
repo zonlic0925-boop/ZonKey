@@ -62,3 +62,7 @@ internal/
 
 # Release 打包产物（仅上传到 GitHub Releases）
 release_assets/
+
+# CodeGraph 本地索引与 TS 增量构建缓存
+.codegraph/
+*.tsbuildinfo
