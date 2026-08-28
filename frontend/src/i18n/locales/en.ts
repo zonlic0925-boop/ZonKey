@@ -292,6 +292,14 @@ export const en: MessageTree = {
     iconSizes: '9 sizes (16-512px)',
     extractNow: 'Extract palette',
   },
+  pptcenter: {
+    noMedia: 'No extractable images found in the PPT',
+    noSlides: 'No slides found in the PPT',
+    mediaFound: '{count} images extracted',
+    notes: 'Notes',
+    slide: 'Slide',
+    compressHint: 'Repack all PPTX resources at max deflate compression (media is not re-encoded).',
+  },
   lang: {
     label: 'Language',
     simplified: '简体中文',

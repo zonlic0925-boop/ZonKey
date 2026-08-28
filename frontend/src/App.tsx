@@ -5,6 +5,7 @@ import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { TextCenter } from './components/textcenter/TextCenter';
 import { PdfCenter } from './components/pdfcenter/PdfCenter';
 import { ImageCenter } from './components/imagecenter/ImageCenter';
+import { PptCenter } from './components/pptcenter/PptCenter';
 import { DocPdfView } from './components/DocPdfView';
 import { WordView } from './components/WordView';
 import { RuleCenter } from './components/RuleCenter';
@@ -132,7 +133,12 @@ export default function App() {
             <ImageCenter tool={activeTool} />
           </div>
         )}
-        {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && activeCenter !== 'text_center' && activeCenter !== 'pdf_center' && activeCenter !== 'image_center' && (
+        {activeCenter === 'ppt_center' && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <PptCenter tool={activeTool} />
+          </div>
+        )}
+        {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && activeCenter !== 'text_center' && activeCenter !== 'pdf_center' && activeCenter !== 'image_center' && activeCenter !== 'ppt_center' && (
           <CenterPlaceholder center={centerMeta} toolCount={tools.length} />
         )}
       </main>

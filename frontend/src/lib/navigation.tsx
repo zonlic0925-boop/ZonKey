@@ -78,9 +78,9 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
   ppt_center: [
     { id: 'ppt-to-pdf', labelKey: 'tools.pptToPdf', availability: 'planned' },
     { id: 'ppt-to-image', labelKey: 'tools.pptToImage', availability: 'planned' },
-    { id: 'ppt-images', labelKey: 'tools.pptImages', availability: 'planned' },
-    { id: 'ppt-text', labelKey: 'tools.pptText', availability: 'planned' },
-    { id: 'ppt-compress', labelKey: 'tools.pptCompress', availability: 'planned' },
+    { id: 'ppt-images', labelKey: 'tools.pptImages', availability: 'ready' },
+    { id: 'ppt-text', labelKey: 'tools.pptText', availability: 'ready' },
+    { id: 'ppt-compress', labelKey: 'tools.pptCompress', availability: 'ready' },
     { id: 'ppt-outline', labelKey: 'tools.pptOutline', availability: 'planned' },
     { id: 'ppt-draft', labelKey: 'tools.pptDraft', availability: 'planned' },
   ],

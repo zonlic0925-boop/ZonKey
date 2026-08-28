@@ -292,6 +292,14 @@ export const zhTW: MessageTree = {
     iconSizes: '9 種尺寸 (16-512px)',
     extractNow: '提取色板',
   },
+  pptcenter: {
+    noMedia: '未在 PPT 中找到可提取的圖片',
+    noSlides: '未在 PPT 中找到幻燈片',
+    mediaFound: '共提取 {count} 張圖片',
+    notes: '備註',
+    slide: '幻燈片',
+    compressHint: '以最高壓縮率重新打包 PPTX 內的全部資源（媒體檔案不重新編碼）。',
+  },
   lang: {
     label: '語言',
     simplified: '简体中文',

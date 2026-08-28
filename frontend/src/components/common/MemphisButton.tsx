@@ -14,6 +14,7 @@ export type ButtonVariant =
   | 'pink'
   | 'lime'
   | 'lavender'
+  | 'orange'
   | 'paper'
   | 'white'
   | 'ghost'
@@ -35,6 +36,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   pink: 'bg-mem-pink text-mem-ink hover:bg-opacity-95',
   lime: 'bg-mem-lime text-mem-ink hover:bg-opacity-95',
   lavender: 'bg-mem-lavender text-white hover:bg-opacity-95',
+  orange: 'bg-mem-orange text-mem-ink hover:bg-opacity-95',
   paper: 'bg-white text-mem-ink hover:bg-slate-50',
   white: 'bg-white text-mem-ink hover:bg-slate-50',
   ghost: 'bg-transparent text-mem-ink border-transparent shadow-none hover:bg-black/5 hover:border-mem-ink'
