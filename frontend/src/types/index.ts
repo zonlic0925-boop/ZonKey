@@ -1,28 +1,107 @@
-export type TabType =
-  | 'drawing'
-  | 'pdf_doc'
-  | 'word_doc'
-  | 'rules'
-  | 'audit'
-  | 'pdf_studio'
-  | 'ppt_extract'
-  | 'image_crop'
-  | 'image_watermark'
-  | 'icon_gen'
-  | 'color_extract'
-  | 'image_stitch'
-  | 'audio_clip'
-  | 'bpm_detect'
-  | 'text_studio'
-  | 'password_gen'
-  | 'dev_toolbox'
-  | 'crypto_tool'
-  | 'regex'
-  | 'json_diff'
-  | 'typography'
-  | 'system_cleanup';
+// ===== 导航结构：8 大中心 + 二级子工具（ToolKnit 合并架构） =====
 
-export type ToolCategory = 'desensitize' | 'office' | 'image' | 'media' | 'devtools' | 'system';
+/** 一级：功能中心 */
+export type CenterId =
+  | 'redact'
+  | 'pdf_center'
+  | 'ppt_center'
+  | 'image_center'
+  | 'media_center'
+  | 'text_center'
+  | 'calc_dev'
+  | 'system_tools';
+
+/** 智能脱敏中心（ZonScale 原生功能） */
+export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit';
+
+/** PDF 工坊 */
+export type PdfToolId =
+  | 'pdf-editor'
+  | 'pdf-merge'
+  | 'pdf-split'
+  | 'pdf-to-image'
+  | 'pdf-rotate'
+  | 'pdf-encrypt'
+  | 'pdf-decrypt'
+  | 'pdf-compress'
+  | 'pdf-enhance';
+
+/** PPT 工坊 */
+export type PptToolId =
+  | 'ppt-to-pdf'
+  | 'ppt-to-image'
+  | 'ppt-images'
+  | 'ppt-text'
+  | 'ppt-compress'
+  | 'ppt-outline'
+  | 'ppt-draft';
+
+/** 图像工坊 */
+export type ImageToolId =
+  | 'image-crop'
+  | 'image-color-replace'
+  | 'image-convert'
+  | 'image-compress'
+  | 'image-stitch'
+  | 'icon-gen'
+  | 'color-extractor'
+  | 'color-space-compare';
+
+/** 音视频中心 */
+export type MediaToolId =
+  | 'bpm-detect'
+  | 'audio-clip'
+  | 'audio-convert'
+  | 'audio-extract'
+  | 'video-convert'
+  | 'video-frame'
+  | 'video-gif';
+
+/** 文本工坊 */
+export type TextToolId =
+  | 'markdown-editor'
+  | 'text-stats'
+  | 'text-format'
+  | 'transcription'
+  | 'typing-test';
+
+/** 计算开发中心 */
+export type CalcToolId =
+  | 'bmi-calc'
+  | 'timestamp-calc'
+  | 'mortgage-calc'
+  | 'interest-calc'
+  | 'password-gen'
+  | 'json-tools'
+  | 'base64'
+  | 'url-codec'
+  | 'uuid'
+  | 'jwt'
+  | 'hash-crypto';
+
+/** 系统硬件中心 */
+export type SystemToolId =
+  | 'hardware-overview'
+  | 'hardware-cpu-memory'
+  | 'hardware-gpu-display'
+  | 'hardware-mainboard'
+  | 'hardware-storage'
+  | 'hardware-power-sensors'
+  | 'large-file-cleanup'
+  | 'c-drive-cleanup';
+
+export type ToolId =
+  | RedactToolId
+  | PdfToolId
+  | PptToolId
+  | ImageToolId
+  | MediaToolId
+  | TextToolId
+  | CalcToolId
+  | SystemToolId;
+
+/** 工具接入状态：ready=已接入可用；planned=已注册、待垂直切片接入 */
+export type ToolAvailability = 'ready' | 'planned';
 
 export interface RedactionRule {
   name: string;

@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { DrawingView } from './components/DrawingView';
 import { DocPdfView } from './components/DocPdfView';
 import { WordView } from './components/WordView';
 import { RuleCenter } from './components/RuleCenter';
 import { AuditLogView } from './components/AuditLogView';
+import { SubNavPills } from './components/navigation/SubNavPills';
+import { CenterPlaceholder } from './components/common/CenterPlaceholder';
 import { MemphisDecor } from './components/MemphisDecor';
-import { TabType } from './types';
+import { CenterId, ToolId } from './types';
+import { CENTER_TOOLS, getCenterMeta } from './lib/navigation';
 import { CheckCircle2, AlertCircle, Info, X, WifiOff } from 'lucide-react';
 import { useBackendStatus } from './lib/api';
 import { useI18n } from './i18n';
@@ -14,7 +17,10 @@ import { APP_NAME, APP_TAGLINE } from './lib/brand';
 
 export default function App() {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabType>('drawing');
+  const [activeCenter, setActiveCenter] = useState<CenterId>('redact');
+  const [activeTool, setActiveTool] = useState<ToolId>('drawing');
+  // 记住每个中心最后使用的工具，切回时不打断用户上下文
+  const lastToolByCenter = useRef<Partial<Record<CenterId, ToolId>>>({ redact: 'drawing' });
   const { online, status, refresh } = useBackendStatus();
 
   const [notification, setNotification] = useState<{
@@ -31,6 +37,22 @@ export default function App() {
     ocrAvailable: status?.ocr_available ?? false,
     activeRulesCount: status?.active_rules_count ?? 0,
   };
+
+  const handleCenterChange = (center: CenterId) => {
+    if (center === activeCenter) return;
+    lastToolByCenter.current[activeCenter] = activeTool;
+    setActiveCenter(center);
+    setActiveTool(lastToolByCenter.current[center] ?? CENTER_TOOLS[center][0].id);
+    refresh();
+  };
+
+  const handleToolChange = (tool: ToolId) => {
+    setActiveTool(tool);
+    refresh();
+  };
+
+  const tools = CENTER_TOOLS[activeCenter];
+  const centerMeta = getCenterMeta(activeCenter);
 
   return (
     <div className="relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
@@ -49,30 +71,45 @@ export default function App() {
       )}
 
       <Header
-        activeTab={activeTab}
-        onTabChange={(tab: any) => {
-          setActiveTab(tab);
-          refresh();
-        }}
+        activeCenter={activeCenter}
+        onCenterChange={handleCenterChange}
         systemStatus={systemStatus}
         backendOnline={online}
       />
 
+      {/* 二级子工具导航：所有中心固定渲染此条（等高），避免切换时布局跳变 */}
+      <div className="relative z-30 shrink-0 w-full flex items-center px-3 py-2 bg-white/80 border-b-2 border-mem-ink/10">
+        <SubNavPills
+          key={activeCenter}
+          options={tools.map((tool) => ({ id: tool.id, label: t(tool.labelKey) }))}
+          activeId={activeTool}
+          onChange={(id) => handleToolChange(id as ToolId)}
+          colorVariant={centerMeta.accent}
+        />
+      </div>
+
       <main className="relative z-10 flex-1 w-full min-h-0 overflow-hidden flex">
-        {activeTab === 'drawing' && (
-          <DrawingView onNotify={showNotify} backendOnline={online} />
+        {activeCenter === 'redact' && (
+          <>
+            {activeTool === 'drawing' && (
+              <DrawingView onNotify={showNotify} backendOnline={online} />
+            )}
+            {activeTool === 'pdf_doc' && (
+              <DocPdfView onNotify={showNotify} backendOnline={online} />
+            )}
+            {activeTool === 'word_doc' && (
+              <WordView onNotify={showNotify} backendOnline={online} />
+            )}
+            {activeTool === 'rules' && (
+              <RuleCenter onNotify={showNotify} backendOnline={online} />
+            )}
+            {activeTool === 'audit' && (
+              <AuditLogView onNotify={showNotify} backendOnline={online} />
+            )}
+          </>
         )}
-        {activeTab === 'pdf_doc' && (
-          <DocPdfView onNotify={showNotify} backendOnline={online} />
-        )}
-        {activeTab === 'word_doc' && (
-          <WordView onNotify={showNotify} backendOnline={online} />
-        )}
-        {activeTab === 'rules' && (
-          <RuleCenter onNotify={showNotify} backendOnline={online} />
-        )}
-        {activeTab === 'audit' && (
-          <AuditLogView onNotify={showNotify} backendOnline={online} />
+        {activeCenter !== 'redact' && (
+          <CenterPlaceholder center={centerMeta} toolCount={tools.length} />
         )}
       </main>
 

@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
-import {
-  Compass,
-  FileText,
-  FileCode,
-  ShieldCheck,
-  History,
-  Coffee,
-} from 'lucide-react';
-import { TabType } from '../types';
+import { Coffee } from 'lucide-react';
+import { CenterId } from '../types';
+import { CENTERS } from '../lib/navigation';
 import { BrandMark } from './BrandMark';
 import { SupportAuthorModal } from './SupportAuthorModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useI18n } from '../i18n';
 
 interface HeaderProps {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
+  activeCenter: CenterId;
+  onCenterChange: (center: CenterId) => void;
   systemStatus: {
     ocrAvailable: boolean;
     activeRulesCount: number;
@@ -23,27 +17,26 @@ interface HeaderProps {
   backendOnline?: boolean | null;
 }
 
+/** 中心导航激活态底色（mem-* 强调色映射） */
+const centerActiveAccent: Record<string, string> = {
+  coral: 'bg-mem-coral/20',
+  sky: 'bg-mem-sky/30',
+  orange: 'bg-mem-orange/30',
+  yellow: 'bg-mem-yellow/40',
+  teal: 'bg-mem-teal/30',
+  pink: 'bg-mem-pink/30',
+  lavender: 'bg-mem-lavender/30',
+  lime: 'bg-mem-lime/40',
+};
+
 export const Header: React.FC<HeaderProps> = ({
-  activeTab,
-  onTabChange,
+  activeCenter,
+  onCenterChange,
   systemStatus,
   backendOnline,
 }) => {
   const { t } = useI18n();
   const [supportOpen, setSupportOpen] = useState(false);
-
-  const navTabs: {
-    id: TabType;
-    labelKey: string;
-    icon: React.ComponentType<{ className?: string }>;
-    accent: string;
-  }[] = [
-    { id: 'drawing', labelKey: 'header.navDrawing', icon: Compass, accent: 'bg-mem-coral/20' },
-    { id: 'pdf_doc', labelKey: 'header.navPdfDoc', icon: FileText, accent: 'bg-mem-teal/30' },
-    { id: 'word_doc', labelKey: 'header.navWordDoc', icon: FileCode, accent: 'bg-mem-pink/30' },
-    { id: 'rules', labelKey: 'header.navRules', icon: ShieldCheck, accent: 'bg-mem-yellow/40' },
-    { id: 'audit', labelKey: 'header.navAudit', icon: History, accent: 'bg-mem-sky/20' },
-  ];
 
   const engineLabel =
     backendOnline === false
@@ -60,23 +53,28 @@ export const Header: React.FC<HeaderProps> = ({
     />
   );
 
-  const navButton = (tab: (typeof navTabs)[number], showLabel: boolean) => {
-    const Icon = tab.icon;
-    const isActive = activeTab === tab.id;
+  const centerButton = (center: (typeof CENTERS)[number], showLabel: boolean) => {
+    const Icon = center.icon;
+    const isActive = activeCenter === center.id;
     return (
       <button
-        key={tab.id}
+        key={center.id}
         type="button"
-        onClick={() => onTabChange(tab.id)}
-        title={t(tab.labelKey)}
-        className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 shrink-0 zs-touch-target ${
-          isActive ? 'memphis-tab-active' : 'memphis-tab-inactive'
+        onClick={() => onCenterChange(center.id)}
+        title={t(center.labelKey)}
+        className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium transition-all duration-150 shrink-0 zs-touch-target ${
+          isActive
+            ? `memphis-tab-active ${centerActiveAccent[center.accent]}`
+            : 'memphis-tab-inactive'
         }`}
       >
-        <span className={`p-1 rounded-md border border-mem-ink/20 ${isActive ? tab.accent : ''}`}>
+        <span className={`p-1 rounded-md border border-mem-ink/20 ${isActive ? centerActiveAccent[center.accent] : ''}`}>
           <Icon className="w-4 h-4" />
         </span>
-        {showLabel && <span className="hidden lg:inline whitespace-nowrap">{t(tab.labelKey)}</span>}
+        {/* 8 个中心较宽：仅激活项显示文字，其余图标化，保证任何宽度不溢出 */}
+        {showLabel && isActive && (
+          <span className="hidden md:inline whitespace-nowrap">{t(center.labelKey)}</span>
+        )}
       </button>
     );
   };
@@ -101,12 +99,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* 手机：横向 Tab */}
+        {/* 手机：横向中心 Tab（图标 + 可横向滚动） */}
         <nav
           className="md:hidden zs-mobile-scroll-x flex items-center gap-1.5 px-2 pb-2 border-t border-mem-ink/10"
           aria-label={t('lang.label')}
         >
-          {navTabs.map((tab) => navButton(tab, false))}
+          {CENTERS.map((center) => centerButton(center, false))}
         </nav>
 
         {/* 桌面：原布局 */}
@@ -127,8 +125,8 @@ export const Header: React.FC<HeaderProps> = ({
             <LanguageSwitcher />
           </div>
 
-          <nav className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink-0">
-            {navTabs.map((tab) => navButton(tab, true))}
+          <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink-0">
+            {CENTERS.map((center) => centerButton(center, true))}
           </nav>
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-[11px] shrink-0">

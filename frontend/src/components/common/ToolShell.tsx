@@ -2,12 +2,13 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SubNavPills, type SubNavOption } from '../navigation/SubNavPills'
 import { pageFadeSlide } from '../../motion/springs'
+import type { MemphisAccent } from '../../lib/navigation'
 
 interface ToolShellProps {
   title: string
   subtitle: string
   icon: React.ReactNode
-  colorVariant?: 'yellow' | 'teal' | 'coral' | 'sky' | 'pink' | 'lime'
+  colorVariant?: MemphisAccent
   subOptions?: SubNavOption[]
   activeSubId?: string
   onSubChange?: (id: string) => void
@@ -15,13 +16,15 @@ interface ToolShellProps {
   children: React.ReactNode
 }
 
-const colorBadgeStyles: Record<string, string> = {
+const colorBadgeStyles: Record<MemphisAccent, string> = {
   yellow: 'bg-mem-yellow text-mem-ink',
   teal: 'bg-mem-teal text-mem-ink',
   coral: 'bg-mem-coral text-white',
   sky: 'bg-mem-sky text-white',
   pink: 'bg-mem-pink text-mem-ink',
   lime: 'bg-mem-lime text-mem-ink',
+  lavender: 'bg-mem-lavender text-white',
+  orange: 'bg-mem-orange text-mem-ink',
 }
 
 export const ToolShell: React.FC<ToolShellProps> = ({

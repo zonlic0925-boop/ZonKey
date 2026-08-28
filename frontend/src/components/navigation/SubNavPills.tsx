@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { pillMorphSpring } from '../../motion/springs'
+import type { MemphisAccent } from '../../lib/navigation'
 
 export interface SubNavOption {
   id: string
@@ -13,16 +14,18 @@ interface SubNavPillsProps {
   options: SubNavOption[]
   activeId: string
   onChange: (id: string) => void
-  colorVariant?: 'yellow' | 'teal' | 'coral' | 'sky' | 'pink' | 'lime'
+  colorVariant?: MemphisAccent
 }
 
-const activePillColors: Record<string, string> = {
+const activePillColors: Record<MemphisAccent, string> = {
   yellow: 'bg-mem-yellow text-mem-ink',
   teal: 'bg-mem-teal text-mem-ink',
   coral: 'bg-mem-coral text-white',
   sky: 'bg-mem-sky text-white',
   pink: 'bg-mem-pink text-mem-ink',
   lime: 'bg-mem-lime text-mem-ink',
+  lavender: 'bg-mem-lavender text-white',
+  orange: 'bg-mem-orange text-mem-ink',
 }
 
 export const SubNavPills: React.FC<SubNavPillsProps> = ({

@@ -16,6 +16,8 @@ export default {
           pink: '#FF9FF3',
           sky: '#45B7D1',
           lime: '#96E6A1',
+          lavender: '#A78BFA',
+          orange: '#FFA94D',
         },
       },
       boxShadow: {
