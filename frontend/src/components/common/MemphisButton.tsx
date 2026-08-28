@@ -65,7 +65,7 @@ export const MemphisButton: React.FC<MemphisButtonProps> = ({
         onClick?.(e)
       }}
       className={clsx(
-        'font-bold border-[2px] border-mem-ink shadow-mem-hard select-none inline-flex items-center justify-center gap-2 cursor-pointer transition-colors',
+        'font-bold border-[2px] border-mem-ink shadow-memphis-sm select-none inline-flex items-center justify-center gap-2 cursor-pointer transition-colors',
         variantStyles[variant],
         sizeStyles[size],
         className

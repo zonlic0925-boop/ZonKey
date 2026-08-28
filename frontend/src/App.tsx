@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { DrawingView } from './components/DrawingView';
+import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { DocPdfView } from './components/DocPdfView';
 import { WordView } from './components/WordView';
 import { RuleCenter } from './components/RuleCenter';
@@ -108,7 +109,12 @@ export default function App() {
             )}
           </>
         )}
-        {activeCenter !== 'redact' && (
+        {activeCenter === 'calc_dev' && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <CalcDevCenter tool={activeTool} />
+          </div>
+        )}
+        {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && (
           <CenterPlaceholder center={centerMeta} toolCount={tools.length} />
         )}
       </main>
