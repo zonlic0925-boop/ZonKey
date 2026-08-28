@@ -1,10 +1,10 @@
-import React, { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { FileListDrawer, FileItem } from './FileListDrawer'
 import { CanvasViewport } from './CanvasViewport'
 import { ExportSettingsPanel } from './ExportSettingsPanel'
 import { formatCandidateLabel } from '../lib/imageLayout'
 import { CandidateBox, PageInfo } from '../types'
-import { uploadPdfTwoPhase, useExportSettings, removePdfCandidate, applyRemovedCandidateFilter, rescanPdfCandidates } from '../lib/api'
+import { uploadPdfPreviewOnly, scanPdfCandidatesById, preloadPdfPageImages, useExportSettings, removePdfCandidate, applyRemovedCandidateFilter, rescanPdfCandidates, syncPdfCandidateBoxes } from '../lib/api'
 import { requestPdfRedaction, syncPdfAfterPreview } from '../lib/redactPreview'
 import { CandidateListPanel } from './CandidateListPanel'
 import { RedactActionBar } from './RedactActionBar'
@@ -22,8 +22,10 @@ interface DrawingFileData {
   candidates: CandidateBox[]
   pageCount: number
   scanning?: boolean
+  pagesLoading?: boolean
   removedCandidateIds: string[]
   downloadUrl?: string | null
+  pdfDownloadUrl?: string | null
 }
 
 function isDrawingCandidate(c: any): boolean {
@@ -54,7 +56,8 @@ function mapApiToDrawing(
   data: any,
   labels: { defaultText: string; enterpriseRule: string; manualText: string },
   scanning = false,
-  removedIds: string[] = []
+  removedIds: string[] = [],
+  pagesLoading = false
 ): DrawingFileData {
   const pages: PageInfo[] = (data.pages || []).map(mapApiPage)
 
@@ -86,7 +89,9 @@ function mapApiToDrawing(
     candidates,
     pageCount: data.page_count || pages.length,
     scanning,
+    pagesLoading,
     removedCandidateIds: [...removedIds],
+    pdfDownloadUrl: data.pdf_download_url ?? null,
   }
 }
 
@@ -108,11 +113,16 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'before' | 'after'>('before')
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewSyncing, setPreviewSyncing] = useState(false)
   const [isBatchProcessing, setIsBatchProcessing] = useState(false)
   const [undoStack, setUndoStack] = useState<CandidateBox[][]>([])
   const [redoStack, setRedoStack] = useState<CandidateBox[][]>([])
+  const fileDataMapRef = useRef(fileDataMap)
+  useEffect(() => {
+    fileDataMapRef.current = fileDataMap
+  }, [fileDataMap])
 
   const activeData = activeFileId ? fileDataMap[activeFileId] : null
   const candidates = activeData?.candidates ?? []
@@ -122,6 +132,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
   const afterPageInfo = afterPages?.find((p) => p.page_num === currentPage) ?? null
   const totalPages = activeData?.pageCount ?? 1
   const isScanning = activeData?.scanning ?? false
+  const isPagesLoading = activeData?.pagesLoading ?? false
 
   const updateCandidates = useCallback(
     (fileId: string, updater: (prev: CandidateBox[]) => CandidateBox[]) => {
@@ -144,68 +155,98 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
     [fileDataMap]
   )
 
-  const scanFile = async (file: File, localId: string) => {
+  /** 阶段一：上传预览并等待全部页面加载（不触发识别） */
+  const loadFilePreview = async (file: File, localId: string): Promise<string | null> => {
     if (backendOnline === false) {
       onNotify(t('drawing.backendOffline'), 'error')
       setFiles((prev) => prev.filter((f) => f.id !== localId))
-      return
+      return null
     }
 
-    setPreviewMode('before')
-    setDownloadUrl(null)
+    setFiles((prev) =>
+      prev.map((f) => (f.id === localId ? { ...f, status: 'loading' as const } : f))
+    )
+
+    try {
+      const preview = await uploadPdfPreviewOnly(file, 'drawing')
+      const mapped = mapApiToDrawing(preview, labels, false, [], true)
+      setFileDataMap((prev) => ({ ...prev, [localId]: mapped }))
+      setActiveFileId((prev) => {
+        if (prev === null) {
+          setCurrentPage(1)
+          return localId
+        }
+        return prev
+      })
+      onNotify(t('drawing.pagesLoading', { filename: file.name }), 'info')
+
+      await preloadPdfPageImages(preview.pages || [])
+      setFileDataMap((prev) => {
+        const cur = prev[localId]
+        if (!cur) return prev
+        return { ...prev, [localId]: { ...cur, pagesLoading: false } }
+      })
+      onNotify(t('drawing.pagesReadyScan', { filename: file.name }), 'info')
+      return String(preview.file_id || '')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('drawing.scanFailed')
+      setFiles((prev) =>
+        prev.map((f) => (f.id === localId ? { ...f, status: 'error' as const, matchCount: 0 } : f))
+      )
+      onNotify(msg, 'error')
+      return null
+    }
+  }
+
+  /** 阶段二：对已加载图纸执行识别（不切换当前选中文件） */
+  const scanLoadedFile = async (file: File, localId: string, serverFileId: string) => {
     setFiles((prev) =>
       prev.map((f) => (f.id === localId ? { ...f, status: 'scanning' as const } : f))
     )
-
-    let previewLoaded = false
+    setFileDataMap((prev) => {
+      const cur = prev[localId]
+      if (!cur) return prev
+      return { ...prev, [localId]: { ...cur, scanning: true, pagesLoading: false } }
+    })
 
     try {
-      const result = await uploadPdfTwoPhase(
-        file,
-        'drawing',
-        (preview) => {
-          previewLoaded = true
-          const mapped = mapApiToDrawing(preview, labels, true, [])
-          setFileDataMap((prev) => ({ ...prev, [localId]: mapped }))
-          setActiveFileId(localId)
-          setCurrentPage(1)
-          onNotify(t('drawing.previewLoading', { filename: file.name }), 'info')
-        },
-        600000
-      )
-
+      const scan = await scanPdfCandidatesById(serverFileId, 600000)
       let matchCount = 0
       setFileDataMap((prevMap) => {
         const prev = prevMap[localId]
-        const removedIds = prev?.removedCandidateIds ?? []
-        const mapped = mapApiToDrawing(result, labels, false, removedIds)
-        mapped.afterPages = prev?.afterPages ?? null
+        if (!prev) return prevMap
+        const removedIds = prev.removedCandidateIds ?? []
+        const mapped = mapApiToDrawing(
+          {
+            file_id: serverFileId,
+            pages: prev.pages,
+            page_count: prev.pageCount,
+            candidates: scan.candidates,
+            total_hits: scan.total_hits,
+          },
+          labels,
+          false,
+          removedIds
+        )
+        mapped.afterPages = prev.afterPages ?? null
         matchCount = mapped.candidates.length
         return { ...prevMap, [localId]: mapped }
       })
       setFiles((prev) =>
         prev.map((f) =>
-          f.id === localId
-            ? { ...f, status: 'ready' as const, matchCount }
-            : f
+          f.id === localId ? { ...f, status: 'ready' as const, matchCount } : f
         )
       )
       onNotify(t('drawing.scanComplete', { filename: file.name, count: matchCount }), 'success')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('drawing.scanFailed')
       setFiles((prev) =>
-        prev.map((f) =>
-          f.id === localId
-            ? { ...f, status: previewLoaded ? ('ready' as const) : ('error' as const), matchCount: 0 }
-            : f
-        )
+        prev.map((f) => (f.id === localId ? { ...f, status: 'ready' as const, matchCount: 0 } : f))
       )
-      if (previewLoaded) {
-        setFileDataMap((prev) =>
-          prev[localId] ? { ...prev, [localId]: { ...prev[localId], scanning: false } } : prev
-        )
-      }
-      onNotify(previewLoaded ? t('drawing.previewScanFailed', { message: msg }) : msg, 'error')
+      setFileDataMap((prev) =>
+        prev[localId] ? { ...prev, [localId]: { ...prev[localId], scanning: false } } : prev
+      )
+      onNotify(t('drawing.previewScanFailed', { message: msg }), 'error')
     }
   }
 
@@ -217,13 +258,40 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
       onNotify(t('drawing.pdfOnly'), 'error')
       return
     }
-    for (const file of pdfs) {
-      const localId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-      setFiles((prev) => [
-        ...prev,
-        { id: localId, name: file.name, path: file.name, size: file.size, status: 'idle' },
-      ])
-      await scanFile(file, localId)
+
+    const queue = pdfs.map((file) => ({
+      file,
+      localId: `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    }))
+
+    setFiles((prev) => [
+      ...prev,
+      ...queue.map(({ file, localId }) => ({
+        id: localId,
+        name: file.name,
+        path: file.name,
+        size: file.size,
+        status: 'idle' as const,
+      })),
+    ])
+
+    setActiveFileId((prev) => {
+      if (prev === null) {
+        setPreviewMode('before')
+        setDownloadUrl(null)
+        setPdfDownloadUrl(null)
+      }
+      return prev
+    })
+
+    const loaded: Array<{ file: File; localId: string; serverFileId: string }> = []
+    for (const { file, localId } of queue) {
+      const serverFileId = await loadFilePreview(file, localId)
+      if (serverFileId) loaded.push({ file, localId, serverFileId })
+    }
+
+    for (const { file, localId, serverFileId } of loaded) {
+      await scanLoadedFile(file, localId, serverFileId)
     }
   }
 
@@ -247,10 +315,12 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             ...(prev[localId] ?? data),
             afterPages: synced.afterPages,
             downloadUrl: synced.downloadUrl,
+            pdfDownloadUrl: synced.pdfDownloadUrl,
           },
         }))
         setPreviewMode(synced.previewMode)
         setDownloadUrl(synced.downloadUrl)
+        setPdfDownloadUrl(synced.pdfDownloadUrl)
         if (synced.result) {
           setFiles((prev) =>
             prev.map((f) =>
@@ -339,28 +409,57 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
       is_selected: true,
       is_manual: true,
     }
-    updateCandidates(activeFileId, (prev) => [...prev, newBox])
+    const data = fileDataMapRef.current[activeFileId]
+    const nextCandidates = [...(data?.candidates ?? []), newBox]
+    updateCandidates(activeFileId, () => nextCandidates)
     setSelectedCandidateId(newBox.id)
+    if (data?.serverFileId) {
+      void syncPdfCandidateBoxes(data.serverFileId, nextCandidates)
+    }
     onNotify(t('drawing.manualBoxAdded'), 'info')
   }
 
+  const handleUpdateCandidateBbox = async (id: string, bbox: [number, number, number, number]) => {
+    if (!activeFileId) return
+    const data = fileDataMapRef.current[activeFileId]
+    if (!data) return
+    const nextCandidates = data.candidates.map((c) => (c.id === id ? { ...c, bbox } : c))
+    const nextData = { ...data, candidates: nextCandidates }
+    fileDataMapRef.current = { ...fileDataMapRef.current, [activeFileId]: nextData }
+    updateCandidates(activeFileId, () => nextCandidates)
+    if (data.serverFileId) {
+      await syncPdfCandidateBoxes(data.serverFileId, nextCandidates)
+    }
+    await syncPreviewForFile(activeFileId, nextCandidates, !!data.afterPages?.length)
+  }
+
   const executeRedact = async (localId: string) => {
-    const data = fileDataMap[localId]
+    let data = fileDataMapRef.current[localId]
     if (!data) return
 
-    const { result, downloadUrl: dl, afterPages } = await requestPdfRedaction({
+    const sourceName = files.find((f) => f.id === localId)?.name ?? ''
+    const outputFilename = sourceName
+      ? `${sourceName.replace(/\.pdf$/i, '')}_desensitized.pdf`
+      : undefined
+
+    await syncPdfCandidateBoxes(data.serverFileId, data.candidates)
+    data = fileDataMapRef.current[localId] ?? data
+
+    const { result, downloadUrl: dl, pdfDownloadUrl: pdfDl, afterPages } = await requestPdfRedaction({
       fileId: data.serverFileId,
       candidates: data.candidates,
       outputDir: exportSettings.outputDir || undefined,
       exportAsZip: exportSettings.exportAsZip,
+      outputFilename,
     })
 
     setFileDataMap((prev) => ({
       ...prev,
-      [localId]: { ...data, afterPages, downloadUrl: dl },
+      [localId]: { ...data, afterPages, downloadUrl: dl, pdfDownloadUrl: pdfDl },
     }))
 
     setDownloadUrl(dl)
+    setPdfDownloadUrl(pdfDl)
     setPreviewMode('after')
     setFiles((prev) =>
       prev.map((f) =>
@@ -405,6 +504,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
 
     setPreviewMode('before')
     setDownloadUrl(null)
+    setPdfDownloadUrl(null)
     setSelectedCandidateId(null)
     setUndoStack([])
     setRedoStack([])
@@ -482,6 +582,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
     setSelectedCandidateId(null)
     setPreviewMode(data?.afterPages?.length ? 'after' : 'before')
     setDownloadUrl(data?.downloadUrl ?? null)
+    setPdfDownloadUrl(data?.pdfDownloadUrl ?? null)
     setUndoStack([])
     setRedoStack([])
   }
@@ -533,11 +634,22 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             onAddFiles={() => fileInputRef.current?.click()}
             onRemoveFile={handleRemoveFile}
             onBatchProcess={async () => {
-              const ready = files.filter((f) => f.status === 'ready' && (fileDataMap[f.id]?.candidates.filter(c => c.is_selected).length ?? 0) > 0)
+              const ready = files.filter((f) => {
+                const data = fileDataMap[f.id]
+                const selectedCount = data?.candidates.filter((c) => c.is_selected).length ?? 0
+                return (f.status === 'ready' || f.status === 'done') && selectedCount > 0 && data?.serverFileId
+              })
               if (!ready.length) { onNotify(t('drawing.noBatchFiles'), 'info'); return }
               setIsBatchProcessing(true)
               for (const f of ready) {
-                try { await executeRedact(f.id) } catch { onNotify(t('drawing.batchFileFailed', { filename: f.name }), 'error') }
+                try {
+                  await executeRedact(f.id)
+                  if (activeFileId === f.id) {
+                    setPreviewMode('after')
+                  }
+                } catch {
+                  onNotify(t('drawing.batchFileFailed', { filename: f.name }), 'error')
+                }
               }
               setIsBatchProcessing(false)
               onNotify(t('drawing.batchComplete'), 'success')
@@ -559,7 +671,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             onDelete={(id) => void handleDeleteCandidate(id)}
             scanning={isScanning && candidates.length === 0}
             detecting={isScanning}
-            emptyHint={pages.length > 0 && !isScanning ? t('drawing.noDrawingHits') : t('drawing.waitingScan')}
+            emptyHint={pages.length > 0 && !isScanning && !isPagesLoading ? t('drawing.noDrawingHits') : t('drawing.waitingScan')}
           />
           <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-visible">
           <div className="p-3 bg-white border-t-2 border-mem-ink/15 space-y-3">
@@ -574,6 +686,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
               onRescan={handleRescan}
               canRescan={!!activeData?.serverFileId && pages.length > 0}
               downloadUrl={downloadUrl}
+              pdfDownloadUrl={pdfDownloadUrl}
               downloadLabel={exportLabel}
               onNotify={onNotify}
             />
@@ -607,6 +720,10 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
           }}
           onDeleteCandidate={handleDeleteCandidate}
           onAddManualBox={handleAddManualBox}
+          onBeginCandidateEdit={() => {
+            if (activeFileId) pushHistory(activeFileId)
+          }}
+          onUpdateCandidateBbox={handleUpdateCandidateBbox}
           onSelectAll={() => {
             if (!activeFileId) return
             const data = fileDataMap[activeFileId]
@@ -651,8 +768,10 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
           onExecuteRedact={handleExecuteRedact}
           isProcessing={isProcessing}
           isScanning={isScanning}
+          pagesLoading={isPagesLoading}
           previewSyncing={previewSyncing}
           downloadUrl={downloadUrl}
+          pdfDownloadUrl={pdfDownloadUrl}
           downloadLabel={exportLabel}
           onNotify={onNotify}
         />

@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import { CanvasViewport } from './CanvasViewport';
 import { ExportSettingsPanel } from './ExportSettingsPanel';
 import { CandidateListPanel } from './CandidateListPanel';
 import { RedactActionBar } from './RedactActionBar';
 import { CandidateBox, PageInfo } from '../types';
-import { uploadPdfTwoPhase, useExportSettings, removePdfCandidate, applyRemovedCandidateFilter, rescanPdfCandidates } from '../lib/api';
+import { uploadPdfTwoPhase, useExportSettings, removePdfCandidate, applyRemovedCandidateFilter, rescanPdfCandidates, syncPdfCandidateBoxes } from '../lib/api';
 import { requestPdfRedaction, syncPdfAfterPreview } from '../lib/redactPreview';
 import { APP_NAME } from '../lib/brand';
 import { useI18n } from '../i18n';
@@ -31,6 +31,7 @@ function mapCandidates(raw: any[], labels: { defaultText: string; piiRule: strin
     bbox: [c.x, c.y, c.x + c.width, c.y + c.height] as [number, number, number, number],
     text: c.text || labels.defaultText,
     rule_name: c.text || (c.type === 'pii' ? labels.piiRule : labels.sensitiveWord),
+    matched_terms: Array.isArray(c.matched_terms) ? c.matched_terms.filter(Boolean) : [],
     channel: c.type === 'pii' ? 'ocr' : 'vector',
     is_selected: c.selected !== false,
     confidence: c.confidence,
@@ -50,6 +51,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
   };
   const [scanning, setScanning] = useState(false);
   const [detecting, setDetecting] = useState(false);
+  const [pagesLoading, setPagesLoading] = useState(false);
   const [fileId, setFileId] = useState<string | null>(null);
   const [filename, setFilename] = useState('');
   const [pages, setPages] = useState<PageInfo[]>([]);
@@ -61,9 +63,14 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewSyncing, setPreviewSyncing] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<CandidateBox[][]>([]);
   const [redoStack, setRedoStack] = useState<CandidateBox[][]>([]);
   const [removedCandidateIds, setRemovedCandidateIds] = useState<string[]>([]);
+  const candidatesRef = useRef(candidates);
+  useEffect(() => {
+    candidatesRef.current = candidates;
+  }, [candidates]);
 
   const pageInfo = pages.find((p) => p.page_num === currentPage) ?? null;
   const afterPageInfo = afterPages?.find((p) => p.page_num === currentPage) ?? null;
@@ -84,6 +91,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
     const selected = files[0];
     setScanning(true);
     setDetecting(false);
+    setPagesLoading(false);
     setPreviewMode('before');
     setDownloadUrl(null);
     setAfterPages(null);
@@ -101,10 +109,15 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
           setFilename(preview.filename);
           setPages(mapPages(preview.pages));
           setCurrentPage(1);
-          setDetecting(true);
-          onNotify(t('docPdf.previewLoading', { filename: selected.name }), 'info');
+          setPagesLoading(true);
+          onNotify(t('docPdf.pagesLoading', { filename: selected.name }), 'info');
         },
-        120000
+        120000,
+        () => {
+          setPagesLoading(false);
+          setDetecting(true);
+          onNotify(t('docPdf.pagesReadyScan', { filename: selected.name }), 'info');
+        }
       );
       setRemovedCandidateIds((removed) => {
         const mapped = applyRemovedCandidateFilter(mapCandidates(data.candidates, docLabels), removed);
@@ -117,6 +130,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
     } finally {
       setScanning(false);
       setDetecting(false);
+      setPagesLoading(false);
     }
     e.target.value = '';
   };
@@ -136,6 +150,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
       setAfterPages(synced.afterPages);
       setPreviewMode(synced.previewMode);
       setDownloadUrl(synced.downloadUrl);
+      setPdfDownloadUrl(synced.pdfDownloadUrl);
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'NO_SELECTION') {
         setAfterPages(null);
@@ -189,23 +204,35 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
       is_selected: true,
       is_manual: true,
     };
-    setCandidates((prev) => [...prev, box]);
+    const nextCandidates = [...candidates, box];
+    setCandidates(nextCandidates);
     setSelectedCandidateId(box.id);
+    if (fileId) void syncPdfCandidateBoxes(fileId, nextCandidates);
     onNotify(t('docPdf.manualBoxAdded'), 'info');
+  };
+
+  const handleUpdateCandidateBbox = async (id: string, bbox: [number, number, number, number]) => {
+    const nextCandidates = candidatesRef.current.map((c) => (c.id === id ? { ...c, bbox } : c));
+    candidatesRef.current = nextCandidates;
+    setCandidates(nextCandidates);
+    if (fileId) await syncPdfCandidateBoxes(fileId, nextCandidates);
+    void syncPreview(nextCandidates, !!afterPages?.length);
   };
 
   const handleExecuteRedact = async () => {
     if (!fileId) return;
-    const selected = candidates.filter((c) => c.is_selected);
+    const latest = candidatesRef.current;
+    const selected = latest.filter((c) => c.is_selected);
     if (!selected.length) {
       onNotify(t('docPdf.selectAtLeastOne'), 'error');
       return;
     }
     setIsProcessing(true);
     try {
-      const { result, downloadUrl: dl, afterPages: nextAfter } = await requestPdfRedaction({
+      await syncPdfCandidateBoxes(fileId, latest);
+      const { result, downloadUrl: dl, pdfDownloadUrl: pdfDl, afterPages: nextAfter } = await requestPdfRedaction({
         fileId,
-        candidates,
+        candidates: candidatesRef.current,
         outputDir: exportSettings.outputDir || undefined,
         exportAsZip: exportSettings.exportAsZip,
       });
@@ -213,6 +240,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
       setAfterPages(nextAfter);
       setPreviewMode('after');
       setDownloadUrl(dl);
+      setPdfDownloadUrl(pdfDl);
       onNotify(t('docPdf.redactComplete', { count: result.redacted_boxes_count }), 'success');
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'NO_SELECTION') {
@@ -291,6 +319,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
             onRescan={handleRescan}
             canRescan={!!fileId && pages.length > 0}
             downloadUrl={downloadUrl}
+            pdfDownloadUrl={pdfDownloadUrl}
             downloadLabel={exportLabel}
             onNotify={onNotify}
           />
@@ -324,6 +353,8 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
         }}
         onDeleteCandidate={handleDeleteCandidate}
         onAddManualBox={handleAddManualBox}
+        onBeginCandidateEdit={pushHistory}
+        onUpdateCandidateBbox={handleUpdateCandidateBbox}
         onSelectAll={() => {
           pushHistory();
           setCandidates((prev) => prev.map((c) => ({ ...c, is_selected: true })));
@@ -351,8 +382,10 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
         onExecuteRedact={handleExecuteRedact}
         isProcessing={isProcessing}
         isScanning={detecting}
+        pagesLoading={pagesLoading}
         previewSyncing={previewSyncing}
         downloadUrl={downloadUrl}
+        pdfDownloadUrl={pdfDownloadUrl}
         downloadLabel={exportLabel}
         onNotify={onNotify}
       />

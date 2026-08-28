@@ -74,7 +74,14 @@ def _run_uvicorn(bind_host: str) -> None:
 def _open_pywebview(title: str) -> None:
     import webview
 
-    webview.create_window(title, URL, width=1440, height=900, min_size=(1024, 720))
+    # 窗口/任务栏图标由 PyInstaller 打包时写入 EXE；pywebview 的 create_window 不支持 icon 参数
+    webview.create_window(
+        title,
+        URL,
+        width=1440,
+        height=900,
+        min_size=(1024, 720),
+    )
     webview.start()
 
 

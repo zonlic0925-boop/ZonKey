@@ -14,7 +14,7 @@ export interface FileItem {
   name: string
   path: string
   size: number
-  status: 'idle' | 'scanning' | 'ready' | 'done' | 'error'
+  status: 'idle' | 'loading' | 'scanning' | 'ready' | 'done' | 'error'
   matchCount?: number
   outputPath?: string
 }
@@ -100,6 +100,9 @@ export const FileListDrawer: React.FC<FileListDrawerProps> = ({
 
                 <div className="flex items-center justify-between text-[11px] text-mem-ink/50">
                   <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  {file.status === 'loading' && (
+                    <span className="text-mem-teal animate-pulse">{t('fileList.statusLoading')}</span>
+                  )}
                   {file.status === 'scanning' && (
                     <span className="text-mem-coral animate-pulse">{t('fileList.statusScanning')}</span>
                   )}

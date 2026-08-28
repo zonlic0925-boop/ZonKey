@@ -177,34 +177,103 @@ export async function saveOutputFileAs(
   return { cancelled: data.cancelled, savedPath: data.saved_path }
 }
 
-/** 两阶段 PDF 上传：先预览、后检测 */
-export async function uploadPdfTwoPhase(
+export async function openOutputFile(outputDir: string | undefined, filename: string): Promise<void> {
+  await apiFetch<{ status: string; path: string }>(
+    '/api/export/open-file',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, dir: outputDir || null }),
+    },
+    30000
+  )
+}
+
+/** 等待所有页面预览图在浏览器中加载完成 */
+export async function preloadPdfPageImages(
+  pages: Array<{ image_url: string }>
+): Promise<void> {
+  const urls = (pages || []).map((p) => p.image_url).filter(Boolean)
+  if (!urls.length) return
+  await Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve, reject) => {
+          const img = new Image()
+          img.onload = () => resolve()
+          img.onerror = () => reject(new Error('页面预览加载失败'))
+          img.src = url
+        })
+    )
+  )
+}
+
+/** 仅上传并返回页面预览（不触发 OCR） */
+export async function uploadPdfPreviewOnly(
   file: File,
-  mode: 'drawing' | 'document',
-  onPreview: (preview: any) => void,
-  timeoutScanMs = 600000
+  mode: 'drawing' | 'document'
 ): Promise<any> {
   const previewForm = new FormData()
   previewForm.append('file', file)
   previewForm.append('mode', mode)
+  return apiFetch<any>('/api/pdf/upload-preview', { method: 'POST', body: previewForm }, 600000)
+}
 
-  const preview = await apiFetch<any>(
-    '/api/pdf/upload-preview',
-    { method: 'POST', body: previewForm },
-    60000
-  )
+/** 对已上传 PDF 执行敏感区域识别 */
+export async function scanPdfCandidatesById(fileId: string, timeoutMs = 600000): Promise<any> {
+  const scanForm = new FormData()
+  scanForm.append('file_id', fileId)
+  return apiFetch<any>('/api/pdf/scan-candidates', { method: 'POST', body: scanForm }, timeoutMs)
+}
+
+/** 两阶段 PDF 上传：先预览、等待全部页面加载、再从第 1 页起识别 */
+export async function uploadPdfTwoPhase(
+  file: File,
+  mode: 'drawing' | 'document',
+  onPreview: (preview: any) => void,
+  timeoutScanMs = 600000,
+  onPagesLoaded?: () => void,
+  onScanStart?: () => void
+): Promise<any> {
+  const preview = await uploadPdfPreviewOnly(file, mode)
   onPreview(preview)
 
-  const scanForm = new FormData()
-  scanForm.append('file_id', preview.file_id)
+  await preloadPdfPageImages(preview.pages || [])
+  onPagesLoaded?.()
+  onScanStart?.()
 
-  const scan = await apiFetch<any>(
-    '/api/pdf/scan-candidates',
-    { method: 'POST', body: scanForm },
-    timeoutScanMs
-  )
+  const scan = await scanPdfCandidatesById(preview.file_id, timeoutScanMs)
 
   return { ...preview, candidates: scan.candidates, total_hits: scan.total_hits }
+}
+
+export async function syncPdfCandidateBoxes(
+  fileId: string,
+  candidates: Array<{
+    id: string
+    page_num: number
+    bbox: [number, number, number, number]
+    is_selected?: boolean
+    matched_terms?: string[]
+  }>
+) {
+  if (!fileId) return
+  await apiFetch('/api/pdf/update-candidate-boxes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      file_id: fileId,
+      boxes: candidates.map((c) => ({
+        id: c.id,
+        page_index: c.page_num - 1,
+        x: c.bbox[0],
+        y: c.bbox[1],
+        width: c.bbox[2] - c.bbox[0],
+        height: c.bbox[3] - c.bbox[1],
+        matched_terms: (c.matched_terms || []).filter(Boolean),
+      })),
+    }),
+  })
 }
 
 /** 对已上传 PDF 重新执行敏感区域识别（file_id 仍有效时） */

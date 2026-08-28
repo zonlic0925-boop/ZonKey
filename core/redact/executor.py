@@ -82,6 +82,47 @@ def export_to_zip(
     return str(zip_p)
 
 
+def _field_value_matches_purged(val: str, values: set[str]) -> bool:
+    if not val or not values:
+        return False
+    if val in values:
+        return True
+    for candidate in values:
+        if not candidate or candidate.startswith("["):
+            continue
+        if len(candidate) >= 4 and (candidate in val or val in candidate):
+            return True
+    return False
+
+
+def _purge_form_widgets(
+    page: fitz.Page,
+    rects: list[fitz.Rect],
+    matched_values: Iterable[str] | None = None,
+) -> None:
+    """删除与抹除框相交、或字段值命中已抹除内容的 AcroForm 控件。
+
+    行政公文（签证表、登记表等）常用可填写 PDF；apply_redactions 只处理
+    页面内容流，不会清除 widget.field_value，导致脱敏后文本层仍可搜索/复制。
+    同一敏感值可能出现在多个表单控件（重复字段），需按值同步清除。
+    """
+    if not rects and not matched_values:
+        return
+    values = {str(v).strip() for v in (matched_values or []) if str(v).strip()}
+    for widget in list(page.widgets() or []):
+        wr = widget.rect
+        val = str(widget.field_value or "").strip()
+        should_delete = bool(rects) and any(wr.intersects(r) for r in rects)
+        if not should_delete and _field_value_matches_purged(val, values):
+            should_delete = True
+        if not should_delete:
+            continue
+        try:
+            page.delete_widget(widget)
+        except Exception as exc:  # noqa: BLE001
+            raise RedactError(page.number, f"删除表单字段失败: {exc}") from exc
+
+
 def _merge_overlapping(boxes: list[Box]) -> list[Box]:
     merged: list[Box] = []
     for box in boxes:
@@ -114,7 +155,8 @@ def redact_pdf(
                 if page_index < 0 or page_index >= doc.page_count:
                     raise RedactError(page_index, f"页号越界: {page_index}")
                 page = doc[page_index]
-                
+                page_redact_rects: list[fitz.Rect] = []
+
                 # 分离普通文字/图片抹除框与需抹除矢量图形（Logo）的抹除框
                 normal_boxes = [rb.box for rb in rboxes if not rb.redact_graphics]
                 graphic_boxes = [rb.box for rb in rboxes if rb.redact_graphics]
@@ -122,6 +164,7 @@ def redact_pdf(
                 # 处理需要擦除矢量线条的 Logo 框
                 if graphic_boxes:
                     g_rects = [fitz.Rect(b.x0, b.y0, b.x1, b.y1) for b in _merge_overlapping(graphic_boxes)]
+                    page_redact_rects.extend(g_rects)
                     for r in g_rects:
                         page.add_redact_annot(r, fill=FILL[mode])
                     # 默认 PyMuPDF apply_redactions 参数: graphics=2 (或 1=remove, 0=keep)
@@ -145,6 +188,7 @@ def redact_pdf(
                         if ix1 > ix0 and iy1 > iy0:
                             inset_rects.append(fitz.Rect(ix0, iy0, ix1, iy1))
                         full_rects.append(fitz.Rect(box.x0, box.y0, box.x1, box.y1))
+                    page_redact_rects.extend(full_rects)
                     if inset_rects:
                         # 第一阶段：字形删除（inset 矩形，避开格线，graphics 保留线画）
                         for r in inset_rects:
@@ -164,6 +208,15 @@ def redact_pdf(
                             graphics=fitz.PDF_REDACT_LINE_ART_NONE,
                         )
                         _drop_stamp_annots(page, full_rects)
+
+                # 行政公文 AcroForm：redaction 后仍需清除相交表单控件
+                matched_values = [
+                    term
+                    for rb in rboxes
+                    for term in (rb.terms or [])
+                    if term and not term.startswith("[") and term not in ("人工框选", "人工调整", "敏感项")
+                ]
+                _purge_form_widgets(page, page_redact_rects, matched_values)
             doc.save(out, garbage=3, deflate=True)
         finally:
             doc.close()

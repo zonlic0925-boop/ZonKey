@@ -49,6 +49,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Generating ZonScale application icon...
+python scripts\generate_zonscale_icon.py
+if errorlevel 1 (
+    echo ERROR: icon generation failed.
+    pause
+    exit /b 1
+)
+
 echo Installing build deps...
 python -m pip install -q pyinstaller pywebview
 if errorlevel 1 (
@@ -78,6 +86,14 @@ echo Running release acceptance (generic rules, no vendor terms)...
 python scripts\release_acceptance.py --exe-dir dist\ZonScale
 if errorlevel 1 (
     echo ERROR: release acceptance failed.
+    pause
+    exit /b 1
+)
+
+echo Copying ZonScale icon sidecars (icon embedded by PyInstaller, not rcedit)...
+python scripts\apply_exe_icon.py
+if errorlevel 1 (
+    echo ERROR: EXE icon missing — ensure zonscale.ico exists and rebuild with PyInstaller.
     pause
     exit /b 1
 )

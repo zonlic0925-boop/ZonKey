@@ -123,6 +123,54 @@ class RuleEngine:
         discriminators = self.discriminator_tokens()
         return sorted(tokens & discriminators)
 
+    @staticmethod
+    def expand_match_in_text(page_text: str, matched: str) -> str:
+        """Extend regex hit with adjacent form suffixes, e.g. F764486 -> F764486(4)."""
+        if not matched or not page_text:
+            return matched
+        best = matched
+        for m in re.finditer(re.escape(matched), page_text):
+            start, end = m.start(), m.end()
+            if end < len(page_text) and page_text[end] == "(":
+                j = end + 1
+                while j < len(page_text) and page_text[j].isdigit():
+                    j += 1
+                if j < len(page_text) and page_text[j] == ")":
+                    end = j + 1
+            candidate = page_text[start:end]
+            if len(candidate) > len(best):
+                best = candidate
+        return best
+
+    def extract_match_values(self, text: str) -> tuple[list[str], str]:
+        """Return (matched_substrings, display_label) for OCR / preview labels."""
+        if not text:
+            return [], ""
+        values: list[str] = []
+        labels: list[str] = []
+        for term, pat in self._patterns:
+            if pat.search(text):
+                values.append(term)
+                labels.append(term)
+        for _start, _end, matched, name in self._iter_regex_spans(text):
+            expanded = self.expand_match_in_text(text, matched)
+            values.append(expanded)
+            labels.append(f"[{name}]")
+        if not values and self._fuzzy:
+            fuzzy = self._match_fuzzy(text)
+            values.extend(fuzzy)
+            labels.extend(fuzzy)
+        seen: set[str] = set()
+        uniq_values: list[str] = []
+        for v in values:
+            if v not in seen:
+                seen.add(v)
+                uniq_values.append(v)
+        if not uniq_values:
+            return [], ""
+        display = labels[0] if len(labels) == 1 else " / ".join(labels[:3])
+        return uniq_values, display
+
     def match(self, text: str) -> list[str]:
         if not text:
             return []

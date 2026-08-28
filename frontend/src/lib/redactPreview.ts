@@ -23,28 +23,31 @@ export function mapRedactedPages(raw: RedactPreviewResult['redacted_pages']): Pa
   }))
 }
 
+function buildBoxOverrides(candidates: CandidateBox[], selectedOnly = true) {
+  const pool = selectedOnly ? candidates.filter((c) => c.is_selected) : candidates
+  return pool.map((c) => ({
+    id: c.id,
+    page_index: c.page_num - 1,
+    x: Number(c.bbox[0].toFixed(2)),
+    y: Number(c.bbox[1].toFixed(2)),
+    width: Number((c.bbox[2] - c.bbox[0]).toFixed(2)),
+    height: Number((c.bbox[3] - c.bbox[1]).toFixed(2)),
+    matched_terms: (c.matched_terms || []).filter(Boolean),
+  }))
+}
+
 export async function requestPdfRedaction(args: {
   fileId: string
   candidates: CandidateBox[]
   outputDir?: string
   exportAsZip?: boolean
   mode?: 'redact' | 'blackout'
-}): Promise<{ result: RedactPreviewResult; downloadUrl: string; afterPages: PageInfo[] }> {
+  outputFilename?: string
+}): Promise<{ result: RedactPreviewResult; downloadUrl: string; pdfDownloadUrl: string; afterPages: PageInfo[] }> {
   const selected = args.candidates.filter((c) => c.is_selected)
   if (!selected.length) {
     throw new Error('NO_SELECTION')
   }
-
-  const manualBoxes = selected
-    .filter((c) => c.is_manual || c.id.startsWith('manual_'))
-    .map((c) => ({
-      id: c.id,
-      page_index: c.page_num - 1,
-      x: c.bbox[0],
-      y: c.bbox[1],
-      width: c.bbox[2] - c.bbox[0],
-      height: c.bbox[3] - c.bbox[1],
-    }))
 
   const result = await apiFetch<RedactPreviewResult>(
     '/api/pdf/execute-redaction',
@@ -55,17 +58,21 @@ export async function requestPdfRedaction(args: {
         file_id: args.fileId,
         selected_candidate_ids: selected.map((c) => c.id),
         mode: args.mode ?? 'redact',
-        manual_boxes: manualBoxes.length > 0 ? manualBoxes : undefined,
+        box_overrides: buildBoxOverrides(args.candidates, false),
         output_dir: args.outputDir || undefined,
         export_as_zip: args.exportAsZip,
+        output_filename: args.outputFilename,
       }),
     },
     300000
   )
 
+  const pdfName = result.output_path?.split(/[/\\]/).pop() || result.download_name
+
   return {
     result,
     downloadUrl: buildDownloadUrl(result.output_dir, result.download_name),
+    pdfDownloadUrl: buildDownloadUrl(result.output_dir, pdfName),
     afterPages: mapRedactedPages(result.redacted_pages),
   }
 }
@@ -80,19 +87,20 @@ export async function syncPdfAfterPreview(args: {
 }): Promise<{
   afterPages: PageInfo[] | null
   downloadUrl: string | null
+  pdfDownloadUrl: string | null
   previewMode: 'before' | 'after'
   result?: RedactPreviewResult
 }> {
   if (!args.hadAfterPreview) {
-    return { afterPages: null, downloadUrl: null, previewMode: 'before' }
+    return { afterPages: null, downloadUrl: null, pdfDownloadUrl: null, previewMode: 'before' }
   }
 
   const selected = args.candidates.filter((c) => c.is_selected)
   if (!selected.length) {
-    return { afterPages: null, downloadUrl: null, previewMode: 'before' }
+    return { afterPages: null, downloadUrl: null, pdfDownloadUrl: null, previewMode: 'before' }
   }
 
-  const { result, downloadUrl, afterPages } = await requestPdfRedaction({
+  const { result, downloadUrl, pdfDownloadUrl, afterPages } = await requestPdfRedaction({
     fileId: args.fileId,
     candidates: args.candidates,
     outputDir: args.outputDir,
@@ -102,6 +110,7 @@ export async function syncPdfAfterPreview(args: {
   return {
     afterPages,
     downloadUrl,
+    pdfDownloadUrl,
     previewMode: 'after',
     result,
   }

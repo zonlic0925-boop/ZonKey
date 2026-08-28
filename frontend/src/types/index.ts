@@ -15,6 +15,8 @@ export interface CandidateBox {
   bbox: [number, number, number, number] // [x0, y0, x1, y1] (pt)
   text: string
   rule_name: string
+  /** 实际敏感子串（护照号、电话等），供 AcroForm 按值清除 */
+  matched_terms?: string[]
   channel: 'vector' | 'ocr' | 'image' | 'manual'
   is_selected: boolean
   is_manual?: boolean

@@ -64,6 +64,8 @@ AUDIT_LOG_FILE = PROJECT_ROOT / "audit_logs.json"
 SCAN_MODE_CACHE: Dict[str, str] = {}
 # 检测结果缓存：file_id -> candidates list（执行脱敏时不再重跑 OCR）
 SCAN_CANDIDATES_CACHE: Dict[str, list] = {}
+# 原始上传文件名：file_id -> 用户文件名（用于 desensitized 输出命名）
+UPLOAD_FILENAME_CACHE: Dict[str, str] = {}
 
 # OCR/检测线程池：避免阻塞其他 API（规则加载、状态查询等）
 _SCAN_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pdf-scan")
@@ -108,15 +110,22 @@ class ManualBoxInput(BaseModel):
     y: float
     width: float
     height: float
+    matched_terms: Optional[List[str]] = None
 
 class RedactExecuteRequest(BaseModel):
     file_id: str
     selected_candidate_ids: List[str]
     mode: str = "redact"  # "redact" | "blackout"
     output_filename: Optional[str] = None
-    manual_boxes: Optional[List[ManualBoxInput]] = None
+    manual_boxes: Optional[List[ManualBoxInput]] = None  # 兼容旧前端
+    box_overrides: Optional[List[ManualBoxInput]] = None
     output_dir: Optional[str] = None
     export_as_zip: bool = False
+
+
+class OpenFileRequest(BaseModel):
+    filename: str
+    dir: Optional[str] = None
 
 
 class ExportSettingsModel(BaseModel):
@@ -161,6 +170,11 @@ class DocumentRulesSaveRequest(BaseModel):
 class RemoveCandidateRequest(BaseModel):
     file_id: str
     candidate_id: str
+
+
+class UpdateCandidateBoxesRequest(BaseModel):
+    file_id: str
+    boxes: List[ManualBoxInput]
 
 # ----------------- 1. 系统与状态接口 -----------------
 
@@ -236,38 +250,82 @@ def _render_pdf_file_pages(pdf_path: Path, dpi: int = 120) -> list[dict[str, Any
 def _build_redact_boxes_from_selection(
     file_id: str,
     selected: set[str],
-    manual_boxes: list[ManualBoxInput] | None,
+    box_overrides: list[ManualBoxInput] | None,
 ) -> list[RedactBox]:
-    """根据前端选中 ID + 缓存候选框构建抹除框（不重新 OCR）。"""
+    """根据选中 ID 构建抹除框；坐标以 box_overrides 为准，否则读扫描缓存。"""
+    if box_overrides:
+        _apply_box_overrides_to_cache(file_id, box_overrides)
+
+    override_map = {mb.id: mb for mb in (box_overrides or [])}
+    cached = {c.get("id"): c for c in SCAN_CANDIDATES_CACHE.get(file_id, [])}
     redact_boxes: list[RedactBox] = []
-    cached = SCAN_CANDIDATES_CACHE.get(file_id, [])
-    manual_ids = {mb.id for mb in (manual_boxes or [])}
 
-    for cand in cached:
-        if cand.get("id") not in selected:
+    for cid in selected:
+        mb = override_map.get(cid)
+        cand = cached.get(cid)
+        if mb:
+            page_index = mb.page_index
+            x, y, w, h = mb.x, mb.y, mb.width, mb.height
+        elif cand:
+            page_index = cand["page_index"]
+            x, y, w, h = cand["x"], cand["y"], cand["width"], cand["height"]
+        else:
             continue
-        if cand.get("id") in manual_ids:
-            continue
+        if cid.startswith("manual_"):
+            box_terms = ["人工框选"]
+        elif mb and mb.matched_terms:
+            box_terms = [str(t) for t in mb.matched_terms if str(t).strip()]
+        elif cand:
+            matched = [str(t) for t in (cand.get("matched_terms") or []) if str(t).strip()]
+            box_terms = matched if matched else [cand.get("text") or "敏感项"]
+        else:
+            box_terms = ["人工调整"]
         redact_boxes.append(RedactBox(
-            page_index=cand["page_index"],
-            box=Box(cand["x"], cand["y"], cand["x"] + cand["width"], cand["y"] + cand["height"]),
+            page_index=page_index,
+            box=Box(x, y, x + w, y + h),
             boxed=True,
-            manual_required=cand.get("manual_required", False),
-            terms=[cand.get("text") or "敏感项"],
+            manual_required=cid.startswith("manual_") or bool(cand and cand.get("manual_required")),
+            terms=box_terms,
+            channel_labels=["MANUAL"] if cid.startswith("manual_") else (cand or {}).get("channel_labels", []),
         ))
-
-    if manual_boxes:
-        for mb in manual_boxes:
-            if mb.id in selected:
-                redact_boxes.append(RedactBox(
-                    page_index=mb.page_index,
-                    box=Box(mb.x, mb.y, mb.x + mb.width, mb.y + mb.height),
-                    boxed=True,
-                    manual_required=False,
-                    terms=["人工框选"],
-                    channel_labels=["MANUAL"],
-                ))
     return redact_boxes
+
+
+def _apply_box_overrides_to_cache(file_id: str, boxes: list[ManualBoxInput]) -> None:
+    """将前端调整后的框坐标同步到扫描缓存，供后续脱敏与预览使用。"""
+    cached = list(SCAN_CANDIDATES_CACHE.get(file_id, []))
+    by_id = {c.get("id"): c for c in cached}
+    for mb in boxes:
+        existing = by_id.get(mb.id)
+        if existing:
+            existing["x"] = mb.x
+            existing["y"] = mb.y
+            existing["width"] = mb.width
+            existing["height"] = mb.height
+            existing["user_adjusted"] = True
+            if mb.matched_terms:
+                existing["matched_terms"] = [str(t) for t in mb.matched_terms if str(t).strip()]
+            continue
+        is_manual = mb.id.startswith("manual_")
+        entry: dict[str, Any] = {
+            "id": mb.id,
+            "page_index": mb.page_index,
+            "x": mb.x,
+            "y": mb.y,
+            "width": mb.width,
+            "height": mb.height,
+            "text": "人工框选" if is_manual else "人工调整",
+            "type": "drawing",
+            "confidence": 1.0,
+            "selected": True,
+            "boxed": True,
+            "manual_required": is_manual,
+            "user_adjusted": True,
+        }
+        if mb.matched_terms:
+            entry["matched_terms"] = [str(t) for t in mb.matched_terms if str(t).strip()]
+        by_id[mb.id] = entry
+    SCAN_CANDIDATES_CACHE[file_id] = list(by_id.values())
 
 
 @app.get("/api/export/settings")
@@ -319,6 +377,24 @@ def save_export_file_as_api(req: SaveAsRequest):
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest_path)
     return {"cancelled": False, "saved_path": str(dest_path.resolve())}
+
+
+@app.post("/api/export/open-file")
+def open_output_file_api(req: OpenFileRequest):
+    """用系统默认程序打开已导出的脱敏文件（Windows/macOS）。"""
+    import subprocess
+
+    src = _resolve_output_file(req.filename, req.dir)
+    try:
+        if sys.platform == "win32":
+            os.startfile(str(src))  # noqa: S606
+        elif sys.platform == "darwin":
+            subprocess.run(["open", str(src)], check=False)
+        else:
+            subprocess.run(["xdg-open", str(src)], check=False)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"无法打开文件: {exc}") from exc
+    return {"status": "ok", "path": str(src.resolve())}
 
 
 @app.get("/api/health")
@@ -386,6 +462,7 @@ def _detect_document_candidates(saved_path: Path, file_id: str, doc: fitz.Docume
                 "width": b.width,
                 "height": b.height,
                 "text": hit.text or " / ".join(hit.matched_terms),
+                "matched_terms": list(hit.matched_terms or []),
                 "type": "pii" if hit.text and hit.text.startswith("[") else "enterprise",
                 "confidence": hit.confidence,
                 "selected": True,
@@ -494,6 +571,7 @@ async def upload_pdf_preview(file: UploadFile = File(...), mode: str = Form("dra
     page_count = doc.page_count
     scan_mode = "document" if mode == "document" else "drawing"
     SCAN_MODE_CACHE[file_id] = scan_mode
+    UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
     pages_meta = _render_pdf_pages(doc)
     doc.close()
 
@@ -544,6 +622,15 @@ def remove_pdf_candidate(req: RemoveCandidateRequest):
     return {"status": "ok", "removed": removed, "remaining": len(next_cached)}
 
 
+@app.post("/api/pdf/update-candidate-boxes")
+def update_pdf_candidate_boxes(req: UpdateCandidateBoxesRequest):
+    """同步前端拖动/缩放后或人工框选的坐标到服务端缓存。"""
+    if not next(TEMP_DIR.glob(f"{req.file_id}.*"), None):
+        raise HTTPException(status_code=404, detail="临时文件已失效，请重新上传")
+    _apply_box_overrides_to_cache(req.file_id, req.boxes)
+    return {"status": "ok", "updated": len(req.boxes)}
+
+
 @app.post("/api/pdf/upload-and-scan")
 async def upload_and_scan_pdf(file: UploadFile = File(...), mode: str = Form("drawing")):
     file_id = str(uuid.uuid4())
@@ -561,6 +648,7 @@ async def upload_and_scan_pdf(file: UploadFile = File(...), mode: str = Form("dr
     page_count = doc.page_count
     scan_mode = "document" if mode == "document" else "drawing"
     SCAN_MODE_CACHE[file_id] = scan_mode
+    UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
 
     if scan_mode == "document":
         pages_meta, candidates = _scan_document_pdf(saved_path, file_id, doc)
@@ -589,14 +677,19 @@ def execute_pdf_redaction(req: RedactExecuteRequest):
     selected = set(req.selected_candidate_ids)
     redact_mode = RedactMode.COVER if req.mode == "blackout" else RedactMode.ERASE
 
-    out_name = req.output_filename or f"{Path(src_path.name).stem}_desensitized.pdf"
+    orig_name = UPLOAD_FILENAME_CACHE.get(req.file_id) or src_path.name
+    stem = Path(orig_name).stem
+    out_name = req.output_filename or f"{stem}_desensitized.pdf"
     if not out_name.lower().endswith(".pdf"):
         out_name += ".pdf"
 
     out_dir = _resolve_output_dir(req.output_dir)
     out_path = out_dir / out_name
 
-    redact_boxes = _build_redact_boxes_from_selection(req.file_id, selected, req.manual_boxes)
+    overrides: list[ManualBoxInput] | None = req.box_overrides
+    if overrides is None:
+        overrides = req.manual_boxes
+    redact_boxes = _build_redact_boxes_from_selection(req.file_id, selected, overrides)
     if not redact_boxes:
         raise HTTPException(status_code=400, detail="未选中任何脱敏项")
 

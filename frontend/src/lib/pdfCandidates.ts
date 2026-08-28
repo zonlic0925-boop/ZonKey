@@ -23,6 +23,7 @@ export function mapApiCandidates(candidates: any[], mode: 'drawing' | 'document'
       bbox: [c.x, c.y, c.x + c.width, c.y + c.height] as [number, number, number, number],
       text: c.text || '敏感项',
       rule_name: formatCandidateLabel(c.matched_terms, c.text, mode === 'document' && c.type === 'pii' ? 'PII' : '敏感项'),
+      matched_terms: Array.isArray(c.matched_terms) ? c.matched_terms.filter(Boolean) : [],
       channel: c.manual_required ? 'manual' : c.type === 'pii' ? 'ocr' : 'vector',
       is_selected: c.selected !== false,
       is_manual: false,

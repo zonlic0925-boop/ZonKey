@@ -77,15 +77,15 @@ class OcrChannel:
                 max(xs) / zoom,
                 max(ys) / zoom,
             )
-            terms = self._engine.match(text)
-            if terms:
+            matched_values, label = self._engine.extract_match_values(text)
+            if matched_values:
                 hits.append(
                     SensitiveHit(
                         page_index=page_index,
                         channel=Channel.OCR,
                         source_box=box,
-                        text=text,
-                        matched_terms=terms,
+                        text=label or text,
+                        matched_terms=matched_values,
                         confidence=float(score),
                     )
                 )
