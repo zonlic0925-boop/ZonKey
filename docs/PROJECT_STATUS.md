@@ -1,6 +1,21 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-26（ZonScale 现代化 UI + exe 打包 + 多语言）。命令与结果均为本次实际执行。
+> 更新于：2026-08-29（ToolKnit 整合收尾：孤儿清理 + 文档登记 + 全量验证）。命令与结果均为本次实际执行。
+
+## 2026-08-29 进度（ToolKnit 整合收尾轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| ToolKnit 60 项工具整合（Phase 1-8） | ✅ | 8 大中心全部挂载；46 ready / 14 planned（planned 显示"即将上线"占位），明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md) 第五节 |
+| 孤儿文件清理 | ✅ | 删除旧 `navigation/Header.tsx`、孤儿 `pdf/PdfStudioView.tsx`、5 个空组件目录、`packaging/windows/tools/rcedit-x64.exe`（图标方案定为 PyInstaller 嵌入）、`zonscale-test.ico`、根目录 `_tmp_*.pdf` ×24、`startup_error.log` |
+| 计划文档状态登记 | ✅ | TOOLKNIT 计划追加执行状态章节（阶段提交/接线统计/后续批次）；docs/README 索引补全；AGENTS_HANDOFF 重写为当前状态 |
+| pytest 全量回归 | ✅ | `python -m pytest -q` → **95 passed in 173.51s** |
+| 前端最终构建 | ✅ | `cd frontend && npm run build` → **成功**（2599 modules，4.55s；仅 chunk >500kB 体积提示，无错误） |
+| release_acceptance 发布门禁 | ✅ | **全部通过**：source_rules（9 条通用词，无厂商词）/ exe_bundled_rules / exe_exists / synthetic_pipeline（残留为零，保护内容保留）/ generic_terms_in_rules |
+
+### 后续批次（用户 2026-08-29 指定，未实施）
+
+1. PDF 转图片 / 加密 / 解密 / 扫描增强 / 页面编辑器；2. 视频转码 / 视频转 GIF；3. 调性检测（口径待与用户确认：BPM 已 ready，若指音乐调性 key 分析为扩展项）；4. 色彩空间色域对比。其余 planned：PPT 转 PDF/转图片/AI 大纲/AI 草稿、离线转写、打字测速。
 
 ## 2026-08-26 进度（ZonScale 现代化工作台）
 

@@ -127,6 +127,57 @@
 
 ## 四、验证与交付标准
 
-1. **零编译报错**：\rontend\ 目录 pm run build\ 编译打包 100% 成功；
+1. **零编译报错**：`frontend` 目录 `npm run build` 编译打包 100% 成功；
 2. **零布局偏移**：导航栏切换时无容器高度突变（CLS = 0）；
 3. **功能完整度**：60 项工具全部在 8 大中心对应挂载，交互顺畅，数据本地化优先。
+
+---
+
+## 五、执行状态登记（2026-08-29 收尾）
+
+### 5.1 分阶段提交记录（全部完成）
+
+| 阶段 | 提交 | 内容 |
+|---|---|---|
+| Phase 1 | `cad0810` | 两级 8 中心导航骨架（废弃根 `Header.tsx`，统一 `components/Header.tsx` + `navigation/SubNavPills.tsx`） |
+| Phase 2 | `429e152` | 计算开发中心 11 工具（BMI/时间戳/房贷/复利/密码/JSON/Base64/URL/UUID/JWT/哈希加解密） |
+| Phase 3 | `8caf9fd` | 文本工坊 3 工具（Markdown 编辑器/文本统计/排版格式化） |
+| Phase 4 | `9790e94` | PDF 工坊批次 1（合并/拆分/旋转/压缩） |
+| Phase 5 | `b3f4d28` | 图像工坊 7 工具（裁剪/色彩替换/格式转换/压缩/拼接/图标生成/取色板） |
+| Phase 6 | `cf817e6` | PPT 工坊 3 工具（内嵌图片提取/大纲提取/瘦身压缩） |
+| Phase 7 | `8964021` | 音视频中心 5 工具（BPM 检测/波形裁剪/格式互转/音轨提取/视频抽帧） |
+| Phase 8 | `3da657f` | 系统硬件中心 8 工具经 FastAPI（`backend_system_tools.py`：硬件概览/CPU 内存/显卡/主板/磁盘/网络传感器/大文件清理/C 盘清理） |
+| 收尾 | 本提交 | 孤儿文件清理 + 文档状态登记 + 全量验证（pytest / `npm run build` / `release_acceptance.py`） |
+
+### 5.2 工具接线统计（来源 `frontend/src/lib/navigation.tsx`）
+
+- **60 项工具全部挂载**到 8 大中心；其中 **46 项 ready**、**14 项 planned**（UI 显示"即将上线"占位，不虚报可用）。
+- planned 明细：PDF 工坊 5（页面编辑器/转图片/加密/解密/扫描增强）、PPT 工坊 4（转 PDF/转图片/AI 大纲/AI 草稿）、音视频 2（视频转码/视频转 GIF）、文本 2（离线转写/打字测速）、色彩 1（色彩空间色域对比）。
+
+### 5.3 后续批次（2026-08-29 用户指定优先级，未在本期实施）
+
+按用户口述顺序登记：
+
+1. **PDF 批次**：PDF 转图片、加密、解密、扫描增强、页面编辑器；
+2. **音视频批次**：视频转码、视频转 GIF；
+3. **调性检测**：若指音乐调性（key）分析，为 BPM 检测之外的扩展项（BPM 检测已 ready），实施前与用户确认口径；
+4. **色彩批次**：色彩空间色域对比。
+
+> 其余 planned（PPT 转 PDF/转图片/AI 大纲/AI 草稿、离线转写、打字测速）排在上述批次之后。
+
+### 5.4 收尾清理明细（本提交）
+
+| 处置 | 对象 | 原因 |
+|---|---|---|
+| 删除 | `frontend/src/components/navigation/Header.tsx` | 双 Header 治理：统一为 `components/Header.tsx`，旧导航头已无引用 |
+| 删除 | `frontend/src/components/pdf/PdfStudioView.tsx` | 被 `pdfcenter/` 实现取代，全仓零引用 |
+| 删除 | 空目录 `components/{image,media,devtools,studios,pdf}/` | 迁移残留空壳 |
+| 删除 | `packaging/windows/assets/zonscale-test.ico`、`packaging/windows/tools/rcedit-x64.exe` | 图标方案定为 PyInstaller 嵌入（见 `build_zonscale_exe.bat` 注释），rcedit 路线废弃；第三方 exe 不入库 |
+| 删除 | 根目录 `_tmp_*.pdf` ×24、`startup_error.log` | 调试残留（均已 gitignore） |
+| 保留 | `extracted_tools.json` | ToolKnit 逆向唯一底稿，已 gitignore，零代码引用 |
+
+### 5.5 收尾验证证据（2026-08-29 实测）
+
+- `python -m pytest -q`：见 PROJECT_STATUS.md 当日登记；
+- `cd frontend && npm run build`：见 PROJECT_STATUS.md 当日登记；
+- `python scripts/release_acceptance.py`：见 PROJECT_STATUS.md 当日登记。
