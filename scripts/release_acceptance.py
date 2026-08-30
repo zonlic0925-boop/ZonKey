@@ -3,7 +3,9 @@
 验收范围：
 1. 词表 / Logo 目录不含 FISHER / EMERSON 等特定企业出厂规则；
 2. 合成样本 + 用户自定义企业词（ACME）全链路脱敏；
-3. 通用保密标记（CONFIDENTIAL 等）属于发布版合法内置项，与特定企业无关。
+3. 通用保密标记（CONFIDENTIAL 等）属于发布版合法内置项，与特定企业无关；
+4. 许可门禁（Phase M）：运行环境 / requirements / 打包产物中无 AGPL 组件
+   （PyMuPDF 等），保证公开发布合规。
 
 用法:
   python scripts/release_acceptance.py
@@ -17,8 +19,6 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
-import fitz
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -40,6 +40,9 @@ _BANNED_BUILTIN_TERMS = {
     "PROPERTY OF EMERSON",
     "PROPERTY OF TOPWORX",
 }
+
+# AGPL 组件（公开发布门禁，Phase M）：禁止出现在运行环境与打包产物中
+_AGPL_PACKAGE_NAMES = {"pymupdf", "pymupdfb", "fitz"}
 
 OUTPUT_DIR = ROOT / "outputs" / "release_acceptance"
 
@@ -66,27 +69,70 @@ def _check_rules_clean(rules_root: Path) -> dict:
     }
 
 
+def _check_no_agpl_components(exe_dir: Path | None) -> dict:
+    """许可门禁：运行环境、requirements.txt 与打包产物均不得含 AGPL 组件。"""
+    import importlib.metadata as md
+
+    installed_bad: list[str] = []
+    for dist in md.distributions():
+        name = (dist.metadata.get("Name") or "").lower()
+        if name in _AGPL_PACKAGE_NAMES:
+            installed_bad.append(name)
+
+    req_text = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
+    reqs_bad = [name for name in sorted(_AGPL_PACKAGE_NAMES) if name in req_text]
+
+    importable = False
+    try:  # noqa: SIM105
+        import fitz  # noqa: F401
+
+        importable = True
+    except Exception:
+        importable = False
+
+    bundle_hits: list[str] = []
+    if exe_dir is not None:
+        for pattern in ("**/fitz*", "**/pymupdf*", "**/PyMuPDF*"):
+            bundle_hits.extend(p.name for p in exe_dir.glob(pattern))
+
+    return {
+        "blocked_packages": sorted(_AGPL_PACKAGE_NAMES),
+        "installed_bad": sorted(set(installed_bad)),
+        "requirements_bad": reqs_bad,
+        "fitz_importable": importable,
+        "bundle_hits": sorted(set(bundle_hits)),
+        "pass": not installed_bad and not reqs_bad and not importable and not bundle_hits,
+    }
+
+
 def _synthetic_drawing_test(out_dir: Path) -> dict:
     """合成图纸：用户自行添加 ACME + 通用 CONFIDENTIAL，验证抹除后零残留。"""
     custom_terms = ["ACME AEROSPACE", "CONFIDENTIAL"]
     src = out_dir / "synthetic_drawing.pdf"
     dst = out_dir / "synthetic_drawing_desensitized.pdf"
 
-    doc = fitz.open()
-    page = doc.new_page(width=420, height=300)
-    page.draw_rect(fitz.Rect(40, 40, 260, 140), color=(0, 0, 0), width=1)
-    page.insert_text((50, 70), "CONFIDENTIAL - ACME AEROSPACE", fontname="helv", fontsize=12)
-    page.insert_text((50, 110), "PART NO: X-1001", fontname="helv", fontsize=10)
-    doc.save(str(src))
-    doc.close()
+    from reportlab.pdfgen import canvas
+
+    width, height = 420, 300
+    c = canvas.Canvas(str(src), pagesize=(width, height))
+    # 显示空间 (40,40)-(260,140) 的保密框（reportlab 用户空间 y-up）
+    c.setLineWidth(1)
+    c.rect(40, height - 140, 220, 100)
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 70, "CONFIDENTIAL - ACME AEROSPACE")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, height - 110, "PART NO: X-1001")
+    c.showPage()
+    c.save()
 
     cfg = PipelineConfig(terms=custom_terms, use_ocr=False)
     res = Pipeline(cfg).process(str(src))
     redact_pdf(str(src), res.all_redact_boxes(), RedactMode.ERASE, str(dst))
 
-    doc_out = fitz.open(str(dst))
-    text = doc_out[0].get_text()
-    doc_out.close()
+    import pdfplumber
+
+    with pdfplumber.open(str(dst)) as doc:
+        text = "\n".join(p.extract_text() or "" for p in doc.pages)
 
     leftovers = []
     for term in custom_terms:
@@ -106,15 +152,14 @@ def _synthetic_drawing_test(out_dir: Path) -> dict:
 
 
 def _verify_output_pdf_terms(pdf_path: Path, terms: list[str]) -> list[str]:
+    import pdfplumber
+
     leftovers: list[str] = []
-    doc = fitz.open(str(pdf_path))
-    try:
-        text = "\n".join(doc[i].get_text("text") for i in range(doc.page_count)).lower()
-        for term in terms:
-            if term.lower() in text:
-                leftovers.append(term)
-    finally:
-        doc.close()
+    with pdfplumber.open(str(pdf_path)) as doc:
+        text = "\n".join(p.extract_text() or "" for p in doc.pages).lower()
+    for term in terms:
+        if term.lower() in text:
+            leftovers.append(term)
     return leftovers
 
 
@@ -155,6 +200,7 @@ def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> 
         }
 
     report["checks"]["synthetic_pipeline"] = _synthetic_drawing_test(OUTPUT_DIR)
+    report["checks"]["no_agpl_components"] = _check_no_agpl_components(exe_dir)
 
     generic_only = load_terms(rules_root / "sensitive_terms.txt")
     report["checks"]["generic_terms_in_rules"] = {
@@ -206,6 +252,15 @@ def main() -> int:
                 print(f"       非法企业词: {check['vendor_leak']}")
             if check.get("logo_files"):
                 print(f"       非法 Logo: {check['logo_files']}")
+        if name == "no_agpl_components":
+            if check.get("installed_bad"):
+                print(f"       环境已装 AGPL 组件: {check['installed_bad']}")
+            if check.get("requirements_bad"):
+                print(f"       requirements 含 AGPL 组件: {check['requirements_bad']}")
+            if check.get("fitz_importable"):
+                print("       fitz 仍可导入")
+            if check.get("bundle_hits"):
+                print(f"       打包产物含 AGPL 文件: {check['bundle_hits']}")
 
     print("-" * 60)
     print(f"报告文件: {OUTPUT_DIR / 'release_acceptance_report.json'}")

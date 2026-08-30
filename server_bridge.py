@@ -2,6 +2,7 @@
 提供全功能 5 大模块 RESTful API 服务 (PDF图纸、通用公文、Word文档、规则管理、审计追踪)
 """
 
+import io
 import os
 import sys
 import json
@@ -20,7 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import fitz  # PyMuPDF
 import uvicorn
 
 # 引入项目 core 脱敏引擎真源
@@ -34,6 +34,7 @@ if str(get_app_root()) not in sys.path:
 from core.pipeline import Pipeline, PipelineConfig
 from core.detector.rule_engine import RuleEngine, load_terms, load_pii_rules
 from core.doc_pdf.pipeline import DocPdfPipeline
+from core.pdfio import PdfDocView
 from core.word.pipeline import WordPipeline
 from core.word.rules_loader import normalize_word_replace_rules
 from core.model import WordReplaceRule, RedactMode, Box, RedactBox
@@ -55,6 +56,24 @@ try:
     app.include_router(system_tools_router)
 except Exception as e:
     print(f"Warning: Failed to load system_tools router: {e}")
+
+try:
+    from backend_ppt_tools import router as ppt_tools_router
+    app.include_router(ppt_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load ppt_tools router: {e}")
+
+try:
+    from backend_media_tools import router as media_tools_router
+    app.include_router(media_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load media_tools router: {e}")
+
+try:
+    from backend_convert_tools import router as convert_tools_router
+    app.include_router(convert_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load convert_tools router: {e}")
 
 TEMP_DIR = PROJECT_ROOT / "temp_bridge_files"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -246,11 +265,8 @@ def _resolve_output_file(filename: str, dir_hint: str | None = None) -> Path:
 
 
 def _render_pdf_file_pages(pdf_path: Path, dpi: int = 120) -> list[dict[str, Any]]:
-    doc = fitz.open(str(pdf_path))
-    try:
+    with PdfDocView(pdf_path) as doc:
         return _render_pdf_pages(doc, dpi=dpi)
-    finally:
-        doc.close()
 
 
 def _build_redact_boxes_from_selection(
@@ -365,6 +381,33 @@ def pick_export_folder_api(req: PickFolderRequest):
     return {"cancelled": False, "path": selected}
 
 
+@app.post("/api/export/save-blob")
+async def save_blob_output(file: UploadFile = File(...)):
+    """前端内存产物落盘中转（桌面壳专用）。
+
+    pywebview 壳内没有浏览器下载通道，纯前端工具（PPT 提取/瘦身、图片编辑等）
+    的内存 blob 先经此端点写入 output/，前端再调 /api/export/save-as 弹原生另存为。
+    浏览器（手机）模式不经过此端点，直接 a[download] 本地保存。
+    """
+    raw_name = Path(file.filename or "output.bin").name
+    base = Path(raw_name).stem.strip()
+    ext = Path(raw_name).suffix
+    cleaned = "".join("_" if ch in '\\/:*?"<>|' else ch for ch in base).strip("._ ") or "output"
+    out_name = f"{cleaned[:80]}{ext.lower()}"
+    dest = OUTPUT_DIR / out_name
+    total = 0
+    MAX_BLOB_BYTES = 500 * 1024 * 1024
+    with open(dest, "wb") as handle:
+        while chunk := await file.read(1024 * 1024):
+            total += len(chunk)
+            if total > MAX_BLOB_BYTES:
+                handle.close()
+                dest.unlink(missing_ok=True)
+                raise HTTPException(status_code=400, detail="产物超过 500MB 中转上限")
+            handle.write(chunk)
+    return {"filename": dest.name, "output_dir": str(OUTPUT_DIR)}
+
+
 @app.post("/api/export/save-as")
 def save_export_file_as_api(req: SaveAsRequest):
     from concurrent.futures import ThreadPoolExecutor
@@ -424,14 +467,15 @@ def _parse_candidate_id(cid: str) -> tuple[int, int] | None:
         return None
 
 
-def _render_pdf_pages(doc: fitz.Document, dpi: int = 120) -> list[dict[str, Any]]:
-    """快速渲染 PDF 各页为预览图（不跑 OCR）。"""
+def _render_pdf_pages(doc: PdfDocView, dpi: int = 120) -> list[dict[str, Any]]:
+    """快速渲染 PDF 各页为预览图（不跑 OCR）。doc: core.pdfio.PdfDocView。"""
     pages_meta = []
     for page_idx in range(doc.page_count):
-        page = doc[page_idx]
-        pix = page.get_pixmap(dpi=dpi)
-        img_bytes = pix.tobytes("png")
-        img_b64 = "data:image/png;base64," + base64.b64encode(img_bytes).decode("utf-8")
+        page = doc.page(page_idx)
+        pil = page.render(dpi=dpi)
+        buf = io.BytesIO()
+        pil.save(buf, format="PNG")
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
         pages_meta.append({
             "page_index": page_idx,
             "width": page.rect.width,
@@ -441,15 +485,15 @@ def _render_pdf_pages(doc: fitz.Document, dpi: int = 120) -> list[dict[str, Any]
     return pages_meta
 
 
-def _detect_document_candidates(saved_path: Path, file_id: str, doc: fitz.Document) -> list[dict[str, Any]]:
+def _detect_document_candidates(saved_path: Path, file_id: str, doc: PdfDocView) -> list[dict[str, Any]]:
     """通用行政公文：PII 正则 + 印章（不含工程图纸企业词表）。"""
     rule_engine = RuleEngine.load_document()
     doc_pipeline = DocPdfPipeline(rule_engine=rule_engine)
     candidates = []
 
     for page_idx in range(doc.page_count):
-        page = doc[page_idx]
-        hits = doc_pipeline.collect_page_hits(page, page_idx, enable_seal=True)
+        page = doc.page(page_idx)
+        hits = doc_pipeline.collect_page_hits(page, page_idx, enable_seal=True, doc_view=doc)
 
         seen: set[tuple] = set()
         box_idx = 0
@@ -528,14 +572,14 @@ def _detect_drawing_candidates(saved_path: Path, file_id: str) -> list[dict[str,
     return candidates
 
 
-def _scan_document_pdf(saved_path: Path, file_id: str, doc: fitz.Document) -> tuple[list, list]:
+def _scan_document_pdf(saved_path: Path, file_id: str, doc: PdfDocView) -> tuple[list, list]:
     """通用行政公文扫描：渲染 + 检测。"""
     pages_meta = _render_pdf_pages(doc)
     candidates = _detect_document_candidates(saved_path, file_id, doc)
     return pages_meta, candidates
 
 
-def _scan_drawing_pdf(saved_path: Path, file_id: str, doc: fitz.Document) -> tuple[list, list]:
+def _scan_drawing_pdf(saved_path: Path, file_id: str, doc: PdfDocView) -> tuple[list, list]:
     """工程图纸扫描：渲染 + 检测（同步，供旧接口兼容）。"""
     pages_meta = _render_pdf_pages(doc)
     candidates = _detect_drawing_candidates(saved_path, file_id)
@@ -549,13 +593,10 @@ def _run_candidate_scan(file_id: str) -> list[dict[str, Any]]:
         raise FileNotFoundError("临时文件已失效")
 
     scan_mode = SCAN_MODE_CACHE.get(file_id, "drawing")
-    doc = fitz.open(str(src_path))
-    try:
+    with PdfDocView(src_path) as doc:
         if scan_mode == "document":
             return _detect_document_candidates(src_path, file_id, doc)
         return _detect_drawing_candidates(src_path, file_id)
-    finally:
-        doc.close()
 
 # ----------------- 2. PDF & 工程图纸脱敏接口 (模块 1 & 模块 2) -----------------
 
@@ -570,16 +611,18 @@ async def upload_pdf_preview(file: UploadFile = File(...), mode: str = Form("dra
         shutil.copyfileobj(file.file, f)
 
     try:
-        doc = fitz.open(str(saved_path))
+        doc = PdfDocView(saved_path)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"无法解析 PDF 文件: {str(e)}")
 
-    page_count = doc.page_count
-    scan_mode = "document" if mode == "document" else "drawing"
-    SCAN_MODE_CACHE[file_id] = scan_mode
-    UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
-    pages_meta = _render_pdf_pages(doc)
-    doc.close()
+    try:
+        page_count = doc.page_count
+        scan_mode = "document" if mode == "document" else "drawing"
+        SCAN_MODE_CACHE[file_id] = scan_mode
+        UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
+        pages_meta = _render_pdf_pages(doc)
+    finally:
+        doc.close()
 
     return {
         "file_id": file_id,
@@ -647,21 +690,23 @@ async def upload_and_scan_pdf(file: UploadFile = File(...), mode: str = Form("dr
         shutil.copyfileobj(file.file, f)
 
     try:
-        doc = fitz.open(str(saved_path))
+        doc = PdfDocView(saved_path)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"无法解析 PDF 文件: {str(e)}")
 
-    page_count = doc.page_count
-    scan_mode = "document" if mode == "document" else "drawing"
-    SCAN_MODE_CACHE[file_id] = scan_mode
-    UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
+    try:
+        page_count = doc.page_count
+        scan_mode = "document" if mode == "document" else "drawing"
+        SCAN_MODE_CACHE[file_id] = scan_mode
+        UPLOAD_FILENAME_CACHE[file_id] = file.filename or saved_path.name
 
-    if scan_mode == "document":
-        pages_meta, candidates = _scan_document_pdf(saved_path, file_id, doc)
-    else:
-        pages_meta, candidates = _scan_drawing_pdf(saved_path, file_id, doc)
+        if scan_mode == "document":
+            pages_meta, candidates = _scan_document_pdf(saved_path, file_id, doc)
+        else:
+            pages_meta, candidates = _scan_drawing_pdf(saved_path, file_id, doc)
+    finally:
+        doc.close()
 
-    doc.close()
     SCAN_CANDIDATES_CACHE[file_id] = candidates
 
     return {

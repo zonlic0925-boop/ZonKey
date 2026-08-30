@@ -5,29 +5,30 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import fitz
+import numpy as np
 import pytest
 
 from core.boxing.box_finder import BoxFinder
 from core.detector.fusion import fuse_page
 from core.model import Box, Channel, RedactMode, SensitiveHit
 from core.pipeline import Pipeline, PipelineConfig
+from pdf_helpers import cell_lines, extract_text, make_pdf, open_view
 
 
 @pytest.fixture
 def mixed_pdf(tmp_path) -> str:
     """一页：一个封闭格内敏感文字（应自动抹）+ 一个无框敏感文字（应保留）。"""
     path = tmp_path / "mixed.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=400, height=400)
-    page.draw_line((100, 100), (300, 100))
-    page.draw_line((100, 200), (300, 200))
-    page.draw_line((100, 100), (100, 200))
-    page.draw_line((300, 100), (300, 200))
-    page.insert_text((110, 140), "CONFIDENTIAL", fontname="helv", fontsize=12)
-    page.insert_text((110, 300), "PROPRIETARY", fontname="helv", fontsize=12)
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    make_pdf(
+        path,
+        width=400,
+        height=400,
+        lines=cell_lines(100, 100, 300, 200),
+        texts=[
+            (110, 140, "CONFIDENTIAL", 12),
+            (110, 300, "PROPRIETARY", 12),
+        ],
+    )
     return str(path)
 
 
@@ -51,9 +52,7 @@ def test_boxed_executed_fallback_kept(mixed_pdf: str, tmp_path) -> None:
     audit = str(tmp_path / "audit.json")
     result = _pipeline().process_and_redact(mixed_pdf, RedactMode.ERASE, out, audit)
     assert result.output_path is not None
-    doc = fitz.open(out)
-    text = doc[0].get_text()
-    doc.close()
+    text = extract_text(out)
     assert "CONFIDENTIAL" not in text
     assert "PROPRIETARY" in text  # FALLBACK 未执行，原文保留
 
@@ -70,11 +69,7 @@ def test_audit_marks_fallback_manual(mixed_pdf: str, tmp_path) -> None:
 
 def test_all_fallback_no_output_file(tmp_path) -> None:
     path = tmp_path / "all_manual.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=400, height=400)
-    page.insert_text((110, 300), "PROPRIETARY", fontname="helv", fontsize=12)
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    make_pdf(path, width=400, height=400, texts=[(110, 300, "PROPRIETARY", 12)])
     out = str(tmp_path / "all_manual_desensitized.pdf")
     audit = str(tmp_path / "audit2.json")
     result = _pipeline().process_and_redact(str(path), RedactMode.ERASE, out, audit)
@@ -88,28 +83,18 @@ def test_all_fallback_no_output_file(tmp_path) -> None:
 def _page_with_image(tmp_path, *, with_grid: bool) -> str:
     """一页插图（40x40pt），可选画封闭格线（格内含图，box_finder 可归位）。"""
     import cv2
-    import numpy as np
 
     path = tmp_path / "img_page.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=400, height=400)
-    if with_grid:
-        _draw_box_lines(page, 90, 90, 310, 210)
     img = 255 * np.ones((40, 40, 3), dtype=np.uint8)
     cv2.rectangle(img, (5, 5), (34, 34), (0, 0, 0), 1)
-    ok, buf = cv2.imencode(".png", img)
-    assert ok
-    page.insert_image(fitz.Rect(100, 100, 140, 140), stream=buf.tobytes())
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    make_pdf(
+        path,
+        width=400,
+        height=400,
+        lines=cell_lines(90, 90, 310, 210) if with_grid else (),
+        images=[(100, 100, 140, 140, img)],
+    )
     return str(path)
-
-
-def _draw_box_lines(page, x0, y0, x1, y1) -> None:
-    page.draw_line((x0, y0), (x1, y0))
-    page.draw_line((x0, y1), (x1, y1))
-    page.draw_line((x0, y0), (x0, y1))
-    page.draw_line((x1, y0), (x1, y1))
 
 
 def _fake_ocr(texts: list[str]):
@@ -178,21 +163,25 @@ def test_image_verify_disabled_keeps_boxed(tmp_path) -> None:
 def _manual_only_pdf(tmp_path) -> str:
     """一页：两段无框敏感文字（全 FALLBACK），+ 一段普通文字。"""
     path = tmp_path / "manual_only.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=400, height=400)
-    page.insert_text((110, 100), "PROPRIETARY", fontname="helv", fontsize=12)
-    page.insert_text((110, 300), "RESTRICTED", fontname="helv", fontsize=12)
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    make_pdf(
+        path,
+        width=400,
+        height=400,
+        texts=[
+            (110, 100, "PROPRIETARY", 12),
+            (110, 300, "RESTRICTED", 12),
+        ],
+    )
     return str(path)
 
 
-def test_box_ids_are_unique() -> None:
-    doc = fitz.open()
-    page = doc.new_page(width=400, height=400)
-    merged = fuse_page([_ocr_hit(Box(100, 100, 200, 150), "SECRET")])
-    rbs = BoxFinder().assign(page, merged)
-    doc.close()
+def test_box_ids_are_unique(tmp_path) -> None:
+    path = tmp_path / "blank.pdf"
+    make_pdf(path)
+    with open_view(path) as view:
+        page = view.page(0)
+        merged = fuse_page([_ocr_hit(Box(100, 100, 200, 150), "SECRET")])
+        rbs = BoxFinder().assign(page, merged)
     ids = [rb.box_id for rb in rbs]
     assert len(ids) == len(set(ids)) == 1
     assert all(isinstance(i, str) and len(i) == 8 for i in ids)
@@ -228,9 +217,7 @@ def test_manual_executed_after_user_confirmation(tmp_path) -> None:
     ids = {rb.box_id for rb in result.all_redact_boxes()}
     pipeline.redact_result(result, RedactMode.ERASE, out, audit, confirm_box_ids=ids)
     assert result.output_path is not None
-    doc = fitz.open(out)
-    text = doc[0].get_text()
-    doc.close()
+    text = extract_text(out)
     assert "PROPRIETARY" not in text
     assert "RESTRICTED" not in text
 
@@ -244,9 +231,7 @@ def test_partial_confirmation_executes_only_selected(tmp_path) -> None:
     assert len(rbs) == 2
     pipeline.redact_result(result, RedactMode.ERASE, out, confirm_box_ids={rbs[0].box_id})
     assert result.output_path is not None
-    doc = fitz.open(out)
-    text = doc[0].get_text()
-    doc.close()
+    text = extract_text(out)
     # 只确认第一框（PROPRIETARY 在 y=100 处），RESTRICTED 保留
     assert "RESTRICTED" in text
 

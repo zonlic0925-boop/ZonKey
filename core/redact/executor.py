@@ -1,4 +1,10 @@
-"""抹除执行：redaction 注释 + apply_redactions 真删除，覆盖/删除模式可切换。"""
+"""抹除执行：pikepdf 内容流引擎真删除，覆盖/删除模式可切换（Phase M 去 AGPL）。
+
+迁移自 PyMuPDF apply_redactions 两阶段语义（见 pikepdf_engine 模块 docstring）：
+- 普通框：字形按整框相交删除、格线保留、相交图像像素化、整框填充；
+- redact_graphics 框（Logo）：触碰线画整块删除 + 图像像素化 + 填充；
+- 行政公文 AcroForm：相交/值命中控件整体清除。
+"""
 
 from __future__ import annotations
 
@@ -6,32 +12,24 @@ import zipfile
 from pathlib import Path
 from typing import Iterable
 
-import fitz
+import pikepdf
 
 from core.errors import RedactError
 from core.model import Box, RedactBox, RedactMode
+from core.pdfio import page_count as pdfio_page_count
+from core.redact.pikepdf_engine import (
+    FILL_COVER,
+    FILL_ERASE,
+    RedactPlan,
+    apply_page_redactions,
+    field_value_matches_purged,
+    purge_form_widgets,
+)
 
-def _drop_stamp_annots(page: fitz.Page, rects: list[fitz.Rect]) -> None:
-    """apply_redactions 在某些文档上会把 redaction 注释残留为 Stamp 注释，
-    渲染时显示品红边框。仅删除与本轮任意抹除矩形相交的 Stamp 注释，
-    不触碰图纸原有注释。"""
-    for annot in list(page.annots() or []):
-        atype = annot.type[0] if isinstance(annot.type, tuple) else annot.type
-        if atype != fitz.PDF_ANNOT_STAMP:
-            continue
-        try:
-            if any(annot.rect.intersects(r) for r in rects):
-                page.delete_annot(annot)
-        except Exception as exc:  # noqa: BLE001
-            raise RedactError(page.number, f"清理 Stamp 注释失败: {exc}") from exc
-
-
-FILL = {RedactMode.ERASE: (1.0, 1.0, 1.0), RedactMode.COVER: (0.0, 0.0, 0.0)}
-
-# 抹除框向内收缩量(pt)：MuPDF 的 redaction 会切割与矩形相交的线画对象
-# （graphics 参数对其不生效），故框必须与格线保持线宽以上的间隙，
-# 否则单元格边线被误删。字形删除判定只看"相交"，收缩不影响文字抹除。
+# 保留常量与语义注释：字形删除按整框相交判定（与迁移前 MuPDF 行为一致）。
 INSET_PT = 1.5
+
+FILL = {RedactMode.ERASE: FILL_ERASE, RedactMode.COVER: FILL_COVER}
 
 
 def output_path_for(source: str, out_dir: str | Path | None = None) -> str:
@@ -82,47 +80,6 @@ def export_to_zip(
     return str(zip_p)
 
 
-def _field_value_matches_purged(val: str, values: set[str]) -> bool:
-    if not val or not values:
-        return False
-    if val in values:
-        return True
-    for candidate in values:
-        if not candidate or candidate.startswith("["):
-            continue
-        if len(candidate) >= 4 and (candidate in val or val in candidate):
-            return True
-    return False
-
-
-def _purge_form_widgets(
-    page: fitz.Page,
-    rects: list[fitz.Rect],
-    matched_values: Iterable[str] | None = None,
-) -> None:
-    """删除与抹除框相交、或字段值命中已抹除内容的 AcroForm 控件。
-
-    行政公文（签证表、登记表等）常用可填写 PDF；apply_redactions 只处理
-    页面内容流，不会清除 widget.field_value，导致脱敏后文本层仍可搜索/复制。
-    同一敏感值可能出现在多个表单控件（重复字段），需按值同步清除。
-    """
-    if not rects and not matched_values:
-        return
-    values = {str(v).strip() for v in (matched_values or []) if str(v).strip()}
-    for widget in list(page.widgets() or []):
-        wr = widget.rect
-        val = str(widget.field_value or "").strip()
-        should_delete = bool(rects) and any(wr.intersects(r) for r in rects)
-        if not should_delete and _field_value_matches_purged(val, values):
-            should_delete = True
-        if not should_delete:
-            continue
-        try:
-            page.delete_widget(widget)
-        except Exception as exc:  # noqa: BLE001
-            raise RedactError(page.number, f"删除表单字段失败: {exc}") from exc
-
-
 def _merge_overlapping(boxes: list[Box]) -> list[Box]:
     merged: list[Box] = []
     for box in boxes:
@@ -145,69 +102,45 @@ def redact_pdf(
     output: str | None = None,
 ) -> str:
     out = output or output_path_for(source)
+    fill = FILL[mode]
     try:
-        doc = fitz.open(source)
+        by_page: dict[int, list[RedactBox]] = {}
+        for rb in redact_boxes:
+            by_page.setdefault(rb.page_index, []).append(rb)
+
+        total_pages = pdfio_page_count(source)
+        for page_index in by_page:
+            if page_index < 0 or page_index >= total_pages:
+                raise RedactError(page_index, f"页号越界: {page_index}")
+
+        pdf = pikepdf.open(source)
         try:
-            by_page: dict[int, list[RedactBox]] = {}
-            for rb in redact_boxes:
-                by_page.setdefault(rb.page_index, []).append(rb)
             for page_index, rboxes in by_page.items():
-                if page_index < 0 or page_index >= doc.page_count:
-                    raise RedactError(page_index, f"页号越界: {page_index}")
-                page = doc[page_index]
-                page_redact_rects: list[fitz.Rect] = []
+                page = pdf.pages[page_index]
 
                 # 分离普通文字/图片抹除框与需抹除矢量图形（Logo）的抹除框
                 normal_boxes = [rb.box for rb in rboxes if not rb.redact_graphics]
                 graphic_boxes = [rb.box for rb in rboxes if rb.redact_graphics]
 
-                # 处理需要擦除矢量线条的 Logo 框
+                plan = RedactPlan(fill_rgb=fill)
+                # 普通框（保留图纸格线）：文本按整框相交删除 + 图像像素化 + 整框填充
+                for box in _merge_overlapping(normal_boxes):
+                    if box.x1 <= box.x0 or box.y1 <= box.y0:
+                        continue
+                    plan.text_rects.append(box)
+                    plan.image_rects.append(box)
+                    plan.paint_rects.append(box)
+                # Logo 框：触碰线画整块删除（对应迁移前 graphics=2）+ 图像像素化 + 填充
                 if graphic_boxes:
-                    g_rects = [fitz.Rect(b.x0, b.y0, b.x1, b.y1) for b in _merge_overlapping(graphic_boxes)]
-                    page_redact_rects.extend(g_rects)
-                    for r in g_rects:
-                        page.add_redact_annot(r, fill=FILL[mode])
-                    # 默认 PyMuPDF apply_redactions 参数: graphics=2 (或 1=remove, 0=keep)
-                    page.apply_redactions(
-                        images=fitz.PDF_REDACT_IMAGE_PIXELS,
-                        graphics=2,
-                    )
-                    _drop_stamp_annots(page, g_rects)
+                    merged = _merge_overlapping(graphic_boxes)
+                    plan.graphics_rects.extend(merged)
+                    plan.graphics_mode = "touched"
+                    plan.image_rects.extend(merged)
+                    plan.text_rects.extend(merged)
+                    plan.paint_rects.extend(merged)
 
-                # 处理普通框（保留图纸格线）
-                if normal_boxes:
-                    inset_rects: list[fitz.Rect] = []
-                    full_rects: list[fitz.Rect] = []
-                    for box in _merge_overlapping(normal_boxes):
-                        if box.x1 <= box.x0 or box.y1 <= box.y0:
-                            continue
-                        ix0 = box.x0 + INSET_PT
-                        iy0 = box.y0 + INSET_PT
-                        ix1 = box.x1 - INSET_PT
-                        iy1 = box.y1 - INSET_PT
-                        if ix1 > ix0 and iy1 > iy0:
-                            inset_rects.append(fitz.Rect(ix0, iy0, ix1, iy1))
-                        full_rects.append(fitz.Rect(box.x0, box.y0, box.x1, box.y1))
-                    page_redact_rects.extend(full_rects)
-                    if inset_rects:
-                        # 第一阶段：字形删除（inset 矩形，避开格线，graphics 保留线画）
-                        for r in inset_rects:
-                            page.add_redact_annot(r, fill=FILL[mode])
-                        page.apply_redactions(
-                            images=fitz.PDF_REDACT_IMAGE_NONE,
-                            graphics=fitz.PDF_REDACT_LINE_ART_NONE,
-                        )
-                        _drop_stamp_annots(page, inset_rects)
-                    if full_rects:
-                        # 第二阶段：图像内容像素化（完整 box 矩形，覆盖贴格线文字；
-                        # 图像像素由 PIXELS 处理，不影响保留线画）
-                        for r in full_rects:
-                            page.add_redact_annot(r, fill=FILL[mode])
-                        page.apply_redactions(
-                            images=fitz.PDF_REDACT_IMAGE_PIXELS,
-                            graphics=fitz.PDF_REDACT_LINE_ART_NONE,
-                        )
-                        _drop_stamp_annots(page, full_rects)
+                if plan.text_rects or plan.image_rects or plan.graphics_rects or plan.paint_rects:
+                    apply_page_redactions(pdf, page, plan)
 
                 # 行政公文 AcroForm：redaction 后仍需清除相交表单控件
                 matched_values = [
@@ -216,10 +149,16 @@ def redact_pdf(
                     for term in (rb.terms or [])
                     if term and not term.startswith("[") and term not in ("人工框选", "人工调整", "敏感项")
                 ]
-                _purge_form_widgets(page, page_redact_rects, matched_values)
-            doc.save(out, garbage=3, deflate=True)
+                all_rects = list(plan.paint_rects)
+                purge_form_widgets(page, all_rects, matched_values)
+
+            pdf.save(
+                out,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                compress_streams=True,
+            )
         finally:
-            doc.close()
+            pdf.close()
     except RedactError:
         raise
     except Exception as exc:  # noqa: BLE001

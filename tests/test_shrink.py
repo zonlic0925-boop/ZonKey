@@ -118,22 +118,22 @@ def test_shrink_ignores_own_hit_span():
 
 def test_pipeline_integration_cell_non_sensitive_preserved(tmp_path):
     """端到端：单元格内敏感行被抹、非敏感行（图纸编号）保留（D8 修复）。"""
-    import fitz
     from core.model import RedactMode
     from core.pipeline import Pipeline, PipelineConfig
+    from pdf_helpers import cell_lines, extract_text, make_pdf
 
     path = tmp_path / "cell_dwg.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=600, height=400)
-    # 大单元格（标题栏条带）
-    page.draw_line((50, 50), (550, 50))
-    page.draw_line((50, 120), (550, 120))
-    page.draw_line((50, 50), (50, 120))
-    page.draw_line((550, 50), (550, 120))
-    page.insert_text((70, 70), "CONFIDENTIAL", fontname="helv", fontsize=12)
-    page.insert_text((70, 105), "DWG.NO. 12345", fontname="helv", fontsize=12)
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    # 大单元格（标题栏条带）：显示空间 (50,50)-(550,120)
+    make_pdf(
+        path,
+        width=600,
+        height=400,
+        lines=cell_lines(50, 50, 550, 120),
+        texts=[
+            (70, 70, "CONFIDENTIAL", 12),
+            (70, 105, "DWG.NO. 12345", 12),
+        ],
+    )
 
     result = Pipeline(PipelineConfig(use_ocr=False)).process(str(path))
     assert len(result.all_redact_boxes()) == 1
@@ -145,37 +145,42 @@ def test_pipeline_integration_cell_non_sensitive_preserved(tmp_path):
     out = result.output_path = str(tmp_path / "cell_dwg_desensitized.pdf")
     Pipeline(PipelineConfig(use_ocr=False)).redact_result(result, RedactMode.ERASE, output=out)
 
-    doc = fitz.open(out)
-    text = doc[0].get_text()
-    doc.close()
+    text = extract_text(out)
     assert "CONFIDENTIAL" not in text
     assert "DWG.NO. 12345" in text  # 非敏感内容保留
 
 
 def test_pipeline_integration_tight_line_spacing_keeps_cell(tmp_path):
-    """端到端：行距过近（< padding+字形溢出）时放弃收缩，整格抹除（安全优先）。"""
-    import fitz
+    """端到端：行距过近时收缩后相邻行零污染（D8/ES-09805 安全属性）。
+
+    Phase M 引擎变更说明：span 几何改由 pdfminer 提供（12pt 字号 span 高
+    12pt，比 fitz span ~16.5pt 更紧），18pt 基线差时收缩带判定为「可收缩」；
+    但字形级删除按字形包围盒（含上下伸部）相交判定，相邻行 DWG.NO 距收缩
+    框仍有 ~3.9pt 净空——本用例直接断言安全属性：敏感行抹净、相邻行原样。
+    （紧邻 2pt 场景的「放弃收缩」路径由 test_shrink_aborts_when_adjacent_span_near 覆盖。）
+    """
     from core.model import RedactMode
     from core.pipeline import Pipeline, PipelineConfig
+    from pdf_helpers import cell_lines, extract_text, make_pdf
 
     path = tmp_path / "tight_dwg.pdf"
-    doc = fitz.open()
-    page = doc.new_page(width=600, height=400)
-    page.draw_line((50, 50), (550, 50))
-    page.draw_line((50, 120), (550, 120))
-    page.draw_line((50, 50), (50, 120))
-    page.draw_line((550, 50), (550, 120))
-    page.insert_text((70, 60), "CONFIDENTIAL", fontname="helv", fontsize=12)
-    page.insert_text((70, 78), "DWG.NO. 12345", fontname="helv", fontsize=12)
-    doc.save(str(path), garbage=3, deflate=True)
-    doc.close()
+    make_pdf(
+        path,
+        width=600,
+        height=400,
+        lines=cell_lines(50, 50, 550, 120),
+        texts=[
+            (70, 60, "CONFIDENTIAL", 12),
+            (70, 78, "DWG.NO. 12345", 12),
+        ],
+    )
 
     result = Pipeline(PipelineConfig(use_ocr=False)).process(str(path))
     assert len(result.all_redact_boxes()) == 1
     rb = result.all_redact_boxes()[0]
     assert rb.boxed
-    # 行距 ~1.5pt（helv 12pt bbox 高 16.5pt，基线差 18pt）
-    # < 收缩框 padding 2 + 字形溢出容差 3.5 → 相邻行保护：放弃收缩，
-    # 保持整格归位框（宽高显著大于收缩后的文字行条）。
-    assert rb.box.y1 - rb.box.y0 > 20.0
-    assert rb.box.x1 - rb.box.x0 > 300.0
+    out = str(tmp_path / "tight_dwg_desensitized.pdf")
+    Pipeline(PipelineConfig(use_ocr=False)).redact_result(result, RedactMode.ERASE, output=out)
+    text = extract_text(out)
+    assert "CONFIDENTIAL" not in text
+    assert "DWG.NO. 12345" in text  # 相邻行零污染（含字形上下伸部不越框）

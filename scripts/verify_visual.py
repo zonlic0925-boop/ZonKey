@@ -13,7 +13,6 @@ import json
 import sys
 from pathlib import Path
 
-import fitz
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -30,14 +29,15 @@ INK = 200
 
 
 def _render(path: str) -> tuple[np.ndarray, float, float]:
-    doc = fitz.open(path)
-    page = doc[0]
-    pix = page.get_pixmap(matrix=fitz.Matrix(ZOOM, ZOOM), alpha=False)
-    arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-        pix.height, pix.width, pix.n
-    )
-    h, w = pix.height, pix.width
-    doc.close()
+    import pypdfium2 as pdfium
+
+    doc = pdfium.PdfDocument(path)
+    try:
+        pil = doc[0].render(scale=ZOOM).to_pil().convert("RGB")
+    finally:
+        doc.close()
+    arr = np.asarray(pil)
+    h, w = arr.shape[:2]
     return arr, w, h
 
 

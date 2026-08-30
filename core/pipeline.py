@@ -7,8 +7,6 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import fitz
-
 from core.boxing.box_finder import BoxFinder
 from core.boxing.shrink import shrink_boxes_to_hits
 from core.detector.fusion import fuse_page
@@ -19,6 +17,7 @@ from core.detector.rule_engine import RuleEngine, load_terms
 from core.detector.vector_channel import VectorChannel
 from core.errors import DesensError, FileOpenError, OcrUnavailableError
 from core.model import Box, FileResult, PageResult, RedactBox, RedactMode
+from core.pdfio import PdfDocView
 from core.redact.executor import redact_pdf
 
 logger = logging.getLogger(__name__)
@@ -26,14 +25,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_TERMS_REL = Path("rules") / "sensitive_terms.txt"
 
 
-def _page_spans(page: fitz.Page) -> list[Box]:
-    """页面全部矢量文字 span bbox（相邻行保护用）。"""
-    spans: list[Box] = []
-    for block in page.get_text("dict").get("blocks", []):
-        for line in block.get("lines", []):
-            for span in line.get("spans", []):
-                spans.append(Box(*span["bbox"]))
-    return spans
+def _page_spans(page) -> list[Box]:
+    """页面全部矢量文字 span bbox（相邻行保护用）。page: core.pdfio.PdfPageView。"""
+    return [span.box for span in page.spans()]
 
 
 @dataclass
@@ -99,12 +93,12 @@ class Pipeline:
                 use_ocr = False
         result = FileResult(source_path=str(Path(source).resolve()))
         try:
-            doc = fitz.open(source)
+            doc = PdfDocView(source)
         except Exception as exc:  # noqa: BLE001
             raise FileOpenError(source, f"PDF 打开失败: {exc}") from exc
         try:
             for page_index in range(doc.page_count):
-                page = doc[page_index]
+                page = doc.page(page_index)
                 hits = list(self._vector.detect(page, page_index))
                 if self._logo_matcher is not None:
                     try:
@@ -213,7 +207,7 @@ class Pipeline:
     def create_manual_result(self, source: str) -> FileResult:
         """为未执行自动检测的文档创建空 FileResult（用于用户直接手动框选）。"""
         try:
-            doc = fitz.open(source)
+            doc = PdfDocView(source)
             try:
                 pages = [PageResult(page_index=i) for i in range(doc.page_count)]
                 return FileResult(source_path=source, pages=pages, ocr_available=True)

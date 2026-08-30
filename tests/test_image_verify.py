@@ -42,12 +42,14 @@ def _fake_engine(texts: list[str]):
 
 
 @pytest.fixture
-def page():
-    import fitz
+def page(tmp_path):
+    from pdf_helpers import make_pdf, open_view
 
-    doc = fitz.open()
-    yield doc.new_page(width=400, height=400)
-    doc.close()
+    path = tmp_path / "blank_page.pdf"
+    make_pdf(path, width=400, height=400)
+    view = open_view(path)
+    yield view.page(0)
+    view.close()
 
 
 def test_verify_hits_brand_token(page, monkeypatch) -> None:

@@ -1,11 +1,10 @@
-"""OCR 通道：栅格化 PDF 页后交给 RapidOCR 检测文字框。"""
+"""OCR 通道：栅格化 PDF 页后交给 RapidOCR 检测文字框（pypdfium2 渲染）。"""
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
 
-import fitz
 import numpy as np
 
 from core.detector.rule_engine import RuleEngine
@@ -34,7 +33,7 @@ def get_ocr_engine():
         return _engine
     except Exception as exc:  # noqa: BLE001
         _engine_error = f"{type(exc).__name__}: {exc}"
-        raise OcrUnavailableError(_engine_error)
+        raise OcrUnavailableError(_engine_error) from exc
 
 
 @dataclass
@@ -49,16 +48,14 @@ class OcrChannel:
         self._engine = engine
 
     @staticmethod
-    def render_pixmap(page: fitz.Page) -> tuple[np.ndarray, float]:
+    def render_pixmap(page) -> tuple[np.ndarray, float]:
+        """渲染整页 RGB（y 向下像素，与迁移前 fitz pixmap 一致）。返回 (数组, zoom)。"""
         max_side = max(page.rect.width, page.rect.height)
         zoom = min(DEFAULT_DPI / 72.0, MAX_SIDE_PX / max_side)
-        pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
-        arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        arr = page.render_np(zoom=zoom)
         return arr, zoom
 
-    def detect(self, page: fitz.Page, page_index: int) -> list[SensitiveHit]:
+    def detect(self, page, page_index: int) -> list[SensitiveHit]:
         engine = get_ocr_engine()
         arr, zoom = self.render_pixmap(page)
         result = engine(arr)

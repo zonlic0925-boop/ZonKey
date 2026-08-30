@@ -1,9 +1,8 @@
 # Seal detector
 from __future__ import annotations
 import logging
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 import cv2
-import fitz
 import numpy as np
 from core.model import Box, Channel, SensitiveHit
 
@@ -56,12 +55,11 @@ class SealDetector:
             hits.append(hit)
         return hits
 
-    def detect(self, page: fitz.Page, page_index: int) -> Iterator[SensitiveHit]:
+    def detect(self, page, page_index: int) -> Iterator[SensitiveHit]:
+        """page: core.pdfio.PdfPageView。渲染整页后做红色印章检测。"""
         scale = self.dpi / 72.0
-        mat = fitz.Matrix(scale, scale)
-        pix = page.get_pixmap(matrix=mat, alpha=False)
-        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape((pix.height, pix.width, 3))
-        img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        arr = page.render_np(dpi=self.dpi)
+        img_bgr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
         img_hits = self.match(img_bgr, page_index=page_index)
         for h in img_hits:
             pdf_box = Box(

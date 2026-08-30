@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import logging
 
-import fitz
-
 from core.detector.fusion import MergedHit  # noqa: F401  # 类型注解用
 from core.detector.ocr_channel import get_ocr_engine
 from core.detector.rule_engine import RuleEngine
@@ -23,7 +21,7 @@ VERIFY_DPI = 200
 VERIFY_INSET_PT = 2.0
 
 
-def is_title_block_logo_candidate(page: fitz.Page, box) -> bool:
+def is_title_block_logo_candidate(page, box) -> bool:
     """基于图纸标题栏区域与几何特征，判断是否属于高置信 Logo 候选。"""
     pw, ph = page.rect.width, page.rect.height
     w = getattr(box, "width", max(0.0, box.x1 - box.x0))
@@ -43,14 +41,14 @@ def is_title_block_logo_candidate(page: fitz.Page, box) -> bool:
 
 
 def verify_image_boxes(
-    page: fitz.Page,
+    page,
     merged: list[MergedHit],
     engine: RuleEngine,
 ) -> dict[int, list[str]]:
     """对 terms 为空的图片命中做内容验证。
 
     Args:
-        page: 当前页。
+        page: 当前页（core.pdfio.PdfPageView）。
         merged: 该页融合后的命中列表。
         engine: 规则引擎（词表）。
 
@@ -83,13 +81,12 @@ def verify_image_boxes(
     return verified
 
 
-def _ocr_image_region(page: fitz.Page, box) -> list[str]:
-    clip = fitz.Rect(box.x0, box.y0, box.x1, box.y1)
-    clip.x0 += VERIFY_INSET_PT
-    clip.y0 += VERIFY_INSET_PT
-    clip.x1 -= VERIFY_INSET_PT
-    clip.y1 -= VERIFY_INSET_PT
-    if clip.is_empty or clip.is_infinite:
+def _ocr_image_region(page, box) -> list[str]:
+    x0 = box.x0 + VERIFY_INSET_PT
+    y0 = box.y0 + VERIFY_INSET_PT
+    x1 = box.x1 - VERIFY_INSET_PT
+    y1 = box.y1 - VERIFY_INSET_PT
+    if x1 <= x0 or y1 <= y0:
         return []
     try:
         engine = get_ocr_engine()
@@ -97,12 +94,7 @@ def _ocr_image_region(page: fitz.Page, box) -> list[str]:
         logger.warning("图片内容验证: OCR 不可用，跳过")
         return []
     try:
-        pix = page.get_pixmap(dpi=VERIFY_DPI, clip=clip, alpha=False)
-        import numpy as np
-
-        arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        arr = page.render_np(dpi=VERIFY_DPI, clip=(x0, y0, x1, y1))
         result = engine(arr)
     except Exception as exc:  # noqa: BLE001
         logger.warning("图片内容验证失败: %s", exc)

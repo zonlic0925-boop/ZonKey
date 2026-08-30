@@ -1,10 +1,13 @@
-from __future__ import annotations
-import os
-import fitz
-from PIL import Image
-from pathlib import Path
-from typing import Callable, Iterable, List, Optional
+"""图片合成 PDF（Phase M 去 AGPL：reportlab 实现，替代 fitz.open + insert_image）。"""
 
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Callable, List, Optional
+
+from PIL import Image
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 
 
 def merge_images_to_pdf(
@@ -14,17 +17,17 @@ def merge_images_to_pdf(
 ) -> str:
     out_p = Path(output_path)
     out_p.parent.mkdir(parents=True, exist_ok=True)
-    doc = fitz.open()
+    c = canvas.Canvas(str(out_p))
     total = len(image_paths)
-    for i, img_path in enumerate(image_paths):
-        img_p = Path(img_path)
-        with Image.open(img_p) as img:
-            w, h = img.size
-        rect = fitz.Rect(0, 0, w, h)
-        page = doc.new_page(width=w, height=h)
-        page.insert_image(rect, filename=str(img_p))
-        if progress_callback:
-            progress_callback(i + 1, total)
-    doc.save(str(out_p))
-    doc.close()
+    try:
+        for i, img_path in enumerate(image_paths):
+            with Image.open(str(img_path)) as img:
+                w, h = img.size
+            c.setPageSize((w, h))
+            c.drawImage(ImageReader(str(img_path)), 0, 0, width=w, height=h)
+            c.showPage()
+            if progress_callback:
+                progress_callback(i + 1, total)
+    finally:
+        c.save()
     return str(out_p)

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Iterator, List, Optional, Tuple
 
 import cv2
-import fitz  # PyMuPDF
 import numpy as np
 
 from core.app_paths import get_app_root
@@ -134,25 +133,27 @@ class LogoMatcher:
             )
         return hits
 
-    def detect(self, page: fitz.Page, page_index: int) -> Iterator[SensitiveHit]:
-        """Runs template matching on page ROI and yields SensitiveHit objects."""
+    def detect(self, page, page_index: int) -> Iterator[SensitiveHit]:
+        """Runs template matching on page ROI and yields SensitiveHit objects.
+
+        page: core.pdfio.PdfPageView（显示空间坐标）。
+        """
         if not self.templates:
             return
 
         pw, ph = page.rect.width, page.rect.height
         roi_x0 = int(pw * 0.45)
         roi_y0 = int(ph * 0.55)
-        roi_rect = fitz.Rect(roi_x0, roi_y0, pw, ph)
+        roi_w = pw - roi_x0
+        roi_h = ph - roi_y0
 
         zoom = self.dpi / 72.0
-        mat = fitz.Matrix(zoom, zoom)
-        pix = page.get_pixmap(matrix=mat, clip=roi_rect)
-
-        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
-        if pix.n >= 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY if pix.n == 3 else cv2.COLOR_RGBA2GRAY)
-        else:
+        pil = page.render(zoom=zoom, clip=(roi_x0, roi_y0, roi_x0 + roi_w, roi_y0 + roi_h))
+        img = np.asarray(pil)
+        if img.ndim == 2:
             gray = img
+        else:
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
         if gray.shape[0] < 50 or gray.shape[1] < 50:
             return

@@ -1,5 +1,5 @@
 # ZonScale 运行时依赖（Python 3.11）
-PyMuPDF==1.27.1
+# PDF 引擎（Phase M：100% 宽松许可，零 AGPL——渲染 pypdfium2 / 抽取 pdfplumber / 写入 pikepdf+reportlab）
 numpy>=2.0,<3
 opencv-python>=4.10
 rapidocr-onnxruntime==1.4.4
@@ -12,6 +12,21 @@ uvicorn[standard]>=0.32
 pywebview>=5.0
 python-multipart>=0.0.9
 python-docx>=1.1
+
+# P2 转换引擎（100% 宽松许可选型，见 docs/ILOVEPDF_INTEGRATION_PLAN.md §3）
+pypdfium2>=5.0
+pikepdf>=9.0
+pdfplumber>=0.11
+python-pptx>=1.0
+openpyxl>=3.1
+mammoth>=1.6
+reportlab>=4.0
+
+# Windows Office COM 兜底（PPT/Word/Excel 转 PDF 的能力探测后路）
+pywin32>=306; sys_platform == "win32"
+
+# 语音转写（文字工坊，纯离线；模型首次使用时自动下载）
+faster-whisper>=1.0
 
 # 开发与回归
 pytest>=8.0

@@ -9,8 +9,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-import fitz
-
 from core.detector.fusion import MergedHit
 from core.model import Box, RedactBox
 
@@ -83,25 +81,26 @@ class BoxFinder:
         self._local_radius = local_radius
         self._fallback_padding = fallback_padding
 
-    def _extract_grid(self, page: fitz.Page) -> tuple[list[HLine], list[VLine]]:
+    def _extract_grid(self, page) -> tuple[list[HLine], list[VLine]]:
+        """矢量格线提取（page: core.pdfio.PdfPageView）。
+
+        只取 stroke 线段（等价迁移前 fitz get_drawings 的 "l" 项），
+        "re" 矩形不参与格线，行为与原实现一致。
+        """
         bucket = max(1.0, self._line_tol * 2)
         h_segs: dict[float, list[tuple[float, float]]] = {}
         v_segs: dict[float, list[tuple[float, float]]] = {}
-        for path in page.get_drawings():
-            for item in path.get("items", []):
-                if item[0] != "l":
-                    continue
-                p1, p2 = item[1], item[2]
-                if abs(p1.y - p2.y) <= self._line_tol and abs(p1.x - p2.x) >= self._min_line_len:
-                    key = round((p1.y + p2.y) / 2 / bucket) * bucket
-                    h_segs.setdefault(key, []).append(
-                        (min(p1.x, p2.x), max(p1.x, p2.x))
-                    )
-                elif abs(p1.x - p2.x) <= self._line_tol and abs(p1.y - p2.y) >= self._min_line_len:
-                    key = round((p1.x + p2.x) / 2 / bucket) * bucket
-                    v_segs.setdefault(key, []).append(
-                        (min(p1.y, p2.y), max(p1.y, p2.y))
-                    )
+        for (px1, py1), (px2, py2) in page.line_segments():
+            if abs(py1 - py2) <= self._line_tol and abs(px1 - px2) >= self._min_line_len:
+                key = round((py1 + py2) / 2 / bucket) * bucket
+                h_segs.setdefault(key, []).append(
+                    (min(px1, px2), max(px1, px2))
+                )
+            elif abs(px1 - px2) <= self._line_tol and abs(py1 - py2) >= self._min_line_len:
+                key = round((px1 + px2) / 2 / bucket) * bucket
+                v_segs.setdefault(key, []).append(
+                    (min(py1, py2), max(py1, py2))
+                )
         hlines: list[HLine] = []
         for y_key, segs in h_segs.items():
             for x0, x1 in _merge_intervals(segs):
@@ -114,7 +113,7 @@ class BoxFinder:
                     vlines.append(VLine(x=float(x_key), y0=y0, y1=y1))
         return hlines, vlines
 
-    def _extract_grid_raster(self, page: fitz.Page) -> tuple[list[HLine], list[VLine]]:
+    def _extract_grid_raster(self, page) -> tuple[list[HLine], list[VLine]]:
         """纯栅格页的像素级框线检测：行/列投影找长实心细段。
 
         扫描图方框线是栅格像素，矢量 drawings 提取不到（D4）。
@@ -130,10 +129,7 @@ class BoxFinder:
             return [], []
 
         zoom = RASTER_DPI / 72.0
-        pix = page.get_pixmap(dpi=RASTER_DPI, alpha=False)
-        gray = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        gray = page.render_np(dpi=RASTER_DPI)
         if gray.ndim == 3:
             gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
         _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
@@ -325,7 +321,7 @@ class BoxFinder:
         return box_res, False
 
     def assign(
-        self, page: fitz.Page, merged: list[MergedHit]
+        self, page, merged: list[MergedHit]
     ) -> list[RedactBox]:
         hlines, vlines = self._extract_grid(page)
         raster_bw = None
@@ -391,15 +387,12 @@ class BoxFinder:
         return results
 
     @staticmethod
-    def _raster_binary(page: fitz.Page) -> "np.ndarray":
+    def _raster_binary(page) -> "np.ndarray":
         """栅格页二值图（150dpi 反色），供局部边扫描复用。"""
         import cv2
         import numpy as np
 
-        pix = page.get_pixmap(dpi=RASTER_DPI, alpha=False)
-        gray = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        gray = page.render_np(dpi=RASTER_DPI)
         if gray.ndim == 3:
             gray = cv2.cvtColor(gray, cv2.COLOR_RGB2GRAY)
         _, bw = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)

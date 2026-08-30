@@ -242,9 +242,10 @@ def test_short_term_constant() -> None:
 def _write_generic_logo_matcher_test(dst: Path) -> None:
     content = """\"\"\"LogoMatcher 视觉模板匹配器测试（通用发布版）。\"\"\"
 
-import fitz
+import pikepdf
 import pytest
 from core.detector.logo_matcher import LogoMatcher
+from core.pdfio import PdfDocView
 
 
 def test_logo_matcher_empty_dir_safe(tmp_path):
@@ -252,11 +253,13 @@ def test_logo_matcher_empty_dir_safe(tmp_path):
     matcher = LogoMatcher(template_dir=tmp_path)
     assert len(matcher.templates) == 0
 
-    doc = fitz.open()
-    page = doc.new_page(width=300, height=300)
-    hits = list(matcher.detect(page, 0))
+    blank = tmp_path / "blank.pdf"
+    pdf = pikepdf.new()
+    pdf.add_blank_page(page_size=(300, 300))
+    pdf.save(str(blank))
+    with PdfDocView(blank) as view:
+        hits = list(matcher.detect(view.page(0), 0))
     assert hits == []
-    doc.close()
 """
     dst.write_text(content, encoding="utf-8")
 
