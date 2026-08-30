@@ -74,6 +74,11 @@ def _run_uvicorn(bind_host: str) -> None:
 def _open_pywebview(title: str) -> None:
     import webview
 
+    # 工坊类工具（PDF/PPT/图像/音视频等）的产物走浏览器下载（blob → 另存为）。
+    # pywebview 默认 ALLOW_DOWNLOADS=False 会在 WebView2 里静默取消全部下载，
+    # 必须显式放开；放开后 WebView2 弹原生"另存为"对话框，不覆盖原始文件。
+    webview.settings['ALLOW_DOWNLOADS'] = True
+
     # 窗口/任务栏图标由 PyInstaller 打包时写入 EXE；pywebview 的 create_window 不支持 icon 参数
     webview.create_window(
         title,
