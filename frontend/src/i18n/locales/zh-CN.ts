@@ -32,7 +32,8 @@ export const zhCN: MessageTree = {
     systemTools: '系统硬件',
   },
   tools: {
-    pdfEditor: '页面编辑',
+    pdfOrganize: '页面整理',
+    pdfEditor: 'PDF 编辑器',
     pdfMerge: 'PDF 合并',
     pdfSplit: 'PDF 拆分',
     pdfExtract: '提取页面',
@@ -40,6 +41,8 @@ export const zhCN: MessageTree = {
     pdfImagesToPdf: '图片转 PDF',
     pdfRotate: 'PDF 旋转',
     pdfEncrypt: 'PDF 加密',
+    pdfForms: '在线填表',
+    pdfCertSign: '证书签名',
     pdfDecrypt: 'PDF 解密',
     pdfToWord: 'PDF 转 Word',
     pdfToExcel: 'PDF 转 Excel',
@@ -553,6 +556,14 @@ export const zhCN: MessageTree = {
   app: {
     backendOffline:
       '后端未启动 — 请双击运行 **启动现代化脱敏工作台.bat** 或 **ZonScale.exe** 后刷新（http://127.0.0.1:8765）',
+  },
+  editor: {
+    document: '文件信息',
+    elements: '图层元素',
+    elementsAdded: '个元素',
+    createSignature: '手写签名',
+    addSign: '插入签名',
+    defaultText: '双击编辑文本'
   },
   export: {
     downloadStarted: '已开始下载，请在浏览器通知栏查看',

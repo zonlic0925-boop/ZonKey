@@ -554,6 +554,14 @@ export const en: MessageTree = {
     backendOffline:
       'Backend not running — launch **启动现代化脱敏工作台.bat** or **ZonScale.exe**, then refresh (http://127.0.0.1:8765)',
   },
+  editor: {
+    document: 'Document Info',
+    elements: 'Elements',
+    elementsAdded: 'items',
+    createSignature: 'Sign',
+    addSign: 'Add Sign',
+    defaultText: 'Double click to edit'
+  },
   export: {
     downloadStarted: 'Download started — check your browser notifications',
     settingsTitle: 'Export settings',

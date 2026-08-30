@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const BASE = process.env.TARGET;
+const waitMs = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await chromium.launch();
+const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+await page.goto(BASE, { waitUntil: 'networkidle', timeout: 60000 });
+await waitMs(1200);
+await page.getByRole('button', { name: '系统硬件' }).first().click();
+await waitMs(500);
+await page.getByRole('button', { name: '系统概览' }).first().click();
+await waitMs(5000);
+const text = await page.locator('body').innerText();
+console.log(JSON.stringify({ hwCenterWorks: /CPU|内存|Windows/i.test(text), sample: text.slice(0, 120) }));
+await browser.close();

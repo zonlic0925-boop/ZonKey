@@ -17,6 +17,10 @@ export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit
 /** PDF 工坊 */
 export type PdfToolId =
   | 'pdf-editor'
+  | 'pdf-organize'
+  | 'images-to-pdf'
+  | 'pdf-forms'
+  | 'pdf-sign-cert'
   | 'pdf-merge'
   | 'pdf-split'
   | 'pdf-extract'
@@ -163,6 +167,24 @@ export interface DocumentState {
   };
 }
 
+export type PdfElementType = 'text' | 'image' | 'rect' | 'ellipse';
+
+export interface PdfElement {
+  id: string;
+  page: number;
+  type: PdfElementType;
+  x: number;
+  y: number; // PDF coordinates (top-left based for our frontend canvas, converted on export)
+  width: number;
+  height: number;
+  // Type specific properties
+  text?: string;
+  color?: string; // hex color
+  fontSize?: number;
+  imageUrl?: string; // base64 data uri for images/signatures
+  strokeWidth?: number;
+}
+
 export interface SystemStatus {
   ocr_available: boolean;
   ocr_model_status: string;
@@ -173,3 +195,6 @@ export interface SystemStatus {
   online?: boolean;
   model_ready?: boolean;
 }
+
+
+

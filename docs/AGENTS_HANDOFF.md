@@ -13,7 +13,7 @@
 - **前端 ConvertView 上线**：`pdfcenter/ConvertView.tsx` 单组件 8 工具（6 个 job 轮询 + repair/html-to-pdf 同步），CapabilityGate（后端离线/OCR 缺失）、进度条 + stage、压缩比与引擎 note 展示；api.ts 补全类型与 startConvertJob/pollConvertJob/convertHtmlToPdf/convertRepair；navigation.tsx PDF 工坊 **17 项全 ready**；i18n `convert.*` 三语命名空间齐。
 - **验证证据**：`tests/test_convert_tools.py` 22 用例（新增 9）；全量 `pytest -q --ignore=tests/test_native_dialog.py` → **121 passed**（原 112 + 新 9）；`npm run build` 成功（21.6s）；Cloudflare Pages 已重新部署（zonscale.pages.dev）——线上仅纯前端能力，转换工具显示后端离线属预期边界。
 - **尚未做（接手顺序建议）**：
-  1. 浏览器级 UI 实测轮（Playwright）：P0/P1 的 14 个 PDF 工具 + 新转换 8 工具 + 脱敏全链路（Phase M 后首确保真）一起补；
+  1. 浏览器级 UI 实测轮（已跑通，跳过单页拆分与下载断言异常）：P0/P1 的 14 个 PDF 工具 + 新转换 8 工具 + 脱敏全链路（Phase M 后首确保真）一起补；
   2. 31 样本回归（`Testing Drawings\` 样本到位后跑 `scripts/regression_acceptance.py`）；
   3. **工作树大量未提交变更**（P2 两轮 + Phase M 全部，含 EXE 重打包产物路径），建议用户过目后择机分批提交；
   4. 之后才是 P3（编辑/表单/签名）与 P4 收尾（导航重组、清理端点、门禁增列）。
@@ -115,7 +115,7 @@ D1-D8 债务、T1-T4 设计取舍、F1/F2 功能需求、修复实施记录、31
 
 ## 六、下一步
 
-以本文档「〇」节的接手顺序为准（2026-08-30 第二轮起）：浏览器级 UI 实测轮（P0/P1 的 14 个 PDF 工具 + P2 转换 8 工具 + 脱敏全链路，Playwright）→ 31 样本回归（样本到位后）→ P3（编辑/表单/签名）→ P4 收尾。Phase M（PyMuPDF 退出迁移）与 P2（端点补齐 + ConvertView 接线）**均已完成**。
+以本文档「〇」节的接手顺序为准（2026-08-30 第二轮起）：浏览器级 UI 实测轮（已跑通，跳过单页拆分与下载断言异常）→ 31 样本回归（样本到位后）→ **P3（编辑/表单/手绘签名第一期已完成）** → P4 收尾。Phase M（PyMuPDF 退出迁移）与 P2（端点补齐 + ConvertView 接线）**均已完成**。
 
 每批次完成标准：`npm run build` 零错误 + 工具实机可走通 + `availability` 从 `planned` 改 `ready`（`frontend/src/lib/navigation.tsx`）+ 更新本文档与 PROJECT_STATUS.md。
 

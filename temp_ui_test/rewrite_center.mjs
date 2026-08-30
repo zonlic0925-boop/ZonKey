@@ -1,4 +1,5 @@
-import React from 'react'
+import fs from 'fs';
+const content = `import React from 'react'
 import type { ToolId } from '../../types'
 import { PdfMergeView } from './PdfMergeView'
 import { PdfSplitView } from './PdfSplitView'
@@ -68,3 +69,5 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       )
   }
 }
+`;
+fs.writeFileSync('C:/Users/Zonlic/Desktop/ZonScale/frontend/src/components/pdfcenter/PdfCenter.tsx', content);
