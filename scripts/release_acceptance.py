@@ -42,7 +42,7 @@ _BANNED_BUILTIN_TERMS = {
 }
 
 # AGPL 组件（公开发布门禁，Phase M）：禁止出现在运行环境与打包产物中
-_AGPL_PACKAGE_NAMES = {"pymupdf", "pymupdfb", "fitz"}
+_AGPL_PACKAGE_NAMES = {"pymupdf", "pymupdfb", "fitz", "pdf2docx"}
 
 OUTPUT_DIR = ROOT / "outputs" / "release_acceptance"
 

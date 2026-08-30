@@ -1085,3 +1085,20 @@ if __name__ == "__main__":
     parser.add_argument("--no-browser", action="store_true")
     cli = parser.parse_args()
     launch_server(port=cli.port, open_browser=not cli.no_browser, lan=cli.lan)
+
+# ----------------- 清理接口 -----------------
+@app.post("/api/system/cleanup")
+def cleanup_temp_files():
+    import shutil
+    cleaned_bytes = 0
+    dirs = [TEMP_DIR, OUTPUT_DIR]
+    for d in dirs:
+        if d.exists():
+            for p in d.iterdir():
+                try:
+                    if p.is_file():
+                        cleaned_bytes += p.stat().st_size
+                        p.unlink()
+                except Exception as e:
+                    print(f"Failed to delete {p}: {e}")
+    return {"status": "success", "cleaned_bytes": cleaned_bytes}

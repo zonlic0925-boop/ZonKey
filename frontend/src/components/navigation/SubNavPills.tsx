@@ -8,6 +8,7 @@ export interface SubNavOption {
   label: string
   icon?: React.ReactNode
   badge?: string | number
+  group?: string
 }
 
 interface SubNavPillsProps {
@@ -36,15 +37,20 @@ export const SubNavPills: React.FC<SubNavPillsProps> = ({
 }) => {
   return (
     <div className="zs-mobile-scroll-x flex items-center gap-1.5 p-1 bg-white border-2 border-mem-ink rounded-xl shadow-memphis-sm overflow-x-auto max-w-full">
-      {options.map((opt) => {
+      {options.map((opt, index) => {
         const isActive = opt.id === activeId
+        const prevGroup = index > 0 ? options[index - 1].group : undefined
+        const showDivider = opt.group && prevGroup && opt.group !== prevGroup
 
         return (
-          <button
-            key={opt.id}
-            onClick={() => onChange(opt.id)}
-            className="relative px-3.5 py-2 md:py-1.5 rounded-lg font-display text-[13px] md:text-sm font-semibold transition-colors duration-150 flex items-center gap-2 select-none shrink-0"
-          >
+          <React.Fragment key={opt.id}>
+            {showDivider && (
+              <div className="w-0.5 h-6 bg-mem-ink/20 mx-1 shrink-0 rounded-full" />
+            )}
+            <button
+              onClick={() => onChange(opt.id)}
+              className="relative px-3.5 py-2 md:py-1.5 rounded-lg font-display text-[13px] md:text-sm font-semibold transition-colors duration-150 flex items-center gap-2 select-none shrink-0"
+            >
             {isActive && (
               <motion.div
                 layoutId="subNavActivePillHighlight"
@@ -70,6 +76,7 @@ export const SubNavPills: React.FC<SubNavPillsProps> = ({
               )}
             </span>
           </button>
+          </React.Fragment>
         )
       })}
     </div>
