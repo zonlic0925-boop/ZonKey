@@ -148,7 +148,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
 
   return (
     <div className="flex-1 w-full h-full p-3 md:p-6 overflow-hidden flex flex-col gap-4 min-h-0">
-      <div className="flex gap-4 text-[11px] flex-wrap">
+      <div className="flex gap-4 text-xs flex-wrap">
         <span className="px-3 py-1 rounded-lg bg-mem-yellow/40 border-2 border-mem-ink/20">
           {t('rules.summaryDrawing')}: {t('rules.itemCount', { count: enterpriseTerms.length })}
         </span>
@@ -171,7 +171,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
               <Building className="w-5 h-5 text-mem-sky" />
               <div>
                 <h2 className="text-sm font-display font-bold">{t('rules.drawingTitle')}</h2>
-                <p className="text-[11px] text-mem-ink/50">{t('rules.drawingSubtitle')}</p>
+                <p className="text-xs text-mem-ink/60">{t('rules.drawingSubtitle')}</p>
               </div>
             </div>
             <span className="text-xs px-2.5 py-1 rounded-lg bg-mem-teal/30 border-2 border-mem-ink/20 font-semibold">
@@ -243,7 +243,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
               <ShieldCheck className="w-5 h-5 text-mem-teal" />
               <div>
                 <h2 className="text-sm font-display font-bold">{t('rules.piiTitle', { appName: APP_NAME })}</h2>
-                <p className="text-[11px] text-mem-ink/50">{t('rules.piiSource')}</p>
+                <p className="text-xs text-mem-ink/60">{t('rules.piiSource')}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -296,14 +296,14 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">{rule.name}</div>
-                      <div className="text-[11px] text-mem-ink/50 mt-0.5 truncate">
+                      <div className="text-xs text-mem-ink/60 mt-0.5 truncate">
                         {rule.category || t('rules.categoryFallback')} · {rule.description || t('rules.descriptionFallback')}
                       </div>
                     </div>
                   </button>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span
-                      className={`text-[11px] px-2.5 py-1 rounded-lg font-medium border ${
+                      className={`text-xs px-2.5 py-1 rounded-lg font-medium border ${
                         isEnabled ? 'bg-mem-teal/30 border-mem-ink/30' : 'bg-mem-cream border-mem-ink/15'
                       }`}
                     >
@@ -334,7 +334,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
                     className="p-3 mb-2 rounded-xl bg-mem-pink/10 border-2 border-mem-ink/15 text-xs"
                   >
                     <div className="font-semibold">{rule.name || t('rules.unnamedRule', { index: idx + 1 })}</div>
-                    <div className="text-mem-ink/50 mt-1 font-mono text-[10px] truncate">
+                    <div className="text-mem-ink/60 mt-1 font-mono text-xs truncate">
                       {rule.find} → {rule.replace}
                     </div>
                   </div>
@@ -354,7 +354,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
                     className="p-3 mb-2 rounded-xl bg-mem-coral/10 border-2 border-mem-ink/15 text-xs flex justify-between"
                   >
                     <span className="font-semibold">{rule.name || key}</span>
-                    <span className="text-mem-ink/50">{rule.enabled !== false ? t('rules.sealEnabled') : t('rules.sealDisabled')}</span>
+                    <span className="text-mem-ink/60">{rule.enabled !== false ? t('rules.sealEnabled') : t('rules.sealDisabled')}</span>
                   </div>
                 ))}
               </div>

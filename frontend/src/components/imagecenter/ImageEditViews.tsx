@@ -118,7 +118,7 @@ export const ImageColorReplaceView: React.FC = () => {
         </Field>
       </div>
       <div>
-        <span className="block mb-1 text-[11px] font-bold text-mem-ink/70">{t('imagecenter.tolerance')}: {tolerance}</span>
+        <span className="block mb-1 text-xs font-bold text-mem-ink/70">{t('imagecenter.tolerance')}: {tolerance}</span>
         <input type="range" min={0} max={120} value={tolerance} onChange={(e) => setTolerance(Number(e.target.value))} className="w-full accent-mem-ink" />
       </div>
       <MemphisButton variant="yellow" onClick={run} disabled={busy || !file}>

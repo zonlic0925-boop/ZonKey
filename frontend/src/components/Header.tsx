@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => onOpenPrivacy?.()}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium
                          bg-mem-teal/25 border-2 border-mem-ink text-mem-ink/80
                          hover:bg-mem-teal/40 hover:-translate-y-px transition-all"
               title={t('privacy.title')}
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium
                          bg-mem-yellow/50 border-2 border-mem-ink text-mem-ink/80
                          hover:bg-mem-coral/20 hover:-translate-y-px transition-all"
               title={t('header.supportTitle')}
@@ -150,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
             {CENTERS.map((center) => centerButton(center, true))}
           </nav>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-[11px] shrink-0">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-xs shrink-0">
             {statusDot}
             <span className="text-mem-ink/60 whitespace-nowrap">{engineLabel}</span>
             <span className="font-bold text-mem-ink whitespace-nowrap">

@@ -10,7 +10,7 @@ export const Field: React.FC<{ label: string; children: React.ReactNode; classNa
   className = '',
 }) => (
   <label className={`block ${className}`}>
-    <span className="block mb-1 text-[11px] font-bold text-mem-ink/70">{label}</span>
+    <span className="block mb-1 text-xs font-bold text-mem-ink/70">{label}</span>
     {children}
   </label>
 )
@@ -89,7 +89,7 @@ export const ResultTile: React.FC<{
   return (
     <div className={`p-3 ${tones[tone]} border-2 border-mem-ink rounded-xl text-center min-w-0`}>
       <p className="text-base md:text-lg font-black font-display text-mem-ink truncate">{value}</p>
-      <p className="text-[10px] font-bold text-mem-ink/60 mt-0.5">{label}</p>
+      <p className="text-xs font-bold text-mem-ink/60 mt-0.5">{label}</p>
     </div>
   )
 }

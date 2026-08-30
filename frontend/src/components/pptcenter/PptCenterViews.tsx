@@ -129,12 +129,12 @@ export const PptTextView: React.FC = () => {
         <div className="space-y-2 max-h-[26rem] overflow-auto pr-1">
           {slides.map((slide) => (
             <div key={slide.slideNumber} className="p-3 bg-white border-2 border-mem-ink rounded-xl">
-              <p className="text-[10px] font-bold text-mem-ink/50">{t('pptcenter.slide')} {slide.slideNumber}</p>
+              <p className="text-xs font-bold text-mem-ink/60">{t('pptcenter.slide')} {slide.slideNumber}</p>
               {slide.lines.map((line, index) => (
                 <p key={index} className={index === 0 ? 'text-sm font-bold text-mem-ink mt-0.5' : 'text-xs text-mem-ink/75 mt-1'}>{line}</p>
               ))}
               {slide.notes.length > 0 && (
-                <p className="text-[10px] text-mem-ink/50 mt-1.5 border-t border-mem-ink/10 pt-1.5">{t('pptcenter.notes')}: {slide.notes.join(' ')}</p>
+                <p className="text-xs text-mem-ink/60 mt-1.5 border-t border-mem-ink/10 pt-1.5">{t('pptcenter.notes')}: {slide.notes.join(' ')}</p>
               )}
             </div>
           ))}
@@ -177,15 +177,15 @@ export const PptCompressView: React.FC = () => {
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="p-3 bg-mem-yellow/25 border-2 border-mem-ink rounded-xl">
             <p className="text-base font-black font-display">{(result.originalSize / 1024).toFixed(0)} KB</p>
-            <p className="text-[10px] font-bold text-mem-ink/60">{t('pdfcenter.originalSize')}</p>
+            <p className="text-xs font-bold text-mem-ink/60">{t('pdfcenter.originalSize')}</p>
           </div>
           <div className="p-3 bg-mem-teal/15 border-2 border-mem-ink rounded-xl">
             <p className="text-base font-black font-display">{(result.compressedSize / 1024).toFixed(0)} KB</p>
-            <p className="text-[10px] font-bold text-mem-ink/60">{t('pdfcenter.compressedSize')}</p>
+            <p className="text-xs font-bold text-mem-ink/60">{t('pdfcenter.compressedSize')}</p>
           </div>
           <div className="p-3 bg-mem-lime/20 border-2 border-mem-ink rounded-xl">
             <p className="text-base font-black font-display">-{saving}%</p>
-            <p className="text-[10px] font-bold text-mem-ink/60">{t('pdfcenter.saving')}</p>
+            <p className="text-xs font-bold text-mem-ink/60">{t('pdfcenter.saving')}</p>
           </div>
         </div>
       )}

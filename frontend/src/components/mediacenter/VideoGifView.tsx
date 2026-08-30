@@ -125,7 +125,7 @@ export const VideoGifView: React.FC = () => {
       <Field label={`${t('mediacenter.vgRange')} (${t('mediacenter.vgMax30')})`}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="w-10 shrink-0 text-[11px] font-bold">{t('mediacenter.vgStart')}</span>
+            <span className="w-10 shrink-0 text-xs font-bold">{t('mediacenter.vgStart')}</span>
             <input
               type="range" min={0} max={Math.max(duration, 0.1)} step={0.1} value={startS}
               onChange={(e) => setStartS(Math.min(Number(e.target.value), endS - 0.2))}
@@ -134,7 +134,7 @@ export const VideoGifView: React.FC = () => {
             <span className="w-12 shrink-0 text-xs font-mono font-bold text-right">{startS.toFixed(1)}s</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-10 shrink-0 text-[11px] font-bold">{t('mediacenter.vgEnd')}</span>
+            <span className="w-10 shrink-0 text-xs font-bold">{t('mediacenter.vgEnd')}</span>
             <input
               type="range" min={0} max={Math.max(duration, 0.1)} step={0.1} value={endS}
               onChange={(e) => setEndS(Math.max(Number(e.target.value), startS + 0.2))}

@@ -64,7 +64,7 @@ export const FileListDrawer: React.FC<FileListDrawerProps> = ({
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-mem-ink/40">
             <FileText className="w-10 h-10 mb-2 opacity-40" />
             <p className="text-xs">{t('fileList.emptyTitle')}</p>
-            <p className="text-[11px] mt-1">{t('fileList.emptyHint')}</p>
+            <p className="text-xs mt-1">{t('fileList.emptyHint')}</p>
           </div>
         ) : (
           files.map((file) => {
@@ -98,7 +98,7 @@ export const FileListDrawer: React.FC<FileListDrawerProps> = ({
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-mem-ink/50">
+                <div className="flex items-center justify-between text-xs text-mem-ink/60">
                   <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                   {file.status === 'loading' && (
                     <span className="text-mem-teal animate-pulse">{t('fileList.statusLoading')}</span>

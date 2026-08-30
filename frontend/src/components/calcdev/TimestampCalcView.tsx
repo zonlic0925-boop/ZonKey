@@ -126,7 +126,7 @@ export const TimestampCalcView: React.FC = () => {
           {rows.map(([label, value]) => (
             <div key={label} className="flex items-center justify-between gap-3 p-2.5 bg-white border-2 border-mem-ink rounded-xl">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold text-mem-ink/60">{label}</p>
+                <p className="text-xs font-bold text-mem-ink/60">{label}</p>
                 <p className="text-xs font-mono font-bold text-mem-ink truncate">{value}</p>
               </div>
               <CopyButton text={value} />

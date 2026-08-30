@@ -276,7 +276,7 @@ export const TypingTestView: React.FC = () => {
           <Keyboard className="w-5 h-5 text-mem-pink" />
           <h3 className="font-display font-black text-mem-ink">{t('tools.typingTest')}</h3>
         </div>
-        <button type="button" onClick={() => { stopTimer(); setPhase('settings') }} className="text-xs font-bold text-mem-ink/50 hover:text-mem-ink">
+        <button type="button" onClick={() => { stopTimer(); setPhase('settings') }} className="text-xs font-bold text-mem-ink/60 hover:text-mem-ink">
           {t('textcenter.ttBack')}
         </button>
       </div>
@@ -373,7 +373,7 @@ const StatTile: React.FC<{ label: string; value: string; accent?: boolean; dange
   danger,
 }) => (
   <div className={`px-3 py-2 border-2 border-mem-ink rounded-xl text-center ${danger ? 'bg-mem-coral/30' : accent ? 'bg-mem-pink/30' : 'bg-white'}`}>
-    <p className="text-[10px] font-black uppercase text-mem-ink/50">{label}</p>
+    <p className="text-xs font-black uppercase text-mem-ink/60">{label}</p>
     <p className="font-display font-black text-lg">{value}</p>
   </div>
 )

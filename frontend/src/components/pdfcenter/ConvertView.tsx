@@ -156,7 +156,7 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
             placeholder={t('convert.htmlContentPlaceholder')}
             className="w-full text-xs font-mono border-2 border-mem-ink rounded-xl px-3 py-2 bg-white placeholder:text-mem-ink/40"
           />
-          <p className="text-[11px] font-bold text-mem-ink/50">{t('convert.htmlOptionalFile')}</p>
+          <p className="text-xs font-bold text-mem-ink/60">{t('convert.htmlOptionalFile')}</p>
         </>
       )}
 
@@ -216,9 +216,9 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
       {job?.status === 'done' && (
         <div className="space-y-1">
           <p className="text-xs font-bold text-mem-teal">{t('convert.done')}</p>
-          {job.engine && <p className="text-[11px] font-bold text-mem-ink/50">{t('convert.engine', { engine: job.engine })}</p>}
+          {job.engine && <p className="text-xs font-bold text-mem-ink/60">{t('convert.engine', { engine: job.engine })}</p>}
           {typeof job.compression_ratio_pct === 'number' && (
-            <p className="text-[11px] font-bold text-mem-ink/60">
+            <p className="text-xs font-bold text-mem-ink/60">
               {t('convert.sizeResult', {
                 origin: Math.round((job as { original_bytes?: number }).original_bytes! / 1024),
                 now: Math.round(((job as { compressed_bytes?: number }).compressed_bytes ?? 0) / 1024),
@@ -226,7 +226,7 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
               })}
             </p>
           )}
-          {job.note && <p className="text-[11px] font-bold text-mem-ink/70">{job.note}</p>}
+          {job.note && <p className="text-xs font-bold text-mem-ink/70">{job.note}</p>}
         </div>
       )}
       {outputs.length > 0 && !busy && <MediaOutputList outputs={outputs} />}

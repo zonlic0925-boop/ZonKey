@@ -48,7 +48,7 @@ export const TextStatsView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {stats.topChineseChars.length > 0 && (
                 <div className="p-3 bg-white border-2 border-mem-ink rounded-2xl">
-                  <p className="text-[11px] font-bold text-mem-ink/60 mb-2">{t('textcenter.topChineseChars')}</p>
+                  <p className="text-xs font-bold text-mem-ink/60 mb-2">{t('textcenter.topChineseChars')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {stats.topChineseChars.map((item) => (
                       <span key={item.text} className="px-2 py-0.5 text-xs font-bold border-2 border-mem-ink rounded-lg bg-mem-coral/10">
@@ -60,7 +60,7 @@ export const TextStatsView: React.FC = () => {
               )}
               {stats.topWords.length > 0 && (
                 <div className="p-3 bg-white border-2 border-mem-ink rounded-2xl">
-                  <p className="text-[11px] font-bold text-mem-ink/60 mb-2">{t('textcenter.topWords')}</p>
+                  <p className="text-xs font-bold text-mem-ink/60 mb-2">{t('textcenter.topWords')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {stats.topWords.map((item) => (
                       <span key={item.text} className="px-2 py-0.5 text-xs font-bold border-2 border-mem-ink rounded-lg bg-mem-sky/10">

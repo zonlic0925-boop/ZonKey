@@ -80,7 +80,7 @@ export const PdfOrganizeView: React.FC = () => {
                  <div className="bg-mem-blue/10 border-2 border-mem-ink rounded-xl p-3 shadow-memphis-sm">
                      <h3 className="text-xs font-bold uppercase tracking-wider text-mem-ink mb-1">{t('editor.document', '文件信息' as any)}</h3>
                      <p className="text-xs font-medium truncate" title={fileName}>{fileName}</p>
-                     <p className="text-[11px] font-mono text-mem-ink/60 mt-0.5">{renderedPages.length} 页</p>
+                     <p className="text-xs font-mono text-mem-ink/60 mt-0.5">{renderedPages.length} 页</p>
                  </div>
                  
                  <div className="bg-mem-cream border-2 border-mem-ink rounded-xl p-3 shadow-memphis-sm flex-1 min-h-[150px] flex flex-col">
@@ -89,7 +89,7 @@ export const PdfOrganizeView: React.FC = () => {
                      </h3>
                      <div className="flex-1 overflow-auto space-y-1.5 min-h-0 pr-1 mask-v-fade">
                          {elements.map(el => (
-                             <div key={el.id} className="text-[10px] flex items-center justify-between p-1.5 bg-white rounded-lg border-2 border-mem-ink">
+                             <div key={el.id} className="text-xs flex items-center justify-between p-1.5 bg-white rounded-lg border-2 border-mem-ink">
                                  <span className="truncate flex-1 font-mono hover:text-clip">
                                      [{el.type.toUpperCase()}] p.{el.page}
                                  </span>

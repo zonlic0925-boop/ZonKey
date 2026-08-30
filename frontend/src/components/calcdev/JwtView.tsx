@@ -86,15 +86,15 @@ export const JwtView: React.FC = () => {
             )}
           </div>
           <div>
-            <p className="text-[11px] font-bold text-mem-ink/70 mb-1">Header</p>
+            <p className="text-xs font-bold text-mem-ink/70 mb-1">Header</p>
             <AreaInput value={JSON.stringify(data.header, null, 2)} onChange={undefined} rows={4} readOnly />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-mem-ink/70 mb-1">Payload</p>
+            <p className="text-xs font-bold text-mem-ink/70 mb-1">Payload</p>
             <AreaInput value={JSON.stringify(data.payload, null, 2)} onChange={undefined} rows={8} readOnly />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-mem-ink/70 mb-1">Signature</p>
+            <p className="text-xs font-bold text-mem-ink/70 mb-1">Signature</p>
             <AreaInput value={data.signature} onChange={undefined} rows={2} readOnly />
           </div>
         </div>

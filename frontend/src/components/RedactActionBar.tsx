@@ -47,7 +47,7 @@ export const RedactActionBar: React.FC<RedactActionBarProps> = ({
   return (
     <div className={`space-y-2 ${className}`}>
       {hasAfterPreview && previewMode === 'before' && (
-        <p className="text-[10px] text-mem-ink/55 leading-snug px-0.5">{t('redact.manualSupplementHint')}</p>
+        <p className="text-xs text-mem-ink/55 leading-snug px-0.5">{t('redact.manualSupplementHint')}</p>
       )}
       {hasAfterPreview && onPreviewModeChange && (
         <PreviewTogglePanel

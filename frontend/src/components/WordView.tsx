@@ -189,7 +189,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
             : 'bg-white border-mem-ink/10 text-mem-ink/60'
         }`}
       >
-        <div className="text-[10px] text-mem-ink/40 mb-1 flex items-center justify-between gap-2">
+        <div className="text-xs text-mem-ink/40 mb-1 flex items-center justify-between gap-2">
           <span>
             {locationLabel(block.location || 'body', t)} #{block.index + 1}
           </span>
@@ -220,7 +220,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
             <FileCode className="w-6 h-6 text-mem-ink" />
           </div>
           <h3 className="text-sm font-display font-bold">{t('word.uploadTitle')}</h3>
-          <p className="text-xs text-mem-ink/50 mt-1">{t('word.uploadSubtitle')}</p>
+          <p className="text-xs text-mem-ink/60 mt-1">{t('word.uploadSubtitle')}</p>
         </div>
 
         <div className="flex-1 memphis-card p-5 flex flex-col overflow-hidden">
@@ -229,12 +229,12 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
               <Sparkles className="w-4 h-4 text-mem-coral" />
               {t('word.rulesTitle')}
             </span>
-            <button onClick={handleAddRule} className="memphis-btn-ghost text-[11px] flex items-center gap-1">
+            <button onClick={handleAddRule} className="memphis-btn-ghost text-xs flex items-center gap-1">
               <Plus className="w-3 h-3" /> {t('word.addEntry')}
             </button>
           </div>
 
-          <div className="my-3 p-3 rounded-xl bg-mem-teal/15 border-2 border-mem-ink/15 text-[11px] leading-relaxed text-mem-ink/70">
+          <div className="my-3 p-3 rounded-xl bg-mem-teal/15 border-2 border-mem-ink/15 text-xs leading-relaxed text-mem-ink/70">
             <div className="flex items-center gap-1.5 font-semibold text-mem-ink mb-1">
               <ShieldCheck className="w-3.5 h-3.5 text-mem-teal" />
               {t('word.builtinTitle', { appName: APP_NAME })}
@@ -253,7 +253,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
           )}
 
           <div className="flex-1 overflow-y-auto space-y-2.5 py-2 pr-1">
-            <div className="text-[11px] text-mem-ink/50 mb-1">{t('word.replaceSectionHint')}</div>
+            <div className="text-xs text-mem-ink/60 mb-1">{t('word.replaceSectionHint')}</div>
             {customRules.map((rule, idx) => (
               <div key={idx} className="p-3 rounded-xl bg-mem-cream border-2 border-mem-ink/15 space-y-2">
                 <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
                       const val = e.target.value;
                       setCustomRules((prev) => prev.map((r, i) => (i === idx ? { ...r, mode: val } : r)));
                     }}
-                    className="memphis-input text-[11px] py-1.5 w-24 shrink-0"
+                    className="memphis-input text-xs py-1.5 w-24 shrink-0"
                   >
                     <option value="exact">{t('word.modeExact')}</option>
                     <option value="regex">{t('word.modeRegex')}</option>
@@ -337,7 +337,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
             {scanResult ? t('word.previewTitleWithFile', { filename: scanResult.filename }) : t('word.previewTitleEmpty')}
           </span>
           {scanResult && (
-            <span className="text-[11px] text-mem-ink/50">
+            <span className="text-xs text-mem-ink/60">
               {t('word.previewStats', {
                 paragraphs: scanResult.paragraphs.length,
                 tables: scanResult.tables.length,
@@ -349,7 +349,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
 
         <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-2">
           {scanning && (
-            <div className="h-full flex flex-col items-center justify-center text-mem-ink/50 gap-3">
+            <div className="h-full flex flex-col items-center justify-center text-mem-ink/60 gap-3">
               <RefreshCw className="w-6 h-6 animate-spin text-mem-pink" />
               <span className="text-xs">{t('word.previewScanning', { appName: APP_NAME })}</span>
             </div>
@@ -359,7 +359,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
             <div className="h-full flex flex-col items-center justify-center text-mem-ink/40 gap-2">
               <FileCode className="w-10 h-10 opacity-30" />
               <span className="text-xs">{t('word.previewEmptyTitle')}</span>
-              <span className="text-[11px]">{t('word.previewEmptyHint')}</span>
+              <span className="text-xs">{t('word.previewEmptyHint')}</span>
             </div>
           )}
 
@@ -368,7 +368,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
           {!scanning &&
             scanResult?.tables.map((table: any) => (
               <div key={`table-${table.table_index}`} className="space-y-2">
-                <div className="text-[11px] font-bold text-mem-ink/60">{t('word.tableTitle', { index: table.table_index + 1 })}</div>
+                <div className="text-xs font-bold text-mem-ink/60">{t('word.tableTitle', { index: table.table_index + 1 })}</div>
                 {table.rows.map((row: any[], rowIdx: number) =>
                   row.map((cell: any) =>
                     renderParagraphBlock(

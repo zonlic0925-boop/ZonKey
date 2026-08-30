@@ -61,7 +61,7 @@ export const SubNavPills: React.FC<SubNavPillsProps> = ({
               {opt.label}
               {opt.badge !== undefined && (
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold border border-mem-ink ${
+                  className={`px-1.5 py-0.2 rounded-full text-xs font-bold border border-mem-ink ${
                     isActive ? 'bg-white text-mem-ink' : 'bg-mem-ink/10 text-mem-ink'
                   }`}
                 >

@@ -659,7 +659,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
           </div>
           <div className="shrink-0 px-3 pt-2 pb-1 border-t-2 border-mem-ink/15">
             <h3 className="text-xs font-bold text-mem-ink/70">{t('drawing.hitsTitle', { count: candidates.length })}</h3>
-            <p className="text-[10px] text-mem-ink/40">{t('drawing.hitsHint')}</p>
+            <p className="text-xs text-mem-ink/40">{t('drawing.hitsHint')}</p>
           </div>
           <div className="lg:contents max-h-[38vh] min-h-0 overflow-y-auto flex flex-col">
           <CandidateListPanel

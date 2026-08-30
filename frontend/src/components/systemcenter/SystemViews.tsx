@@ -18,7 +18,7 @@ export function formatBytes(bytes?: number | null): string {
 
 export const KVTile: React.FC<{ label: string; value: React.ReactNode; wide?: boolean }> = ({ label, value, wide }) => (
   <div className={`p-3 bg-white border-2 border-mem-ink rounded-xl ${wide ? 'col-span-full' : ''}`}>
-    <p className="text-[10px] font-bold text-mem-ink/50">{label}</p>
+    <p className="text-xs font-bold text-mem-ink/60">{label}</p>
     <p className="text-sm font-bold font-display text-mem-ink mt-0.5 break-all">{value ?? '—'}</p>
   </div>
 )
@@ -87,7 +87,7 @@ export const SystemInfoView: React.FC<{ endpoint: string; title: string }> = ({ 
               <div className="mt-1.5 h-2 border-2 border-mem-ink rounded-full overflow-hidden bg-mem-cream">
                 <div className="h-full bg-mem-teal" style={{ width: `${Math.min(100, Number(disk.percent ?? 0))}%` }} />
               </div>
-              <p className="text-[10px] text-mem-ink/50 font-mono mt-1">
+              <p className="text-xs text-mem-ink/60 font-mono mt-1">
                 {formatBytes(Number(disk.used_bytes))} / {formatBytes(Number(disk.total_bytes))}
               </p>
             </div>
@@ -100,7 +100,7 @@ export const SystemInfoView: React.FC<{ endpoint: string; title: string }> = ({ 
           {gpus.map((gpu, index) => (
             <div key={index} className="p-3 bg-white border-2 border-mem-ink rounded-xl text-xs">
               <p className="font-bold text-mem-ink">{String(gpu.name ?? '—')}</p>
-              <p className="text-[10px] text-mem-ink/50 font-mono mt-0.5">
+              <p className="text-xs text-mem-ink/60 font-mono mt-0.5">
                 {t('systemcenter.driver')}: {String(gpu.driver_version ?? '—')} · VRAM: {formatBytes(Number(gpu.adapter_ram_bytes))}
               </p>
             </div>
@@ -189,7 +189,7 @@ export const CleanupView: React.FC = () => {
             <div key={tier.tier} className="p-3 bg-white border-2 border-mem-ink rounded-xl flex items-center justify-between gap-3 flex-wrap">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-mem-ink">{tier.name}</p>
-                <p className="text-[11px] text-mem-ink/60 font-mono mt-0.5">
+                <p className="text-xs text-mem-ink/60 font-mono mt-0.5">
                   {formatBytes(tier.bytes)} · {tier.count}
                 </p>
               </div>
@@ -296,7 +296,7 @@ export const LargeFileView: React.FC = () => {
             {files.map((file) => (
               <li key={file.path} className="px-3 py-1.5 bg-white border-2 border-mem-ink rounded-xl text-xs">
                 <p className="font-mono font-bold truncate">{file.path}</p>
-                <p className="text-[10px] text-mem-ink/50 font-mono">{formatBytes(file.size_bytes)}</p>
+                <p className="text-xs text-mem-ink/60 font-mono">{formatBytes(file.size_bytes)}</p>
               </li>
             ))}
           </ul>

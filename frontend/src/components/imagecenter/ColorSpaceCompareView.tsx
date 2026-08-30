@@ -124,7 +124,7 @@ export const ColorSpaceCompareView: React.FC = () => {
               {gamuts.map((g) => (
                 <span
                   key={g.id}
-                  className={`px-2 py-0.5 text-[11px] font-bold border-2 border-mem-ink rounded-md ${
+                  className={`px-2 py-0.5 text-xs font-bold border-2 border-mem-ink rounded-md ${
                     g.ok ? 'bg-mem-teal/70' : 'bg-white text-mem-ink/40 line-through'
                   }`}
                   title={g.ok ? t('imagecenter.csInGamut') : t('imagecenter.csOutOfGamut')}
@@ -176,8 +176,8 @@ export const ColorSpaceCompareView: React.FC = () => {
               const cfg = COLOR_SPACE_SLIDER_CONFIG[id].channels
               return (
                 <div key={id} className="px-2 py-1.5 border border-mem-ink/30 rounded-lg">
-                  <p className="text-[10px] font-black uppercase text-mem-ink/50">{id}</p>
-                  <p className="font-mono text-[11px] font-bold break-all">
+                  <p className="text-xs font-black uppercase text-mem-ink/60">{id}</p>
+                  <p className="font-mono text-xs font-bold break-all">
                     {cfg.map((c) => fmtColorNumber(v[c.key], c.decimals)).join(' · ')}
                   </p>
                 </div>
@@ -216,8 +216,8 @@ const CssCards: React.FC<{ cards: Array<{ label: string; code: string }>; copied
             className="flex items-center justify-between gap-2 px-3 py-1.5 text-left border-2 border-mem-ink rounded-xl hover:bg-mem-yellow/20"
           >
             <span className="min-w-0">
-              <span className="block text-[10px] font-black uppercase text-mem-ink/50">{card.label}</span>
-              <span className="block font-mono text-[11px] font-bold truncate">{card.code}</span>
+              <span className="block text-xs font-black uppercase text-mem-ink/60">{card.label}</span>
+              <span className="block font-mono text-xs font-bold truncate">{card.code}</span>
             </span>
             {copied === card.label ? (
               <Check className="w-3.5 h-3.5 text-mem-teal shrink-0" />
@@ -227,7 +227,7 @@ const CssCards: React.FC<{ cards: Array<{ label: string; code: string }>; copied
           </button>
         ))}
       </div>
-      {copied && <p className="mt-2 text-[11px] font-bold text-mem-teal">{copiedLabel}</p>}
+      {copied && <p className="mt-2 text-xs font-bold text-mem-teal">{copiedLabel}</p>}
     </div>
   )
 }

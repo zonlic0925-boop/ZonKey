@@ -93,7 +93,7 @@ export const MortgageCalcView: React.FC = () => {
                 )}
               </div>
               <div className="max-h-72 overflow-auto">
-                <table className="w-full text-[11px] font-mono">
+                <table className="w-full text-xs font-mono">
                   <thead className="sticky top-0 bg-white">
                     <tr className="text-left text-mem-ink/60 border-b border-mem-ink/20">
                       <th className="px-3 py-1.5">{t('calcdev.month')}</th>

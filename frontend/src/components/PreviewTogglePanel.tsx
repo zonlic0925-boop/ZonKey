@@ -21,7 +21,7 @@ export const PreviewTogglePanel: React.FC<PreviewTogglePanelProps> = ({
       role="group"
       aria-label={t('canvas.previewToggleTitle')}
     >
-      <span className="text-[10px] font-bold text-mem-ink/60 uppercase tracking-wide">
+      <span className="text-xs font-bold text-mem-ink/60 uppercase tracking-wide">
         {t('canvas.previewToggleTitle')}
       </span>
       <div

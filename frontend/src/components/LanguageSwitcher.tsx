@@ -35,8 +35,8 @@ export const LanguageSwitcher: React.FC = () => {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <Languages className="w-3.5 h-3.5 text-mem-ink/50" />
-        <span className="text-[10px] font-bold text-mem-ink min-w-[2rem] text-center">
+        <Languages className="w-3.5 h-3.5 text-mem-ink/60" />
+        <span className="text-xs font-bold text-mem-ink min-w-[2rem] text-center">
           {LOCALE_LABELS[locale]}
         </span>
         <ChevronDown className={`w-3 h-3 text-mem-ink/40 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -55,14 +55,14 @@ export const LanguageSwitcher: React.FC = () => {
               role="menuitem"
               onClick={() => pick(code)}
               title={LOCALE_NAMES[code]}
-              className={`w-full text-left px-3 py-2 text-[11px] transition-colors ${
+              className={`w-full text-left px-3 py-2 text-xs transition-colors ${
                 locale === code
                   ? 'bg-mem-teal/30 font-bold text-mem-ink'
                   : 'text-mem-ink/70 hover:bg-mem-yellow/40'
               }`}
             >
               <span className="font-semibold">{LOCALE_LABELS[code]}</span>
-              <span className="block text-[10px] text-mem-ink/50 mt-0.5">{LOCALE_NAMES[code]}</span>
+              <span className="block text-xs text-mem-ink/60 mt-0.5">{LOCALE_NAMES[code]}</span>
             </button>
           ))}
         </div>

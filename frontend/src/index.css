@@ -123,7 +123,7 @@
   }
 
   .brand-credit {
-    @apply font-brand-script text-mem-ink/50 leading-none;
+    @apply font-brand-script text-mem-ink/60 leading-none;
     letter-spacing: 0.04em;
   }
 }

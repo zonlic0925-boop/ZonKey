@@ -149,7 +149,7 @@ export const ColorPaletteView: React.FC = () => {
             <div key={color.hex} className="flex items-center gap-3 px-3 py-2 bg-white border-2 border-mem-ink rounded-xl">
               <span className="w-8 h-8 rounded-lg border-2 border-mem-ink shrink-0" style={{ backgroundColor: color.hex }} />
               <code className="text-xs font-mono font-bold">{color.hex}</code>
-              <span className="text-xs font-bold text-mem-ink/50 ml-auto">{Math.round(color.ratio * 100)}%</span>
+              <span className="text-xs font-bold text-mem-ink/60 ml-auto">{Math.round(color.ratio * 100)}%</span>
             </div>
           ))}
         </div>

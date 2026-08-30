@@ -61,7 +61,7 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
         return <ConvertView op={tool} />
       }
       return (
-        <div className="flex flex-col items-center justify-center p-12 text-center text-mem-ink/50">
+        <div className="flex flex-col items-center justify-center p-12 text-center text-mem-ink/60">
           <p className="text-lg font-medium mb-2">抱歉，功能维护中</p>
           <p className="text-sm">引擎在 {tool} 处理期间已离线</p>
         </div>

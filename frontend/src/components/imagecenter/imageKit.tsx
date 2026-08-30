@@ -44,7 +44,7 @@ export const ImagePicker: React.FC<{
                 <span className="font-mono font-bold truncate">{picked.name}</span>
               </span>
               <span className="flex items-center gap-2 shrink-0">
-                <span className="text-mem-ink/50">{(picked.size / 1024).toFixed(0)} KB</span>
+                <span className="text-mem-ink/60">{(picked.size / 1024).toFixed(0)} KB</span>
                 <button
                   type="button"
                   onClick={() => onChange(files.filter((_, i) => i !== index))}
@@ -65,7 +65,7 @@ export const SaveRow: React.FC<{ blob: Blob; fileName: string }> = ({ blob, file
   <li className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border-2 border-mem-ink rounded-xl text-xs">
     <span className="font-mono font-bold truncate">{fileName}</span>
     <span className="flex items-center gap-2 shrink-0">
-      <span className="text-mem-ink/50">{(blob.size / 1024).toFixed(1)} KB</span>
+      <span className="text-mem-ink/60">{(blob.size / 1024).toFixed(1)} KB</span>
       <MemphisButton size="sm" variant="white" onClick={() => downloadBlob(blob, fileName)}>
         保存
       </MemphisButton>

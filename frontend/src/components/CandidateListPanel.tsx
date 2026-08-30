@@ -28,7 +28,7 @@ export const CandidateListPanel: React.FC<CandidateListPanelProps> = ({
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 border-t-2 border-mem-ink/15">
       {(scanning || detecting) && candidates.length === 0 && (
-        <div className="text-center text-xs text-mem-ink/50 py-6">
+        <div className="text-center text-xs text-mem-ink/60 py-6">
           <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
           {detecting ? t('candidateList.detecting') : t('candidateList.loadingPreview')}
         </div>
@@ -50,7 +50,7 @@ export const CandidateListPanel: React.FC<CandidateListPanelProps> = ({
             <div className="font-semibold truncate" title={c.text}>
               {c.text}
             </div>
-            <div className="text-[10px] text-mem-ink/50 mt-0.5">
+            <div className="text-xs text-mem-ink/60 mt-0.5">
               {t('candidateList.meta', {
                 page: c.page_num,
                 source: c.is_manual ? t('candidateList.sourceManual') : t('candidateList.sourceSystem'),
@@ -60,14 +60,14 @@ export const CandidateListPanel: React.FC<CandidateListPanelProps> = ({
           <button
             type="button"
             title={t('candidateList.deleteTitle')}
-            className="shrink-0 p-1 rounded-md text-mem-ink/40 hover:text-mem-coral hover:bg-mem-coral/10"
+            className="shrink-0 p-2.5 -m-1.5 rounded-md text-mem-ink/40 hover:text-mem-coral hover:bg-mem-coral/10"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               onDelete(c.id)
             }}
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ))}

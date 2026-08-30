@@ -58,7 +58,7 @@ export const MediaOutputList: React.FC<{ outputs: MediaJobOutput[] }> = ({ outpu
         >
           <span className="font-mono font-bold truncate min-w-0">{output.name}</span>
           <span className="flex items-center gap-1.5 shrink-0">
-            {savedName === output.name && <span className="text-[11px] font-bold text-mem-teal">{t('mediaJob.saved')}</span>}
+            {savedName === output.name && <span className="text-xs font-bold text-mem-teal">{t('mediaJob.saved')}</span>}
             <a
               href={buildDownloadUrl(output.dir, output.name)}
               download={output.name}

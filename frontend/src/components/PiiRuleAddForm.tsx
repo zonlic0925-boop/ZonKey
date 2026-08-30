@@ -122,7 +122,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
     <div className="pt-4 pb-2 space-y-3 border-b-2 border-mem-ink/10">
       <div>
         <h3 className="text-xs font-bold text-mem-ink/80">{t('piiForm.title')}</h3>
-        <p className="text-[10px] text-mem-ink/45 mt-0.5">{t('piiForm.subtitle')}</p>
+        <p className="text-xs text-mem-ink/45 mt-0.5">{t('piiForm.subtitle')}</p>
       </div>
 
       <input
@@ -134,7 +134,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
       />
 
       <div>
-        <label className="text-[10px] font-semibold text-mem-ink/55 mb-1.5 block">{t('piiForm.matchModeLabel')}</label>
+        <label className="text-xs font-semibold text-mem-ink/55 mb-1.5 block">{t('piiForm.matchModeLabel')}</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
           {(Object.keys(MODE_KEYS) as PiiMatchMode[])
             .filter((m) => m !== 'advanced' || showAdvanced)
@@ -143,7 +143,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
                 key={matchMode}
                 type="button"
                 onClick={() => setMode(matchMode)}
-                className={`text-left px-3 py-2 rounded-xl border-2 text-[11px] transition-all ${
+                className={`text-left px-3 py-2 rounded-xl border-2 text-xs transition-all ${
                   mode === matchMode
                     ? 'bg-mem-teal/25 border-mem-teal shadow-memphis-sm font-semibold'
                     : 'bg-white border-mem-ink/15 hover:border-mem-ink/30'
@@ -153,7 +153,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
               </button>
             ))}
         </div>
-        <p className="text-[10px] text-mem-ink/45 mt-1.5">{t(MODE_KEYS[mode].hint)}</p>
+        <p className="text-xs text-mem-ink/45 mt-1.5">{t(MODE_KEYS[mode].hint)}</p>
       </div>
 
       {mode === 'contains' && (
@@ -211,7 +211,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="text-[10px] text-mem-ink/50">{t('piiForm.categoryLabel')}</label>
+        <label className="text-xs text-mem-ink/60">{t('piiForm.categoryLabel')}</label>
         <select
           value={categoryKey}
           onChange={(e) => setCategoryKey(e.target.value as CategoryKey)}
@@ -225,7 +225,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
         </select>
       </div>
 
-      <div className="rounded-xl bg-mem-cream/80 border-2 border-mem-ink/10 px-3 py-2 text-[11px] text-mem-ink/65">
+      <div className="rounded-xl bg-mem-cream/80 border-2 border-mem-ink/10 px-3 py-2 text-xs text-mem-ink/65">
         {t('piiForm.preview', { preview })}
       </div>
 
@@ -242,7 +242,7 @@ export const PiiRuleAddForm: React.FC<PiiRuleAddFormProps> = ({ disabled, onAdd,
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="memphis-btn-ghost flex items-center gap-1 text-[11px] text-mem-ink/50"
+          className="memphis-btn-ghost flex items-center gap-1 text-xs text-mem-ink/60"
         >
           {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           {showAdvanced ? t('piiForm.collapseAdvanced') : t('piiForm.expandAdvanced')}

@@ -129,7 +129,7 @@ export const HashCryptoView: React.FC = () => {
       <div className="flex items-center gap-2 mb-2">
         <Lock className="w-5 h-5 text-mem-lavender" />
         <h3 className="font-display font-black text-mem-ink">{t('tools.hashCrypto')}</h3>
-        <span className="text-[10px] font-bold text-mem-ink/50">{t('calcdev.cryptoCount')}</span>
+        <span className="text-xs font-bold text-mem-ink/60">{t('calcdev.cryptoCount')}</span>
       </div>
 
       <TabsRow<Section>
@@ -292,7 +292,7 @@ export const HashCryptoView: React.FC = () => {
             <MemphisButton variant="lavender" onClick={genRsa} disabled={rsaBusy}>
               {t('calcdev.genKeyPair')}
             </MemphisButton>
-            <span className="text-[10px] font-bold text-mem-ink/50 pb-2">{t('calcdev.rsaNote')}</span>
+            <span className="text-xs font-bold text-mem-ink/60 pb-2">{t('calcdev.rsaNote')}</span>
           </div>
 
           <Field label={t('calcdev.publicKey')}>

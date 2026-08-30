@@ -504,7 +504,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   const toolBtn = (active: boolean, accent: string) =>
     active
       ? `${accent} border-2 border-mem-ink shadow-memphis-sm`
-      : 'text-mem-ink/50 hover:text-mem-ink'
+      : 'text-mem-ink/60 hover:text-mem-ink'
 
   const canvasTools = (horizontal: boolean) => (
     <>
@@ -648,7 +648,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             )}
 
             {isScanning && previewMode === 'before' && !previewSyncing && !pagesLoading && (
-              <div className="absolute top-3 right-3 z-40 flex items-center gap-2 px-2 py-1 rounded-lg bg-white/90 border border-mem-ink/30 shadow-sm text-[10px] font-medium text-mem-ink/70">
+              <div className="absolute top-3 right-3 z-40 flex items-center gap-2 px-2 py-1 rounded-lg bg-white/90 border border-mem-ink/30 shadow-sm text-xs font-medium text-mem-ink/70">
                 <span className="w-1.5 h-1.5 rounded-full bg-mem-coral animate-pulse" />
                 {t('canvas.scanningOverlay')}
               </div>
@@ -783,7 +783,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4 text-mem-ink/50">
+          <div className="flex flex-col items-center justify-center gap-4 text-mem-ink/60">
             <div className="w-16 h-16 rounded-2xl memphis-card flex items-center justify-center">
               <Layers className="w-8 h-8 text-mem-ink/40" />
             </div>

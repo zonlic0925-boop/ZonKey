@@ -72,7 +72,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ onNotify, backendOnl
                 <div className={`text-base md:text-2xl font-display font-black ${card.accent ? 'text-mem-teal' : ''}`}>
                   {card.value}
                 </div>
-                <div className="text-xs text-mem-ink/50">{t(card.labelKey)}</div>
+                <div className="text-xs text-mem-ink/60">{t(card.labelKey)}</div>
               </div>
             </div>
           );
@@ -85,7 +85,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ onNotify, backendOnl
             <History className="w-5 h-5 text-mem-pink" />
             <div>
               <h2 className="text-sm font-display font-bold">{t('audit.title')}</h2>
-              <p className="text-[11px] text-mem-ink/50">{t('audit.subtitle')}</p>
+              <p className="text-xs text-mem-ink/60">{t('audit.subtitle')}</p>
             </div>
           </div>
           <button onClick={fetchAuditLogs} className="memphis-btn-ghost p-2">
@@ -125,11 +125,11 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ onNotify, backendOnl
                   <div>
                     <div className="text-xs font-bold flex items-center gap-2">
                       <span>{log.filename}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-lg bg-mem-lime/40 border border-mem-ink/20">
+                      <span className="text-xs px-2 py-0.5 rounded-lg bg-mem-lime/40 border border-mem-ink/20">
                         {t('audit.completed')}
                       </span>
                     </div>
-                    <div className="text-[11px] text-mem-ink/50 mt-1 flex items-center gap-3">
+                    <div className="text-xs text-mem-ink/60 mt-1 flex items-center gap-3">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {log.timestamp}
                       </span>
@@ -139,8 +139,8 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ onNotify, backendOnl
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] text-mem-ink/40 font-mono">#{log.id}</div>
-                  <div className="text-[11px] text-mem-ink/50 mt-1 truncate max-w-[280px]">
+                  <div className="text-xs text-mem-ink/40 font-mono">#{log.id}</div>
+                  <div className="text-xs text-mem-ink/60 mt-1 truncate max-w-[280px]">
                     {log.output_path}
                   </div>
                 </div>

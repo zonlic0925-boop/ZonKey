@@ -96,7 +96,7 @@ export const MarkdownEditorView: React.FC = () => {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyAction(action.id)}
-            className="px-2 py-1 text-[11px] font-bold border-2 border-mem-ink rounded-lg bg-white hover:bg-mem-pink/20 transition-colors min-w-[28px]"
+            className="px-2 py-1 text-xs font-bold border-2 border-mem-ink rounded-lg bg-white hover:bg-mem-pink/20 transition-colors min-w-[28px]"
           >
             {action.label}
           </button>

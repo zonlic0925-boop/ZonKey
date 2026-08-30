@@ -43,7 +43,7 @@ export const ExportSettingsPanel: React.FC<ExportSettingsPanelProps> = ({
 
   return (
     <div className={`memphis-card-flat p-3 flex flex-col gap-2 ${compact ? '' : 'w-full'} ${className}`}>
-      <div className="text-[11px] font-bold flex items-center gap-1.5 text-mem-ink/70">
+      <div className="text-xs font-bold flex items-center gap-1.5 text-mem-ink/70">
         <FolderOpen className="w-3.5 h-3.5" />
         {t('export.settingsTitle')}
       </div>

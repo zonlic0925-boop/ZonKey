@@ -25,15 +25,15 @@ export const MemphisDecor: React.FC = () => (
       />
     </svg>
 
-    {/* 散布波点 */}
-    <div className="absolute top-[18%] right-[22%] w-3 h-3 rounded-full bg-mem-coral border-2 border-mem-ink" />
-    <div className="absolute top-[35%] left-[8%] w-2 h-2 rounded-full bg-mem-teal border-2 border-mem-ink" />
-    <div className="absolute bottom-[30%] right-[15%] w-4 h-4 rounded-full bg-mem-yellow border-2 border-mem-ink" />
-    <div className="absolute top-[55%] left-[5%] w-2.5 h-2.5 rounded-full bg-mem-pink border-2 border-mem-ink" />
+    {/* 散布波点 (降低对比度，防止被误认为脏数据/死像素) */}
+    <div className="absolute top-[18%] right-[22%] w-3 h-3 rounded-full bg-mem-coral/30 border-2 border-mem-ink/20" />
+    <div className="absolute top-[35%] left-[8%] w-2 h-2 rounded-full bg-mem-teal/30 border-2 border-mem-ink/20" />
+    <div className="absolute bottom-[30%] right-[15%] w-4 h-4 rounded-full bg-mem-yellow/30 border-2 border-mem-ink/20" />
+    <div className="absolute top-[55%] left-[5%] w-2.5 h-2.5 rounded-full bg-mem-pink/30 border-2 border-mem-ink/20" />
 
-    {/* 中部偏右：小条纹块 */}
+    {/* 中部偏右：小条纹块 (降低对比度) */}
     <div
-      className="absolute top-[12%] left-[45%] w-10 h-10 border-[3px] border-mem-ink opacity-40"
+      className="absolute top-[12%] left-[45%] w-10 h-10 border-[3px] border-mem-ink/20 opacity-20"
       style={{
         backgroundImage: 'repeating-linear-gradient(45deg, #4ECDC4, #4ECDC4 4px, transparent 4px, transparent 8px)',
       }}

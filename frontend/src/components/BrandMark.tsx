@@ -64,16 +64,16 @@ export const BrandMark: React.FC<BrandMarkProps> = ({
             {APP_NAME}
           </span>
           {!compact && (
-            <span className="text-[10px] px-2 py-0.5 rounded-lg bg-mem-teal/30 text-mem-ink border-2 border-mem-ink font-semibold mb-1">
+            <span className="text-xs px-2 py-0.5 rounded-lg bg-mem-teal/30 text-mem-ink border-2 border-mem-ink font-semibold mb-1">
               {t('brand.workbenchBadge')}
             </span>
           )}
         </div>
-        <p className={`brand-credit mt-1 ${compact ? 'text-[11px]' : 'text-[13px]'}`}>
+        <p className={`brand-credit mt-1 ${compact ? 'text-xs' : 'text-[13px]'}`}>
           {APP_TAGLINE}
         </p>
         {showSubtitle && !compact && (
-          <p className="text-[10px] text-mem-ink/45 mt-1 tracking-wide">{t('brand.subtitle')}</p>
+          <p className="text-xs text-mem-ink/45 mt-1 tracking-wide">{t('brand.subtitle')}</p>
         )}
       </div>
     </div>

@@ -41,7 +41,7 @@ export const PdfFilePicker: React.FC<{
             <li key={`${picked.name}-${index}`} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border-2 border-mem-ink rounded-xl text-xs">
               <span className="font-mono font-bold truncate">{picked.name}</span>
               <span className="flex items-center gap-2 shrink-0">
-                <span className="text-mem-ink/50">{(picked.size / 1024).toFixed(0)} KB</span>
+                <span className="text-mem-ink/60">{(picked.size / 1024).toFixed(0)} KB</span>
                 <button
                   type="button"
                   onClick={() => onChange(files.filter((_, i) => i !== index))}

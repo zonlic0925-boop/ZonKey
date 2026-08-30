@@ -106,7 +106,7 @@ export const AuditView: React.FC = () => {
                   <td className="py-3.5 px-4 font-mono font-bold text-rose-400">{item.redactionCount} 处</td>
                   <td className="py-3.5 px-4 text-slate-300">{item.mode}</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold border border-emerald-400/30">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-400/30">
                       <CheckCircle2 className="w-3 h-3" /> 合规成功
                     </span>
                   </td>

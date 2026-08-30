@@ -285,13 +285,13 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
             <input type="file" accept=".pdf" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
             <Upload className="w-8 h-8 mx-auto mb-2 text-mem-teal" />
             <h3 className="text-sm font-bold">{t('docPdf.uploadTitle')}</h3>
-            <p className="text-[11px] text-mem-ink/50 mt-1">{t('docPdf.uploadSubtitle', { appName: APP_NAME })}</p>
+            <p className="text-xs text-mem-ink/60 mt-1">{t('docPdf.uploadSubtitle', { appName: APP_NAME })}</p>
           </div>
         </div>
 
         <div className="shrink-0 px-3 pt-2 pb-1 border-b-2 border-mem-ink/15">
           <h3 className="text-xs font-bold text-mem-ink/70">{t('docPdf.hitsTitle', { count: candidates.length })}</h3>
-          <p className="text-[10px] text-mem-ink/40">{t('docPdf.hitsHint')}</p>
+          <p className="text-xs text-mem-ink/40">{t('docPdf.hitsHint')}</p>
         </div>
 
         <CandidateListPanel
@@ -325,7 +325,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
           />
           <ExportSettingsPanel settings={exportSettings} onChange={setExportSettings} compact onNotify={onNotify} className="flex" />
           {filename && (
-            <p className="text-[10px] text-mem-ink/40 truncate">{filename}</p>
+            <p className="text-xs text-mem-ink/40 truncate">{filename}</p>
           )}
         </div>
       </div>

@@ -86,24 +86,24 @@ export const OfflinePrivacyNotice: React.FC<OfflinePrivacyNoticeProps> = ({ open
                 <span className="text-mem-ink/70">{item.icon}</span>
                 <span className="font-display font-bold text-mem-ink text-xs">{item.title}</span>
                 {item.id === mode && (
-                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-mem-ink bg-mem-yellow text-mem-ink">
+                  <span className="ml-auto text-xs font-bold px-1.5 py-0.5 rounded-md border border-mem-ink bg-mem-yellow text-mem-ink">
                     {t('privacy.currentMode')}
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-mem-ink/70 leading-relaxed">{item.body}</p>
+              <p className="text-xs text-mem-ink/70 leading-relaxed">{item.body}</p>
             </div>
           ))}
         </div>
 
-        <ul className="text-[11px] text-mem-ink/70 space-y-1 mb-3 list-none">
+        <ul className="text-xs text-mem-ink/70 space-y-1 mb-3 list-none">
           <li className="flex gap-1.5"><span className="text-mem-teal font-bold">✓</span>{t('privacy.pointLocal')}</li>
           <li className="flex gap-1.5"><span className="text-mem-teal font-bold">✓</span>{t('privacy.pointNoAccount')}</li>
           <li className="flex gap-1.5"><span className="text-mem-teal font-bold">✓</span>{t('privacy.pointConnection')}</li>
         </ul>
 
         {restricted && (
-          <p className="text-[11px] text-mem-ink/70 bg-mem-yellow/40 border border-mem-ink/20 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+          <p className="text-xs text-mem-ink/70 bg-mem-yellow/40 border border-mem-ink/20 rounded-lg px-3 py-2 mb-3 leading-relaxed">
             {t('privacy.restrictedBrowser')}
           </p>
         )}
@@ -112,7 +112,7 @@ export const OfflinePrivacyNotice: React.FC<OfflinePrivacyNoticeProps> = ({ open
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] font-medium text-mem-ink/50 hover:text-mem-ink px-3 py-2 rounded-lg"
+            className="text-xs font-medium text-mem-ink/60 hover:text-mem-ink px-3 py-2 rounded-lg"
           >
             {t('privacy.later')}
           </button>
@@ -129,7 +129,7 @@ export const OfflinePrivacyNotice: React.FC<OfflinePrivacyNoticeProps> = ({ open
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-mem-yellow/40 text-mem-ink/50"
+          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-mem-yellow/40 text-mem-ink/60"
           aria-label={t('privacy.title')}
         >
           <X className="w-4 h-4" />

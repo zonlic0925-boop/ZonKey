@@ -93,7 +93,7 @@ export const PasswordGenView: React.FC = () => {
             <CopyButton text={password} />
           </div>
           <div>
-            <div className="flex justify-between text-[11px] font-bold text-mem-ink/70 mb-1">
+            <div className="flex justify-between text-xs font-bold text-mem-ink/70 mb-1">
               <span>{t('calcdev.strength')}: {t(`calcdev.strength_${strength.label}`)}</span>
               <span>{t('calcdev.entropy')}: {strength.entropy.toFixed(0)} bits</span>
             </div>

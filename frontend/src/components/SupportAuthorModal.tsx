@@ -32,7 +32,7 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-mem-yellow/40 text-mem-ink/50"
+          className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-mem-yellow/40 text-mem-ink/60"
           aria-label={t('support.close')}
         >
           <X className="w-4 h-4" />
@@ -57,7 +57,7 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
         </div>
 
         <div className="rounded-xl border-2 border-mem-ink bg-white p-3 mb-4 space-y-2">
-          <p className="text-[11px] font-semibold text-mem-ink/70">{t('support.linksTitle')}</p>
+          <p className="text-xs font-semibold text-mem-ink/70">{t('support.linksTitle')}</p>
           <a
             href={AUTHOR_GITHUB_URL}
             target="_blank"
@@ -69,7 +69,7 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
                 <User className="w-3.5 h-3.5 shrink-0" />
                 {t('support.githubProfile')}
               </span>
-              <span className="block text-[10px] text-mem-ink/45 truncate mt-0.5">{AUTHOR_GITHUB_URL}</span>
+              <span className="block text-xs text-mem-ink/45 truncate mt-0.5">{AUTHOR_GITHUB_URL}</span>
             </span>
             <ExternalLink className="w-3 h-3 text-mem-ink/40 shrink-0" />
           </a>
@@ -84,16 +84,16 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
                 <Star className="w-3.5 h-3.5 text-mem-coral shrink-0" />
                 {t('support.projectRepo')}
               </span>
-              <span className="block text-[10px] text-mem-ink/45 truncate mt-0.5">{PROJECT_REPO_URL}</span>
+              <span className="block text-xs text-mem-ink/45 truncate mt-0.5">{PROJECT_REPO_URL}</span>
             </span>
             <ExternalLink className="w-3 h-3 text-mem-ink/40 shrink-0" />
           </a>
-          <p className="text-[10px] text-mem-ink/55 leading-relaxed pt-1 border-t border-mem-ink/10">
+          <p className="text-xs text-mem-ink/55 leading-relaxed pt-1 border-t border-mem-ink/10">
             {t('support.starHint')}
           </p>
         </div>
 
-        <p className="text-[11px] text-mem-ink/50 text-center mb-3">{t('support.qrHint')}</p>
+        <p className="text-xs text-mem-ink/60 text-center mb-3">{t('support.qrHint')}</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="memphis-card-flat p-2 flex flex-col items-center gap-1.5">
             <img
@@ -101,7 +101,7 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
               alt={t('support.alipayQrAlt')}
               className="w-full max-w-[140px] rounded-lg border border-mem-ink/10"
             />
-            <span className="text-[10px] font-semibold text-[#1677FF]">{t('support.alipayLabel')}</span>
+            <span className="text-xs font-semibold text-[#1677FF]">{t('support.alipayLabel')}</span>
           </div>
           <div className="memphis-card-flat p-2 flex flex-col items-center gap-1.5">
             <img
@@ -109,11 +109,11 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
               alt={t('support.wechatQrAlt')}
               className="w-full max-w-[140px] rounded-lg border border-mem-ink/10"
             />
-            <span className="text-[10px] font-semibold text-[#07C160]">{t('support.wechatLabel')}</span>
+            <span className="text-xs font-semibold text-[#07C160]">{t('support.wechatLabel')}</span>
           </div>
         </div>
 
-        <p className="text-[10px] text-mem-ink/40 text-center mt-4">
+        <p className="text-xs text-mem-ink/40 text-center mt-4">
           {t('support.thanks', { appName: APP_NAME })}
         </p>
       </div>
