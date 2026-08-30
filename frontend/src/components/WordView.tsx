@@ -207,8 +207,8 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
   };
 
   return (
-    <div className="flex-1 w-full h-full p-3 md:p-6 overflow-hidden flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0">
-      <div className="w-full lg:w-[460px] lg:h-full shrink-0 flex flex-col gap-4 max-h-[45vh] lg:max-h-none overflow-y-auto">
+    <div className="flex-1 w-full h-full p-3 md:p-6 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0">
+      <div className="w-full lg:w-[460px] lg:h-full shrink-0 flex flex-col gap-4 lg:max-h-none lg:overflow-y-auto">
         <div className="p-6 memphis-card flex flex-col items-center justify-center text-center relative overflow-hidden group">
           <input
             type="file"
@@ -330,7 +330,7 @@ export const WordView: React.FC<WordViewProps> = ({ onNotify, backendOnline }) =
         </div>
       </div>
 
-      <div className="flex-1 min-h-[40vh] lg:min-h-0 lg:h-full memphis-card p-4 md:p-6 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-[40vh] lg:min-h-0 lg:h-full memphis-card p-4 md:p-6 flex flex-col lg:overflow-hidden">
         <div className="flex items-center justify-between pb-4 border-b-2 border-mem-ink/10">
           <span className="text-xs font-bold flex items-center gap-2">
             <Layers className="w-4 h-4 text-mem-pink" />

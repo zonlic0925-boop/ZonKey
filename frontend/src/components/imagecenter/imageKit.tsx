@@ -1,6 +1,10 @@
 import React, { useRef } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { MemphisButton } from '../common/MemphisButton'
+import { downloadBlob } from '../../lib/deliver'
+
+// 统一交付层：桌面壳走服务端中转 + 原生另存为，浏览器直接 a[download]
+export { downloadBlob }
 
 export interface PickedImage {
   file: File
@@ -55,15 +59,6 @@ export const ImagePicker: React.FC<{
       )}
     </div>
   )
-}
-
-export function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 export const SaveRow: React.FC<{ blob: Blob; fileName: string }> = ({ blob, fileName }) => (

@@ -21,6 +21,7 @@ import { CheckCircle2, AlertCircle, Info, X, WifiOff } from 'lucide-react';
 import { useBackendStatus } from './lib/api';
 import { useI18n } from './i18n';
 import { APP_NAME, APP_TAGLINE } from './lib/brand';
+import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components/OfflinePrivacyNotice';
 
 export default function App() {
   const { t } = useI18n();
@@ -29,6 +30,8 @@ export default function App() {
   // 记住每个中心最后使用的工具，切回时不打断用户上下文
   const lastToolByCenter = useRef<Partial<Record<CenterId, ToolId>>>({ redact: 'drawing' });
   const { online, status, refresh } = useBackendStatus();
+  // 首次打开弹出「隐私与联网声明」；确认后 localStorage 记忆，页眉盾牌可重开
+  const [privacyNoticeOpen, setPrivacyNoticeOpen] = useState(() => !hasAcknowledgedPrivacyNotice());
 
   const [notification, setNotification] = useState<{
     msg: string;
@@ -82,6 +85,7 @@ export default function App() {
         onCenterChange={handleCenterChange}
         systemStatus={systemStatus}
         backendOnline={online}
+        onOpenPrivacy={() => setPrivacyNoticeOpen(true)}
       />
 
       {/* 二级子工具导航：所有中心固定渲染此条（等高），避免切换时布局跳变 */}
@@ -169,6 +173,8 @@ export default function App() {
           </button>
         </div>
       )}
+
+      <OfflinePrivacyNotice open={privacyNoticeOpen} onClose={() => setPrivacyNoticeOpen(false)} />
     </div>
   );
 }

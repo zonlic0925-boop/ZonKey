@@ -19,12 +19,25 @@ export type PdfToolId =
   | 'pdf-editor'
   | 'pdf-merge'
   | 'pdf-split'
+  | 'pdf-extract'
   | 'pdf-to-image'
+  | 'pdf-images-to-pdf'
   | 'pdf-rotate'
+  | 'pdf-compress'
+  | 'pdf-enhance'
+  | 'pdf-watermark'
+  | 'pdf-page-numbers'
+  | 'pdf-crop'
   | 'pdf-encrypt'
   | 'pdf-decrypt'
-  | 'pdf-compress'
-  | 'pdf-enhance';
+  | 'pdf-to-word'
+  | 'pdf-to-excel'
+  | 'pdf-to-ppt'
+  | 'office-to-pdf'
+  | 'compress-deep'
+  | 'html-to-pdf'
+  | 'ocr-export'
+  | 'pdf-repair';
 
 /** PPT 工坊 */
 export type PptToolId =

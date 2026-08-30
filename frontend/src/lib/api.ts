@@ -310,3 +310,194 @@ export function applyRemovedCandidateFilter<T extends { id: string }>(
   if (removed.size === 0) return items
   return items.filter((c) => !removed.has(c.id))
 }
+
+// ---------------------------------------------------------------------------
+// 音视讯中心长任务（视频转换 / 视频转GIF / 语音转写）
+// ---------------------------------------------------------------------------
+
+export interface MediaToolCapabilities {
+  ffmpeg: boolean
+  asr_engine: boolean
+  asr_default_model: string
+}
+
+export interface MediaJobOutput {
+  name: string
+  dir: string
+}
+
+export interface MediaJobStatus {
+  job_id: string
+  kind: string
+  status: 'running' | 'done' | 'error'
+  progress: number
+  stage: string
+  error: string | null
+  outputs: MediaJobOutput[]
+  detected_language?: string
+  duration?: number
+}
+
+export async function getMediaCapabilities(): Promise<MediaToolCapabilities> {
+  return apiFetch<MediaToolCapabilities>('/api/media/status', undefined, 10000)
+}
+
+export async function startVideoConvert(file: File, target: string): Promise<{ job_id: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('target', target)
+  return apiFetch('/api/media/video/convert', { method: 'POST', body: form }, 600000)
+}
+
+export async function startVideoGif(
+  file: File,
+  opts: { startS: number; endS: number; fps: number; width: number; quality: string }
+): Promise<{ job_id: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('start_s', String(opts.startS))
+  form.append('end_s', String(opts.endS))
+  form.append('fps', String(opts.fps))
+  form.append('width', String(opts.width))
+  form.append('quality', opts.quality)
+  return apiFetch('/api/media/video/gif', { method: 'POST', body: form }, 600000)
+}
+
+export async function startTranscription(
+  file: File,
+  language: string,
+  modelSize: string
+): Promise<{ job_id: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('language', language)
+  form.append('model_size', modelSize)
+  return apiFetch('/api/media/transcribe', { method: 'POST', body: form }, 600000)
+}
+
+export async function getMediaJob(jobId: string): Promise<MediaJobStatus> {
+  return apiFetch<MediaJobStatus>(`/api/media/jobs/${encodeURIComponent(jobId)}`, undefined, 30000)
+}
+
+/** 轮询媒体任务直至 done/error；onTick 每次采样回调。 */
+export async function pollMediaJob(
+  jobId: string,
+  onTick?: (status: MediaJobStatus) => void,
+  intervalMs = 1000
+): Promise<MediaJobStatus> {
+  for (;;) {
+    const status = await getMediaJob(jobId)
+    onTick?.(status)
+    if (status.status === 'done' || status.status === 'error') return status
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 文档转换（/api/convert，job 轮询模式）
+// ---------------------------------------------------------------------------
+
+export interface ConvertJobOutput {
+  name: string
+  dir: string
+}
+
+export interface ConvertJobStatus {
+  job_id: string
+  kind: string
+  status: 'running' | 'done' | 'error'
+  progress: number
+  stage: string
+  error: string | null
+  outputs: ConvertJobOutput[]
+  engine?: string
+  note?: string
+  warnings?: string[]
+  page_count?: number
+  dpi?: number
+  quality?: number
+  compression_ratio_pct?: number
+  char_count?: number
+}
+
+export interface ConvertCapability {
+  engines: Record<string, string | null>
+  pywin32: boolean
+  word_com: boolean
+  excel_com: boolean
+  rapidocr: boolean
+  word_fallback: boolean
+}
+
+export async function getConvertCapability(): Promise<ConvertCapability> {
+  return apiFetch<ConvertCapability>('/api/convert/capability', undefined, 10000)
+}
+
+export type ConvertOp =
+  | 'pdf-to-word'
+  | 'pdf-to-excel'
+  | 'pdf-to-ppt'
+  | 'office-to-pdf'
+  | 'compress-deep'
+  | 'ocr-export'
+
+export interface ConvertOptions {
+  dpi?: number
+  quality?: number
+  imageFormat?: 'png' | 'jpeg'
+  ocrOutput?: 'txt' | 'pdf'
+}
+
+export async function startConvertJob(op: ConvertOp, file: File, opts: ConvertOptions = {}): Promise<{ job_id: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  if (op === 'pdf-to-ppt') {
+    form.append('dpi', String(opts.dpi ?? 150))
+    form.append('image_format', opts.imageFormat ?? 'png')
+  } else if (op === 'compress-deep') {
+    form.append('dpi', String(opts.dpi ?? 144))
+    form.append('quality', String(opts.quality ?? 70))
+  } else if (op === 'ocr-export') {
+    form.append('output', opts.ocrOutput ?? 'txt')
+    form.append('dpi', String(opts.dpi ?? 200))
+  }
+  return apiFetch(`/api/convert/${op}`, { method: 'POST', body: form }, 600000)
+}
+
+export async function getConvertJob(jobId: string): Promise<ConvertJobStatus> {
+  return apiFetch<ConvertJobStatus>(`/api/convert/jobs/${encodeURIComponent(jobId)}`, undefined, 30000)
+}
+
+/** 轮询转换任务直至 done/error；onTick 每次采样回调。 */
+export async function pollConvertJob(
+  jobId: string,
+  onTick?: (status: ConvertJobStatus) => void,
+  intervalMs = 1000
+): Promise<ConvertJobStatus> {
+  for (;;) {
+    const status = await getConvertJob(jobId)
+    onTick?.(status)
+    if (status.status === 'done' || status.status === 'error') return status
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
+  }
+}
+
+/** HTML/Markdown → PDF（同步端点）：接受粘贴内容或 .html/.md/.txt 文件。 */
+export async function convertHtmlToPdf(
+  opts: { content?: string; file?: File | null; title?: string }
+): Promise<{ status: string; download_name: string; output_dir: string; engine: string; warnings?: string[] }> {
+  const form = new FormData()
+  if (opts.file) form.append('file', opts.file)
+  if (opts.content) form.append('content', opts.content)
+  form.append('title', opts.title || 'Document')
+  return apiFetch('/api/convert/html-to-pdf', { method: 'POST', body: form }, 120000)
+}
+
+/** PDF 修复（同步端点，pikepdf/qpdf 损坏恢复）。 */
+export async function convertRepair(
+  file: File
+): Promise<{ status: string; download_name: string; output_dir: string; page_count: number; engine: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  return apiFetch('/api/convert/repair', { method: 'POST', body: form }, 300000)
+}

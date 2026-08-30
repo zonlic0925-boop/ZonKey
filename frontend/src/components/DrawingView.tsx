@@ -616,7 +616,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
         }}
       />
       <div
-        className={`flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden relative min-h-0 ${isDragging ? 'ring-4 ring-mem-teal ring-inset' : ''}`}
+        className={`flex-1 w-full h-full flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden relative min-h-0 ${isDragging ? 'ring-4 ring-mem-teal ring-inset' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={async (e) => {
@@ -625,7 +625,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
           if (e.dataTransfer.files?.length) await processFiles(e.dataTransfer.files)
         }}
       >
-        <div className="order-2 lg:order-1 flex flex-col w-full lg:w-80 shrink-0 border-t-[3px] lg:border-t-0 lg:border-r-[3px] border-mem-ink min-h-0 max-h-[40vh] lg:max-h-none overflow-hidden">
+        <div className="order-2 lg:order-1 flex flex-col w-full lg:w-80 shrink-0 border-t-[3px] lg:border-t-0 lg:border-r-[3px] border-mem-ink min-h-0 lg:overflow-hidden">
           <div className="max-h-[120px] lg:max-h-[40%] min-h-[88px] shrink-0 flex flex-col overflow-hidden border-b-2 border-mem-ink/15">
             <FileListDrawer
             files={files}
@@ -661,6 +661,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             <h3 className="text-xs font-bold text-mem-ink/70">{t('drawing.hitsTitle', { count: candidates.length })}</h3>
             <p className="text-[10px] text-mem-ink/40">{t('drawing.hitsHint')}</p>
           </div>
+          <div className="lg:contents max-h-[38vh] min-h-0 overflow-y-auto flex flex-col">
           <CandidateListPanel
             candidates={candidates}
             selectedCandidateId={selectedCandidateId}
@@ -673,6 +674,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             detecting={isScanning}
             emptyHint={pages.length > 0 && !isScanning && !isPagesLoading ? t('drawing.noDrawingHits') : t('drawing.waitingScan')}
           />
+          </div>
           <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-visible">
           <div className="p-3 bg-white border-t-2 border-mem-ink/15 space-y-3">
             <RedactActionBar
@@ -690,11 +692,11 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
               downloadLabel={exportLabel}
               onNotify={onNotify}
             />
-            <ExportSettingsPanel settings={exportSettings} onChange={setExportSettings} compact onNotify={onNotify} className="hidden lg:flex" />
+            <ExportSettingsPanel settings={exportSettings} onChange={setExportSettings} compact onNotify={onNotify} className="flex" />
           </div>
           </div>
         </div>
-        <div className="order-1 lg:order-2 flex-1 min-h-[52vh] lg:min-h-0 min-w-0 overflow-hidden">
+        <div className="order-1 lg:order-2 flex-none lg:flex-1 h-[52vh] lg:h-auto lg:min-h-0 shrink-0 lg:shrink min-w-0 overflow-hidden">
         <CanvasViewport
           currentPage={currentPage}
           totalPages={totalPages}

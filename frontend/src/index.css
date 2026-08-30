@@ -5,6 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* 允许捏合缩放，仅禁双击缩放（消除误触与点击延迟）；-webkit-text-size-adjust 防手机浏览器自作主张改字号 */
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-mem-cream text-mem-ink font-body antialiased;
     overflow: hidden;
@@ -13,6 +20,13 @@
 
   #root {
     @apply h-full max-w-[100vw] overflow-hidden;
+  }
+
+  /* 手机端可读性基准：整体 rem 等比放大，小字/触控目标同步增大，用户无需捏合缩放 */
+  @media (max-width: 767px) {
+    html {
+      font-size: 17.5px;
+    }
   }
 }
 

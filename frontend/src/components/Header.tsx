@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Coffee } from 'lucide-react';
+import { Coffee, ShieldCheck } from 'lucide-react';
 import { CenterId } from '../types';
 import { CENTERS } from '../lib/navigation';
 import { BrandMark } from './BrandMark';
@@ -15,6 +15,7 @@ interface HeaderProps {
     activeRulesCount: number;
   };
   backendOnline?: boolean | null;
+  onOpenPrivacy?: () => void;
 }
 
 /** 中心导航激活态底色（mem-* 强调色映射） */
@@ -34,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   onCenterChange,
   systemStatus,
   backendOnline,
+  onOpenPrivacy,
 }) => {
   const { t } = useI18n();
   const [supportOpen, setSupportOpen] = useState(false);
@@ -71,9 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
         <span className={`p-1 rounded-md border border-mem-ink/20 ${isActive ? centerActiveAccent[center.accent] : ''}`}>
           <Icon className="w-4 h-4" />
         </span>
-        {/* 8 个中心较宽：仅激活项显示文字，其余图标化，保证任何宽度不溢出 */}
+        {/* 激活项始终带文字（手机横滚 Tab 上也显示），非激活项仅图标，保证任何宽度不溢出 */}
         {showLabel && isActive && (
-          <span className="hidden md:inline whitespace-nowrap">{t(center.labelKey)}</span>
+          <span className="inline whitespace-nowrap">{t(center.labelKey)}</span>
         )}
       </button>
     );
@@ -89,6 +91,14 @@ export const Header: React.FC<HeaderProps> = ({
             {statusDot}
             <button
               type="button"
+              onClick={() => onOpenPrivacy?.()}
+              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-teal/30 border-2 border-mem-ink text-mem-ink/80"
+              title={t('privacy.title')}
+            >
+              <ShieldCheck className="w-4 h-4 text-mem-teal" />
+            </button>
+            <button
+              type="button"
               onClick={() => setSupportOpen(true)}
               className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-yellow/50 border-2 border-mem-ink text-mem-ink/80"
               title={t('header.supportTitle')}
@@ -101,16 +111,27 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* 手机：横向中心 Tab（图标 + 可横向滚动） */}
         <nav
-          className="md:hidden zs-mobile-scroll-x flex items-center gap-1.5 px-2 pb-2 border-t border-mem-ink/10"
+          className="md:hidden zs-mobile-scroll-x flex items-center gap-1.5 px-2 py-2 border-t border-mem-ink/10"
           aria-label={t('lang.label')}
         >
-          {CENTERS.map((center) => centerButton(center, false))}
+          {CENTERS.map((center) => centerButton(center, true))}
         </nav>
 
         {/* 桌面：原布局 */}
         <div className="hidden md:flex h-20 w-full px-6 items-center justify-between gap-4">
           <div className="flex items-center gap-2 shrink-0 min-w-0">
             <BrandMark />
+            <button
+              type="button"
+              onClick={() => onOpenPrivacy?.()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium
+                         bg-mem-teal/25 border-2 border-mem-ink text-mem-ink/80
+                         hover:bg-mem-teal/40 hover:-translate-y-px transition-all"
+              title={t('privacy.title')}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-mem-teal" />
+              <span className="font-brand-script text-sm leading-none">{t('privacy.title')}</span>
+            </button>
             <button
               type="button"
               onClick={() => setSupportOpen(true)}

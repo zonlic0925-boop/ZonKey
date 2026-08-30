@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { FileCode2 } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import { useI18n } from '../../i18n'
+import { downloadBlob } from '../../lib/deliver'
 import { MemphisButton } from '../common/MemphisButton'
 import {
   applyMarkdownAction,
@@ -30,15 +31,6 @@ const TOOLBAR_ACTIONS: { id: MarkdownAction; label: string }[] = [
   { id: 'table', label: '表格' },
   { id: 'codeblock', label: '```' },
 ]
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export const MarkdownEditorView: React.FC = () => {
   const { t } = useI18n()

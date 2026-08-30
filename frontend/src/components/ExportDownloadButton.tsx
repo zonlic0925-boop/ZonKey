@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Download, ExternalLink } from 'lucide-react'
 import { saveOutputFileAs, openOutputFile, type NotifyFn } from '../lib/api'
+import { triggerServerFileDownload, useShellMode } from '../lib/deliver'
 import { useI18n } from '../i18n'
 
 export interface DownloadInfo {
@@ -17,6 +18,12 @@ interface ExportDownloadButtonProps {
   showOpen?: boolean
 }
 
+/**
+ * 服务端产物（output/ 目录）的导出按钮，按运行环境分流：
+ * - 桌面壳（pywebview）：/api/export/save-as 弹本机原生另存为 + 可用系统程序打开；
+ * - 手机/桌面浏览器：/api/download/{filename} 下载流，由浏览器存入下载目录
+ *   （save-as 的原生对话框弹在服务器所在电脑上，手机用户无法取件）。
+ */
 export const ExportDownloadButton: React.FC<ExportDownloadButtonProps> = ({
   info,
   openInfo,
@@ -26,6 +33,7 @@ export const ExportDownloadButton: React.FC<ExportDownloadButtonProps> = ({
   showOpen = true,
 }) => {
   const { t } = useI18n()
+  const shell = useShellMode()
   const [busy, setBusy] = useState(false)
   const [opening, setOpening] = useState(false)
   const buttonLabel = label ?? t('export.labelPdf')
@@ -34,6 +42,11 @@ export const ExportDownloadButton: React.FC<ExportDownloadButtonProps> = ({
   const handleExport = async () => {
     setBusy(true)
     try {
+      if (!shell) {
+        triggerServerFileDownload(info.outputDir, info.name)
+        onNotify?.(t('export.downloadStarted'), 'info')
+        return
+      }
       const result = await saveOutputFileAs(info.outputDir, info.name)
       if (result.cancelled) {
         onNotify?.(t('export.cancelled'), 'info')
@@ -64,7 +77,7 @@ export const ExportDownloadButton: React.FC<ExportDownloadButtonProps> = ({
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      {showOpen && pdfOpen && (
+      {shell && showOpen && pdfOpen && (
         <button
           type="button"
           onClick={() => void handleOpen()}

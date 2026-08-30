@@ -58,18 +58,18 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ onNotify, backendOnl
 
   return (
     <div className="flex-1 w-full h-full p-6 overflow-hidden flex flex-col gap-6">
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-2.5 md:gap-6">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.labelKey} className="p-6 memphis-card flex items-center gap-4">
+            <div key={card.labelKey} className="p-3 md:p-6 memphis-card flex items-center gap-3 md:gap-4">
               <div
-                className={`w-12 h-12 rounded-xl ${card.bg} border-2 border-mem-ink flex items-center justify-center`}
+                className={`w-9 h-9 md:w-12 md:h-12 shrink-0 rounded-xl ${card.bg} border-2 border-mem-ink flex items-center justify-center`}
               >
                 <Icon className="w-6 h-6 text-mem-ink" />
               </div>
               <div>
-                <div className={`text-2xl font-display font-black ${card.accent ? 'text-mem-teal' : ''}`}>
+                <div className={`text-base md:text-2xl font-display font-black ${card.accent ? 'text-mem-teal' : ''}`}>
                   {card.value}
                 </div>
                 <div className="text-xs text-mem-ink/50">{t(card.labelKey)}</div>

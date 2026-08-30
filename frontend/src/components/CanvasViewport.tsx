@@ -347,7 +347,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
   useEffect(() => {
     if (!editingId) return
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent | PointerEvent) => {
       const session = editSessionRef.current
       if (!session || !imageMetrics || !displayPage) return
       const startPt = overlayPointerToPdf(session.startPointer.x, session.startPointer.y, imageMetrics)
@@ -370,9 +370,16 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       liveBboxRef.current = next
     }
     const onUp = () => finishBoxEdit()
+    // pointer + mouse 双通道：触屏只发 pointer，鼠标两者都发（onMove 幂等，重复无害）
+    window.addEventListener('pointermove', onMove as (e: Event) => void)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => {
+      window.removeEventListener('pointermove', onMove as (e: Event) => void)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -443,8 +450,11 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedCandidateId, previewMode, onDeleteCandidate, onSelectCandidate, onToggleCandidate])
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (mode !== 'rect' || !imageRef.current) return
+    // 触屏框选：捕获指针并禁掉浏览器滚动手势，否则 touch-pan 会抢走拖动
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 指针已释放 */ }
+    e.preventDefault()
     const pt = pointerToLayout(e.clientX, e.clientY)
     if (!pt) return
     if (previewMode === 'after' && hasAfterPreview) {
@@ -457,14 +467,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     setIsDrawing(true)
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDrawing || !imageRef.current) return
     const pt = pointerToLayout(e.clientX, e.clientY)
     if (!pt) return
     setDrawCurrent(pt)
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     if (!isDrawing || !drawStart || !drawCurrent || !imageRef.current || !displayPage) {
       setIsDrawing(false)
       return
@@ -583,11 +593,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
         <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
         <div
           ref={containerRef}
-          className="flex-1 min-h-0 min-w-0 overflow-auto flex items-center justify-center p-2 sm:p-4 relative touch-pan-x touch-pan-y"
+          className={`flex-1 min-h-0 min-w-0 overflow-auto flex items-center justify-center p-2 sm:p-4 relative ${
+            mode === 'rect' ? 'touch-none' : 'touch-pan-x touch-pan-y'
+          }`}
           title={t('canvas.zoomWheelHint')}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
         {afterPreviewPending && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
@@ -678,19 +691,20 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
                     <div
                       key={box.id}
                       style={{ left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` }}
-                      className={`absolute transition-all duration-75 rounded-sm border-2 ${
+                      className={`absolute transition-all duration-75 rounded-sm border-2 touch-none ${
                         isIncluded
                           ? 'bg-mem-coral/35 border-mem-coral'
                           : 'bg-mem-teal/15 border-dashed border-mem-ink/40 hover:bg-mem-yellow/30'
                       } ${isHighlighted ? 'ring-2 ring-mem-sky ring-offset-1 z-10' : ''} ${
                         canEdit ? 'cursor-move' : 'cursor-pointer'
                       }`}
-                      onMouseDown={(e) => {
+                      onPointerDown={(e) => {
                         e.stopPropagation()
                         if (!canEdit || !imageMetrics) {
                           onSelectCandidate(box.id)
                           return
                         }
+                        try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 指针已释放 */ }
                         const pt = pointerToLayout(e.clientX, e.clientY)
                         if (!pt) return
                         onSelectCandidate(box.id)
@@ -728,9 +742,10 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
                           return (
                             <span
                               key={h}
-                              onMouseDown={(e) => {
+                              onPointerDown={(e) => {
                                 e.stopPropagation()
                                 if (!canEdit || !imageMetrics) return
+                                try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* 指针已释放 */ }
                                 const pt = pointerToLayout(e.clientX, e.clientY)
                                 if (!pt) return
                                 beginBoxEdit(box, 'resize', h, pt)
@@ -741,7 +756,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
                                 width: `${HANDLE_SIZE}px`,
                                 height: `${HANDLE_SIZE}px`,
                               }}
-                              className={`absolute bg-white border border-mem-sky rounded-sm z-30 pointer-events-auto ${
+                              className={`absolute bg-white border border-mem-sky rounded-sm z-30 pointer-events-auto touch-none ${
                                 h === 'nw' || h === 'se' ? 'cursor-nwse-resize' :
                                 h === 'ne' || h === 'sw' ? 'cursor-nesw-resize' :
                                 h === 'n' || h === 's' ? 'cursor-ns-resize' : 'cursor-ew-resize'

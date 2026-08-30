@@ -11,7 +11,7 @@ import {
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine } from '../calcdev/kit'
 
-const PptPicker: React.FC<{ onFile: (file: File) => void; disabled?: boolean }> = ({ onFile, disabled }) => (
+export const PptPicker: React.FC<{ onFile: (file: File) => void; disabled?: boolean }> = ({ onFile, disabled }) => (
   <input
     type="file"
     accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"

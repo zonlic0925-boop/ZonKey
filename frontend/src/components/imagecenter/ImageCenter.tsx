@@ -3,8 +3,9 @@ import type { ToolId } from '../../types'
 import { ImageCompressView, ImageConvertView } from './ImageBatchViews'
 import { ImageColorReplaceView, ImageCropView } from './ImageEditViews'
 import { ColorPaletteView, IconGenView, ImageStitchView } from './ImageComposeViews'
+import { ColorSpaceCompareView } from './ColorSpaceCompareView'
 
-/** 图像工坊：按二级工具 ID 渲染对应视图（色彩空间对比见后续批次） */
+/** 图像工坊：按二级工具 ID 渲染对应视图 */
 export const ImageCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
   switch (tool) {
     case 'image-convert':
@@ -21,6 +22,8 @@ export const ImageCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <IconGenView />
     case 'color-extractor':
       return <ColorPaletteView />
+    case 'color-space-compare':
+      return <ColorSpaceCompareView />
     default:
       return null
   }

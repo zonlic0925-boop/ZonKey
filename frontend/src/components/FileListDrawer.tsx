@@ -91,7 +91,7 @@ export const FileListDrawer: React.FC<FileListDrawerProps> = ({
                       e.stopPropagation()
                       onRemoveFile(file.id)
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-mem-ink/40 hover:text-mem-coral rounded-lg transition-opacity"
+                    className="opacity-40 md:opacity-0 md:group-hover:opacity-100 p-1 text-mem-ink/60 md:text-mem-ink/40 hover:text-mem-coral rounded-lg transition-opacity max-md:zs-touch-target"
                     title={t('fileList.removeTitle')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />

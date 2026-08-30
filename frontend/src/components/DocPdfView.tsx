@@ -278,8 +278,8 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
   };
 
   return (
-    <div className="flex-1 w-full h-full flex flex-col lg:flex-row overflow-hidden min-h-0">
-      <div className="order-2 lg:order-1 w-full lg:w-[360px] shrink-0 flex flex-col border-t-[3px] lg:border-t-0 lg:border-r-[3px] border-mem-ink bg-white overflow-hidden min-h-0 max-h-[42vh] lg:max-h-none">
+    <div className="flex-1 w-full h-full flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden min-h-0">
+      <div className="order-2 lg:order-1 w-full lg:w-[360px] shrink-0 flex flex-col border-t-[3px] lg:border-t-0 lg:border-r-[3px] border-mem-ink bg-white min-h-0 lg:overflow-hidden">
         <div className="p-4 border-b-2 border-mem-ink/15">
           <div className="memphis-card p-4 text-center relative overflow-hidden group">
             <input type="file" accept=".pdf" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
@@ -323,14 +323,14 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
             downloadLabel={exportLabel}
             onNotify={onNotify}
           />
-          <ExportSettingsPanel settings={exportSettings} onChange={setExportSettings} compact onNotify={onNotify} className="hidden lg:flex" />
+          <ExportSettingsPanel settings={exportSettings} onChange={setExportSettings} compact onNotify={onNotify} className="flex" />
           {filename && (
             <p className="text-[10px] text-mem-ink/40 truncate">{filename}</p>
           )}
         </div>
       </div>
 
-      <div className="order-1 lg:order-2 flex-1 min-h-[50vh] lg:min-h-0 min-w-0 overflow-hidden">
+      <div className="order-1 lg:order-2 flex-none lg:flex-1 h-[50vh] lg:h-auto lg:min-h-0 shrink-0 lg:shrink min-w-0 overflow-hidden">
       <CanvasViewport
         currentPage={currentPage}
         totalPages={totalPages}

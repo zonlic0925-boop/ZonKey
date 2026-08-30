@@ -1,6 +1,8 @@
 import React, { useRef } from 'react'
 import { FilePlus2, X } from 'lucide-react'
+import JSZip from 'jszip'
 import { MemphisButton } from '../common/MemphisButton'
+import { downloadBlob } from '../../lib/deliver'
 
 export interface PickedFile {
   file: File
@@ -56,15 +58,33 @@ export const PdfFilePicker: React.FC<{
   )
 }
 
-export function downloadBytes(bytes: Uint8Array, filename: string) {
+/** 统一交付出口：桌面壳走服务端中转 + 原生另存为，浏览器直接 a[download] */
+export async function downloadBytes(bytes: Uint8Array, filename: string, mime = 'application/pdf') {
   const buffer = new ArrayBuffer(bytes.byteLength)
   new Uint8Array(buffer).set(bytes)
-  const url = URL.createObjectURL(new Blob([buffer], { type: 'application/pdf' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+  const blob = new Blob([buffer], { type: mime })
+  try {
+    await downloadBlob(blob, filename)
+  } catch {
+    // 服务端中转失败时回退浏览器下载通道（壳内 ALLOW_DOWNLOADS 已开启）
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+}
+
+export async function downloadFilesZip(files: { fileName: string; bytes: Uint8Array }[], zipName: string) {
+  const zip = new JSZip()
+  for (const file of files) zip.file(file.fileName, file.bytes)
+  const blob = await zip.generateAsync({ type: 'blob' })
+  await downloadBlob(blob, zipName)
+}
+
+export async function downloadImageZip(outputs: { fileName: string; bytes: Uint8Array }[], zipName: string) {
+  return downloadFilesZip(outputs, zipName)
 }
 
 export const BusyLine: React.FC<{ busy: boolean; label: string }> = ({ busy, label }) =>

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { MemphisButton } from '../common/MemphisButton'
 import { useI18n } from '../../i18n'
+import { copyTextToClipboard } from '../../lib/deliver'
 
 export const Field: React.FC<{ label: string; children: React.ReactNode; className?: string }> = ({
   label,
@@ -60,11 +61,8 @@ export const CopyButton: React.FC<{ text: string }> = ({ text }) => {
       size="sm"
       variant="white"
       onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text)
-        } catch {
-          // 剪贴板不可用时静默失败（非安全上下文）
-        }
+        // 局域网 HTTP 等非安全上下文自动回退 execCommand
+        await copyTextToClipboard(text)
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
