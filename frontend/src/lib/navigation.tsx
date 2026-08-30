@@ -65,7 +65,10 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'audit', labelKey: 'header.navAudit', availability: 'ready' },
   ],
   pdf_center: [
+    { id: 'pdf-organize', labelKey: 'tools.pdfOrganize', availability: 'ready' },
     { id: 'pdf-editor', labelKey: 'tools.pdfEditor', availability: 'ready' },
+    { id: 'pdf-forms', labelKey: 'tools.pdfForms', availability: 'ready' },
+    { id: 'pdf-cert-sign', labelKey: 'tools.pdfCertSign', availability: 'ready' },
     { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'ready' },
     { id: 'pdf-split', labelKey: 'tools.pdfSplit', availability: 'ready' },
     { id: 'pdf-extract', labelKey: 'tools.pdfExtract', availability: 'ready' },

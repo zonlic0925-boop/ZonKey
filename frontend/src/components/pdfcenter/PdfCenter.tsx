@@ -54,7 +54,7 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <PdfCropView />
     case 'pdf-forms':
       return <PdfFormsView />
-    case 'pdf-sign-cert':
+    case 'pdf-cert-sign':
       return <PdfCertSignView />
     default:
       if (tool.startsWith('cv-')) {

@@ -20,7 +20,7 @@ export type PdfToolId =
   | 'pdf-organize'
   | 'images-to-pdf'
   | 'pdf-forms'
-  | 'pdf-sign-cert'
+  | 'pdf-cert-sign'
   | 'pdf-merge'
   | 'pdf-split'
   | 'pdf-extract'
