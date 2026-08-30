@@ -1,6 +1,199 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-29（ToolKnit 整合收尾：孤儿清理 + 文档登记 + 全量验证）。命令与结果均为本次实际执行。
+> 更新于：2026-08-30（P2 端点补齐 + ConvertView 前端接线轮——转换引擎 8 工具全链路完成，121 passed）。
+
+## 2026-08-30 进度（P2 端点补齐 + ConvertView 前端接线，第二轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| compress-deep | ✅ | pypdfium2 逐页栅格化（72–200dpi）+ JPEG 质量档重编码（30–95）→ reportlab 画布回写；响应含 original/compressed bytes 与压缩比百分比；如实标注「栅格化深度压缩，无可编辑文本层，适合扫描件/图片型 PDF，文字型走前端轻压缩」 |
+| html-to-pdf | ✅ | 同步端点：HTML 子集解析器（h1-h6/p/div/ul/ol/table/blockquote/pre/hr + 内联 b/i/code/u；img 忽略并记提示，零联网取资源）+ Markdown 子集（标题/列表/引用/代码块/分隔线/粗斜体）；CJK 字体注册链 msyh.ttc → simhei.ttf → STSong-Light CID 兜底；接受 .html/.htm/.md/.txt 上传或直接粘贴内容（4MB 上限） |
+| ocr-export | ✅ | 复用 `core.detector.ocr_channel` RapidOCR 引擎 + pypdfium2 渲染：TXT 分页纯文本 / 夹心 PDF（原页 JPEG + `setTextRenderMode(3)` 隐形文字层按识别框原位叠加，可搜索可复制）；rapidocr 不可用时 capability 置 false，前端 CapabilityGate 拦截不发起任务 |
+| office 兜底链 | ✅ | COM 失败自动降级（job note+warnings 诚实标注，禁止静默）：Word → mammoth docx→HTML → reportlab platypus；Excel → openpyxl（data_only 缓存值）→ HTML 表格 → reportlab；COM 与兜底双失败时报错明示两条错误详情 |
+| ConvertView | ✅ | `pdfcenter/ConvertView.tsx` 单组件覆盖 8 工具（pdf-to-word/excel/ppt + office-to-pdf/compress-deep/ocr-export 走 job 轮询；pdf-repair/html-to-pdf 同步）：CapabilityGate（后端离线提示 + OCR 缺失拦截）、进度条 + stage、压缩比/引擎/局限 note 如实展示、参数 chips（dpi/quality/输出格式）；产物走 MediaOutputList 统一交付 |
+| 导航与接线 | ✅ | navigation.tsx PDF 工坊 17 项全 ready（新增 compress-deep/pdf-to-word/pdf-to-excel/pdf-to-ppt/office-to-pdf/html-to-pdf/ocr-export/pdf-repair）；api.ts 补 ConvertOp/ConvertJobStatus/ConvertCapability 类型 + startConvertJob/pollConvertJob/convertHtmlToPdf/convertRepair；i18n `convert.*` 命名空间三语（zh-CN/zh-TW/en）齐 |
+| 测试 | ✅ | `tests/test_convert_tools.py` 13→22 用例：compress-deep 端到端（断言体积下降）、html-to-pdf markdown/HTML 表格/空输入 422、ocr-export TXT/夹心 PDF（pdfium 重新抽取验证文字层可搜索）、office 兜底链（伪造 COM 失败走 mammoth/openpyxl 路径并断言 note）、capability 新引擎上报；全量 `pytest -q --ignore=tests/test_native_dialog.py` → **121 passed**（原 112 + 新 9） |
+| 构建/部署 | ✅ | `npm run build` 成功（21.6s，仅历史 chunk 体积提示）；Cloudflare Pages 已更新（zonscale.pages.dev）。线上 Pages 仅纯前端能力——转换 8 工具依赖 FastAPI 后端，线上显示后端离线属预期边界 |
+
+### P2 剩余
+
+- 浏览器级（Playwright）UI 实测：新转换 8 工具 + P0/P1 的 14 个 PDF 工具 + 脱敏全链路（Phase M 后首确保真）一起补一轮。
+- 31 样本回归（`Testing Drawings\` 样本目录到位后跑 `scripts/regression_acceptance.py`）。
+
+## 2026-08-30 进度（Phase M：PyMuPDF 退出迁移）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| **AGPL 清零** | ✅ | 全仓 `import fitz` 归零；requirements.txt 除名 PyMuPDF；开发环境已卸载；11 个测试文件 + 3 个脚本 + temp_ui_test 样本生成器全部迁移 |
+| 新读取层 `core/pdfio.py` | ✅ | pypdfium2 渲染（Apache-2.0）+ pdfplumber 文本/矢量/图片抽取（MIT）+ pikepdf 控件值读取；坐标合同 = fitz 兼容显示空间（原点左上 y 向下随 /Rotate）；`/Rotate=90` 行为实测与 fitz 一致（pdfplumber 坐标本就是显示空间） |
+| 新写入引擎 `core/redact/pikepdf_engine.py` | ✅ | 内容流走查（CTM/文本状态/Tm-Td-TJ）字形级真删除 + TJ 补偿量保位；字体宽度（/Widths、/W、标准 14 走 reportlab AFM）；图像像素化（CCITT/ImageMask/DCT/Flate + SMask）；线画 keep/touched/covered；`re f` 填充块；qpdf 只写可达对象 |
+| executor 语义对齐 | ✅ | 普通框 = 整框相交删字形 + 格线保留 + 图像像素化 + 填充；Logo 框 = 触碰线画整块删（graphics=2 语义）；doc 公文 = graphics=covered（apply_redactions() 默认）+ COVER 仅涂白 |
+| 检测/管线迁移 | ✅ | vector_channel / ocr_channel / image_verify / seal_detector / logo_matcher / box_finder / pipeline / doc_pdf pipeline / image_merge（reportlab）/ server_bridge 预览扫描 / backend_ppt_tools 渲染（pypdfium2）|
+| 测试基建 | ✅ | `tests/pdf_helpers.py`：reportlab 合成样本 + pdfplumber/pdfium 断言（坐标合同=显示空间）；test_executor/test_pipeline/test_doc_pdf/test_box_finder/test_shrink/test_image_verify/test_image_merge/test_convert_tools/test_ppt_tools 全部去 fitz |
+| 全量 pytest | ✅ | `pytest -q --ignore=tests/test_native_dialog.py` → **112 passed**（与迁移前同数量；PyMuPDF 已卸载环境下运行） |
+| 发布门禁 | ✅ | `release_acceptance.py` 全部通过，新增 `no_agpl_components` 断言（环境已装组件 / requirements / fitz 可导入性 / 打包产物文件四路检查） |
+| EXE 重打包 | ✅ | PyInstaller 重建 + 图标侧车 + `dist_release/ZonScale_Windows_x64_20260830.zip`；新 EXE 门禁含 AGPL 断言全绿 |
+| 合成端到端回归 | ✅ | A3 图纸：4 命中 / 2 自动 / 3 待人工（与 2026-08-29 fitz 实测同构，残留=待人工项符合宪法）；公文：PII 8 类全净（手机/证件/护照/银行卡/信用代码/邮箱/香港号/座机）、正文保留（hits 12 vs 旧 11，印章/去重口径差） |
+| 31 样本回归 | ⏳ | `Testing Drawings\` 目录本机不存在，`scripts/regression_acceptance.py` 未跑——样本到位后必跑 |
+| 行为微差登记 | ✅ | D8 紧行距用例（基线差 18pt）：「放弃收缩」→「精确收缩+相邻行零污染」（pdfminer span 比 fitz 紧，3.5pt 容差带判定前移；字形净空 ~3.9pt 实测安全；测试改为直接断言安全属性）。引擎限制：WMode 1 垂直书写按水平度量、Inline image 不像素化、CropBox≠MediaBox 按 MediaBox |
+| 关键踩坑记录 | ✅ | ① pypdfium2 `render(crop=)` 是「四边裁剪量」(left,bottom,right,top) 非坐标矩形，且在旋转后位图上应用；② pikepdf 对象 `hasattr(s,'as_bytes')` 触发属性→键回退抛 ValueError，须用 isinstance；③ 矩阵级联按 PDF 规范 4.2.3（写错会把平移翻倍）；④ CCITT 解码极性：pikepdf 出的是传真原始位（0=白），DeviceGray 回写需反转，ImageMask 保持原语义不反转 |
+
+## 2026-08-30 进度（P2 转换引擎垂直切片：backend_convert_tools）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 转换桥上线 | ✅ | 新增 `backend_convert_tools.py`（router `/api/convert`）：能力探测 `GET /capability`（引擎版本 + pywin32/Word/Excel COM 导入级探测，与 PPT 工坊同口径）+ job 轮询 `GET /jobs/{id}`（沿用音视频中心模式），产物落 `output/` 走 `/api/download` 与原生另存为 |
+| PDF→Word | ✅ | 自研链路：pdfplumber 文本行（字号/粗体/坐标，剔除表格框内行）+ find_tables → python-docx 重建（标题分级/段落归并/Table Grid 表格/跨页分页符）；**规避 pdf2docx 的 PyMuPDF 硬依赖**；无文本层（扫描件）任务报错并引导 OCR 导出 |
+| PDF→Excel | ✅ | pdfplumber 表格抽取 → openpyxl（每页一个 sheet，表头加粗、列宽自适应、纯数字单元格转数值）；未检测到表格时任务报错引导 PDF→Word |
+| PDF→PPT | ✅ | pypdfium2 逐页渲染（72–300dpi，png/jpeg）→ python-pptx 整页贴图，幻灯片尺寸=PDF 页面尺寸；响应如实标注「视觉版式还原，非可编辑文本还原」 |
+| Office→PDF | ✅ | Word/Excel COM（DispatchEx + 位置参数 + COM 全局锁；wdFormatPDF=17 / xlTypePDF=0）；pptx 引导走 PPT 工坊；无 Office 时任务报错明示（mammoth/reportlab HTML 兜底链后续接入，禁止静默降级） |
+| PDF 修复 | ✅ | pikepdf（qpdf 内核）打开自动恢复损坏 xref/对象结构后重写，同步端点；不可修复返回 422 |
+| 宽松许可依赖落库 | ✅ | requirements.txt 新增 pypdfium2/pikepdf/pdfplumber/python-pptx/openpyxl/mammoth/reportlab（全宽松许可，见 ILOVEPDF_INTEGRATION_PLAN §3）；**转换模块零 PyMuPDF 引用**（Phase M 退出起点） |
+| server_bridge 接线 | ✅ | convert router 挂载（与 system/ppt/media 同 try/except 模式）；TestClient 冒烟 capability 200、引擎版本全部上报 |
+| 测试 | ✅ | 新增 `tests/test_convert_tools.py` 13 用例全绿（reportlab/python-docx/openpyxl 现场合成样本端到端，含 Word/Excel COM 真转 + 文本断言；产物即测即清）；全量 `pytest --ignore=tests/test_native_dialog.py` → **112 passed** |
+
+## 2026-08-30 进度（iLovePDF 功能对齐：P0 死资产接线 + P1 页面级工具）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| **iLovePDF 对齐方案** | ✅ | 新增 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)：26 项功能对照矩阵、开源选型、分阶段计划（P0/P1/P2/P3/M/P4） |
+| **许可决策：零商业授权** | ✅ | 不购买 Artifex 商业授权；PyMuPDF（AGPL）按 Phase M 退出（渲染→pypdfium2 Apache-2.0，写操作→pikepdf MPL-2.0 + pypdf BSD + reportlab BSD）；发布前完成迁移，转换引擎全部用宽松许可库 |
+| PDF 水印 | ✅ | 新工具 `pdf-watermark`：文字/图片水印，透明度/角度/颜色/整页平铺；canvas 统一渲染→PNG 盖章（原生支持中日文，无需字体嵌入）；原 `officeCore.ts` 孤儿实现废弃 |
+| PDF 范围拆分 | ✅ | `pdf-split` 双模式：逐页拆分（原行为）+ 按范围拆分（`1-3,5,8-`，支持开区间 `8-`），`parsePdfPageRanges` 共用解析器 |
+| 图片转 PDF | ✅ | 新工具 `pdf-images-to-pdf`：多图按顺序合成（可调序），适应尺寸/A4 版式、页边距；canvas 归一化兼容 EXIF 方向与 WebP；**前端 pdf-lib 实现，不加深 PyMuPDF 依赖** |
+| 提取页面 | ✅ | 新工具 `pdf-extract`：按范围提取页面合并为单个新 PDF |
+| 添加页码 | ✅ | 新工具 `pdf-page-numbers`：六位置/三格式（1、1 / N、Page 1）/字号/起始页 |
+| PDF 裁剪 | ✅ | 新工具 `pdf-crop`：四边等比收缩 CropBox（0–40%） |
+| 交付链路统一 | ✅ | `pdfKit.downloadBytes`/`downloadImageZip` 从裸 `a[download]` 迁移到 `lib/deliver.ts` 统一出口（壳内=服务端中转+原生另存，浏览器=下载流；服务端中转失败自动回退浏览器通道） |
+| 孤儿代码清理 | ✅ | 删除零引用的 `officeCore.ts`（水印/拆分能力已迁入 `pdfCore.ts`）；`requirements.txt` 补 `pywin32`（此前 PPT→PDF 的 PowerPoint COM 兜底在未手装 pywin32 的机器上静默失效） |
+| 工程清理 | ✅ | `PdfToolId` 扩至 14 项；navigation/PdfCenter 注册；i18n 三语（zh-CN/zh-TW/en）全量补键 |
+| 测试 | ✅ | 前端 `npm run build` 通过（仅既有 chunk 体积告警）；后端 pytest 全绿 |
+
+
+## 2026-08-29 进度（手机兼容与导出交付轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| **老手机白屏根因** | ✅ | 构建产物仅含 `<script type="module">`：不支持 ES Module 的老内核（微信 X5、旧 Android WebView）执行不到任何 JS → 白屏；另 pdfjs-dist v6 主构建要求 Chrome 110/119+ |
+| 修复：@vitejs/plugin-legacy | ✅ | Vite 6 配套 v6 插件：老内核走 SystemJS + core-js（polyfills-legacy 157KB + index-legacy 2MB），modern chunk 注入 Promise.withResolvers 等现代 polyfill；目标 Chrome ≥61 / Safari ≥11 / Firefox ≥60 |
+| 修复：pdfjs-dist 降级 v4 | ✅ | 4.10.38 + `legacy/build/pdf.mjs`（自带 polyfill）；`pdfRender.ts` 渲染失败翻译为「浏览器内核过旧」用户可读提示 |
+| 修复：手机浏览器导出链路 | ✅ | 根因：`ExportDownloadButton` 一律走 `/api/export/save-as`，原生另存为对话框弹在**服务器电脑**上，手机用户永远取不到文件。现按环境分流：桌面壳=原生另存为；手机/桌面浏览器=`/api/download/{filename}` 下载流（Content-Disposition attachment）。「打开」按钮仅壳内显示 |
+| 修复：壳内 blob 产物中转 | ✅ | 新增 `/api/export/save-blob`：纯前端工具（PPT 提取/瘦身、图片编辑等）内存 blob 先落 output/ 再走另存为；浏览器模式保留直接 a[download]。`lib/deliver.ts` 统一交付层，`downloadBlob` 自动分流 |
+| 修复：导出命名 | ✅ | PPT 渲染产物名原带临时前缀 `src_xxxxxxxx_`；改取上传原始文件名（如 `测试演示.pdf` / `测试演示_images.zip`） |
+| 修复：转长图导出文案 | ✅ | ZIP 导出按钮原误标「导出 PDF」，改 `export.labelZip` |
+| 修复：局域网 HTTP 剪贴板 | ✅ | 非 HTTPS 下 `navigator.clipboard` 不存在致复制按钮静默失效；`copyTextToClipboard` 增加 execCommand 回退 |
+| 隐私与联网声明弹窗 | ✅ | `OfflinePrivacyNotice.tsx` 首访自动弹出（localStorage 记忆，页眉盾牌可重开）；按运行模式如实告知：桌面壳=完全离线 / 局域网=设备间直传 / 隧道=TLS 加密中转不存储；微信内置浏览器提示换系统浏览器；i18n 三语 |
+| 手机视口实测（390×844） | ✅ | IAB + DataTransfer 注入真实 pptx：隐私弹窗全流程、PPT 转 PDF（PowerPoint COM）→ 导出 PDF 下载事件 ✓、转长图 → 导出 ZIP 下载事件 ✓、文本提取 txt ✓、瘦身自动下载 ✓、其余 6 中心渲染冒烟 ✓；`/api/download` 200 + application/pdf + attachment 断言 ✓ |
+| 测试 | ✅ | test_ppt_tools / test_router / test_app_paths 9 passed；前端 `npm run build` 含 legacy 产物成功 |
+
+### 手机端联网边界（弹窗文案依据）
+
+- 桌面壳：完全离线，文件不出本机。
+- 局域网模式（`启动局域网手机访问.bat`）：页面由同一 WiFi 的电脑提供，文件只在手机↔电脑直传，不经过互联网。
+- 公网隧道模式（`启动公网手机访问.bat`）：经 Cloudflare TLS 加密隧道连回电脑，云端不存储内容，处理仍在本机。
+- 手机端首次打开需网络加载页面本身；使用期间须保持与电脑的连接，但文件处理不依赖任何外部互联网服务。
+
+## 2026-08-29 进度（手机端适配轮 + 公网隧道交付）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 全功能公网访问（手机可用） | ✅ | 后端跑本机 + cloudflared 快速隧道（`启动公网手机访问.bat` 一键重启）；URL 每次重启会变 |
+| 静态前端公网 | ✅ | Cloudflare Pages `zonscale.pages.dev`（纯前端工具；项目名 zonscale，wrangler pages deploy dist_web） |
+| 手机端可读性 | ✅ | `index.css` 手机断点（<768px）html 基准字号 16→17.5px，全站 rem 等比放大，小字/触控目标同步增大，无需捏合缩放 |
+| 缩放手势保障 | ✅ | `html { touch-action: manipulation }`：保留捏合缩放、仅禁双击缩放（消误触）；`text-size-adjust: 100%` 防浏览器擅改字号 |
+| 一级中心 Tab | ✅ | 手机横滚 Tab 激活项显示文字（此前手机端仅图标不可辨识） |
+| 二级工具 pills | ✅ | 修正写反的断点（此前手机字号反而小于桌面），py-2 触控目标 + 隐藏滚动条（zs-mobile-scroll-x） |
+| 审计三卡/规则中心 | ✅ | 统计卡响应式（p-3/gap-2.5），手机视口 390px 实测零横向溢出 |
+| 手机视口实测 | ✅ | Playwright 390×844：6 中心导航可见、首页/脱敏/PDF/PPT/规则/审计截图目检通过 |
+
+## 2026-08-29 进度（工坊实机修复轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| **PDF 工坊"都不能用"根因定位** | ✅ | 代码本身正常（Playwright 实测 Chromium 9/9 工具全通过、零报错）；真因：pywebview 默认 `ALLOW_DOWNLOADS=False`，WebView2 壳内**所有浏览器 blob 下载被静默取消**——而 PDF 工坊 9 个工具的产物全部走 blob 下载 |
+| 修复：desktop_app.py 放开下载 | ✅ | `webview.settings['ALLOW_DOWNLOADS'] = True`（`_open_pywebview`）；放开后 WebView2 弹原生"另存为"对话框（pywebview edgechromium.py `on_download_starting`），符合"输出副本不改原文件"语义 |
+| PPT 转 PDF / 转长图 | ✅ | 新增 `backend_ppt_tools.py`（FastAPI `/api/ppt/render`）：LibreOffice 优先，Windows 回退 PowerPoint COM（DispatchEx + WithWindow=False + ppSaveAsPDF=32）；images 目标经 PyMuPDF 逐页渲染打包 ZIP；产物写入 `output/` 走 `/api/download` 与原生另存为，不经 blob 下载通道 |
+| PPT 大纲生成（原"AI 大纲"） | ✅ | 更名"大纲生成"（诚实命名，非 AI）：离线模板驱动（`pptOutlineCore.ts`，8 种演示类型角色序列 + 双语模板），产出可编辑 Markdown |
+| PPT 草稿生成（原"AI 草稿"） | ✅ | 更名"草稿生成"：`pptDraftCore.ts` 纯 JSZip 构建合法 OOXML（16:9，两种主题）；产出经 PowerPoint COM 实测可打开并导出 PDF |
+| OOXML 兼容性修复 | ✅ | 二分定位两处 PowerPoint 拒开问题：① theme `fmtScheme` 需恰好 3 组 fill/line/effect/bgFill（原版 ToolKnit 只有 1 组）；② `p:sldSz type="wide"` 非法（ST_SlideSizeType 无 "wide" 枚举值），去掉 type 属性 |
+| UI 实测（Playwright） | ✅ | PDF 工坊 9/9、PPT 工坊 4 新工具全通过零报错；草稿产物经 python-pptx 结构校验 + PowerPoint COM 打开验证 |
+| pytest | ✅ | 新增 `tests/test_ppt_tools.py`（渲染端到端真跑 COM，无渲染器环境自动 skip） |
+| 前端构建 | ✅ | `npm run build` → 成功（2607 modules） |
+| ToolKnit 接线 | ✅ | **55 ready / 5 planned**（PPT 工坊 7/7 ready） |
+
+### 关键证据链（PDF 工坊壳内不可用）
+
+1. 用户报告 PDF 工坊所有工具"不能正常使用"；
+2. Chromium 浏览器实测 9/9 通过 → 排除代码缺陷与 dist_web 过期（EXE 内嵌 bundle 哈希与现源码构建一致）；
+3. 用户运行形态 = pywebview 壳 → 检查 `webview/platforms/edgechromium.py:315` `on_download_starting`：`ALLOW_DOWNLOADS=False` 时 `args.Cancel = True`（默认值 False，见 `webview.settings`）；
+4. 所有工具"点执行后无任何反应"与"下载被静默取消"完全吻合 → 修复后放开开关 + 原生另存为对话框。
+
+
+## 2026-08-29 进度（智能脱敏 UI 实测轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 环境就绪 | ✅ | `http://127.0.0.1:8765` 200；`/api/status` → `ocr_available=true`，`active_rules_count=20`，引擎在线 |
+| 实测1 工程图纸脱敏 | ✅ | 合成 `sample_drawing.pdf` → 识别 4 处 → 执行 → 输出 `output/sample_drawing_desensitized.pdf`（审计抹除 2 处，见下方问题清单） |
+| 实测2 公文 PDF 脱敏 | ✅ | 合成 `sample_doc.pdf` → 识别 11 处 PII/敏感词 → 执行 → 输出 `output/sample_doc_desensitized.pdf` |
+| 实测3 Word 文档脱敏 | ✅ | 合成 `sample.docx` → 扫描命中 7 处 → 执行 → 输出 `output/*_redacted.docx` |
+| 实测4 规则策略中心 | ✅ | 增词 → 删词 →「保存工程图纸规则」；PII/Word/印章规则面板加载正常 |
+| 实测5 审计日志流水 | ✅ | `/api/audit/logs` 累计 4 文档 / 27 抹除项；UI 刷新可见本次 3 条新记录 |
+| 截图证据 | ✅ | `temp_ui_test/shots/`（01_drawing_* / 02_doc_pdf_* / 03_word_* / 04_rules_* / 05_audit_* + `results.json`） |
+| 自动化脚本 | ✅ | `temp_ui_test/run_ui_tests.mjs`（Playwright headless，约 29s 全绿） |
+
+### 设计规范审查摘要（Vercel Guidelines / 交互美学 · 只读，未改代码）
+
+**做得好的：**
+- 二级 SubNav 固定高度，中心切换无 CLS 跳变（符合 AGENTS_HANDOFF 第四节偏好）。
+- 脱敏前/后预览切换、Toast 成功反馈、命中列表与画布框联动清晰。
+- Memphis 品牌一致性（粗边框、Pastel 色板、Display 标题）在 5 个 redact 子页保持统一。
+- 规则中心双栏信息架构合理；审计页三指标卡 + 流水列表可读。
+
+**问题清单 + 修改建议（优先级排序）：**
+
+| # | 严重度 | 问题 | 建议 |
+|---|---|---|---|
+| P1 | 高 | 工程图纸识别 4 处但默认仅 **2/4 选中**，执行后审计仅抹除 2 处；用户易误以为「已全部脱敏」 | 识别完成后默认全选；或执行前当「已选 < 命中总数」时二次确认；执行按钮文案区分「执行已选 N 处」 |
+| P2 | 中 | 审计流水展示 **服务端 UUID 文件名**，非用户上传原名 | 日志 API/UI 增加 `original_filename` 字段并优先展示 |
+| P3 | 中 | 脱敏完成后左侧 **3～4 个同级主色 CTA**（打开/导出/重新脱敏）视觉权重相同 | 按 Emil 式层级：单一 Primary（导出），其余 Secondary/Ghost |
+| P4 | 中 | 空画布区 **MemphisDecor 浮动色点** 易被误认为加载异常或脏数据 | 限制装饰仅在 Header/背景层，工作区留白；或降低对比度 |
+| P5 | 低 | 辅助文案 10–11px + `text-mem-ink/50` 对比度逼近 WCAG AA 下限 | 正文辅助提升至 12px / `text-mem-ink/60`；关键操作说明不用低于 AA |
+| P6 | 低 | 命中列表/删除图标点击热区偏小（约 24px） | 扩至 44×44px 或增加 padding；保留 Del 快捷键提示 |
+| P7 | 低 | 根容器 `select-none` 导致 Word 预览区无法复制文本对照 | Word/公文预览区局部 `select-text` |
+| P8 | 低 | 导出路径输入只读且截断，无 tooltip 展示完整路径 | 只读 input 加 `title` 或 hover tooltip |
+
+### 实测命令（可复现）
+
+```powershell
+# 1. 启动服务（若未运行）
+cd C:\Users\Zonlic\Desktop\ZonScale
+python -m uvicorn server_bridge:app --host 127.0.0.1 --port 8765
+
+# 2. 生成合成样本
+python temp_ui_test/make_samples.py
+
+# 3. 自动化 UI 实测 + 截图
+cd temp_ui_test
+node run_ui_tests.mjs
+# 结果 → shots/results.json
+```
+
+## 2026-08-29 进度（PDF 工坊第二批）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| PDF 转图片 | ✅ | `pdfToImages()` — PDF.js 2× 渲染 PNG/JPEG，ZIP 批量下载 |
+| PDF 加密 | ✅ | `encryptPdfFile()` — cryptpdf AES-256 Rev 5 |
+| PDF 解密 | ✅ | `decryptPdfFile()` — 口令验证后输出无密码副本 |
+| PDF 扫描增强 | ✅ | `enhancePdfScan()` — 对比度/灰度/二值化逐页重建 |
+| PDF 页面编辑器 | ✅ | `rebuildPdfFromPages()` — 重排/旋转/删除后导出 |
+| 前端构建 | ✅ | `cd frontend && npm run build` → **成功**（2607 modules，5.44s） |
+| ToolKnit 接线 | ✅ | **51 ready / 9 planned**（PDF 工坊 9/9 ready） |
+
+### 后续批次（用户 2026-08-29 指定，PDF 批次已完成）
+
+1. ~~PDF 转图片 / 加密 / 解密 / 扫描增强 / 页面编辑器~~ ✅；2. 视频转码 / 视频转 GIF；3. 调性检测（口径待确认）；4. 色彩空间色域对比。其余 planned：PPT 转 PDF/转图片/AI 大纲/AI 草稿、离线转写、打字测速。
 
 ## 2026-08-29 进度（ToolKnit 整合收尾轮）
 
@@ -12,10 +205,8 @@
 | pytest 全量回归 | ✅ | `python -m pytest -q` → **95 passed in 173.51s** |
 | 前端最终构建 | ✅ | `cd frontend && npm run build` → **成功**（2599 modules，4.55s；仅 chunk >500kB 体积提示，无错误） |
 | release_acceptance 发布门禁 | ✅ | **全部通过**：source_rules（9 条通用词，无厂商词）/ exe_bundled_rules / exe_exists / synthetic_pipeline（残留为零，保护内容保留）/ generic_terms_in_rules |
-
-### 后续批次（用户 2026-08-29 指定，未实施）
-
-1. PDF 转图片 / 加密 / 解密 / 扫描增强 / 页面编辑器；2. 视频转码 / 视频转 GIF；3. 调性检测（口径待与用户确认：BPM 已 ready，若指音乐调性 key 分析为扩展项）；4. 色彩空间色域对比。其余 planned：PPT 转 PDF/转图片/AI 大纲/AI 草稿、离线转写、打字测速。
+| 合成样本 UI 实测（上午） | ✅ | FastAPI 桥响应 200；UI 偏好代码核实 |
+| `temp_ui_test/` 处置 | ⏳ | 未跟踪目录（含实测脚本/截图/样本），未入 git；待用户决定清理或 gitignore |
 
 ## 2026-08-26 进度（ZonScale 现代化工作台）
 
