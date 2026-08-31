@@ -4,6 +4,7 @@ import { DrawingView } from './components/DrawingView';
 import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { TextCenter } from './components/textcenter/TextCenter';
 import { PdfCenter } from './components/pdfcenter/PdfCenter';
+import { PdfToolHome } from './components/pdfcenter/PdfToolHome';
 import { ImageCenter } from './components/imagecenter/ImageCenter';
 import { PptCenter } from './components/pptcenter/PptCenter';
 import { MediaCenter } from './components/mediacenter/MediaCenter';
@@ -92,7 +93,14 @@ export default function App() {
       <div className="relative z-30 shrink-0 w-full flex items-center px-3 py-2 bg-white/80 border-b-2 border-mem-ink/10">
         <SubNavPills
           key={activeCenter}
-          options={tools.map((tool) => ({ id: tool.id, label: t(tool.labelKey) }))}
+          options={tools.map((tool) => ({
+            id: tool.id,
+            label: t(tool.labelKey),
+            group:
+              activeCenter === 'pdf_center' && tool.group
+                ? t(`pdfGroups.${tool.group}`)
+                : undefined,
+          }))}
           activeId={activeTool}
           onChange={(id) => handleToolChange(id as ToolId)}
           colorVariant={centerMeta.accent}
@@ -131,7 +139,11 @@ export default function App() {
         )}
         {activeCenter === 'pdf_center' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-            <PdfCenter tool={activeTool} />
+            {activeTool === 'pdf-home' ? (
+              <PdfToolHome onSelect={handleToolChange} />
+            ) : (
+              <PdfCenter tool={activeTool} />
+            )}
           </div>
         )}
         {activeCenter === 'image_center' && (

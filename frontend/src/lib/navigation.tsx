@@ -38,6 +38,8 @@ export interface ToolMeta {
   /** i18n key，见 locales 的 tools.* */
   labelKey: string;
   availability: ToolAvailability;
+  /** PDF 工坊等：SubNavPills 分组键（见 pdfGroups.*） */
+  group?: 'organize' | 'convert' | 'edit' | 'security';
 }
 
 /** 8 大中心（顺序即导航顺序） */
@@ -65,31 +67,36 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'audit', labelKey: 'header.navAudit', availability: 'ready' },
   ],
   pdf_center: [
-    { id: 'pdf-organize', labelKey: 'tools.pdfOrganize', availability: 'ready' },
-    { id: 'pdf-editor', labelKey: 'tools.pdfEditor', availability: 'ready' },
-    { id: 'pdf-forms', labelKey: 'tools.pdfForms', availability: 'ready' },
-    { id: 'pdf-cert-sign', labelKey: 'tools.pdfCertSign', availability: 'ready' },
-    { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'ready' },
-    { id: 'pdf-split', labelKey: 'tools.pdfSplit', availability: 'ready' },
-    { id: 'pdf-extract', labelKey: 'tools.pdfExtract', availability: 'ready' },
-    { id: 'pdf-rotate', labelKey: 'tools.pdfRotate', availability: 'ready' },
-    { id: 'pdf-to-image', labelKey: 'tools.pdfToImage', availability: 'ready' },
-    { id: 'pdf-images-to-pdf', labelKey: 'tools.pdfImagesToPdf', availability: 'ready' },
-    { id: 'pdf-compress', labelKey: 'tools.pdfCompress', availability: 'ready' },
-    { id: 'compress-deep', labelKey: 'tools.compressDeep', availability: 'ready' },
-    { id: 'pdf-enhance', labelKey: 'tools.pdfEnhance', availability: 'ready' },
-    { id: 'pdf-watermark', labelKey: 'tools.pdfWatermark', availability: 'ready' },
-    { id: 'pdf-page-numbers', labelKey: 'tools.pdfPageNumbers', availability: 'ready' },
-    { id: 'pdf-crop', labelKey: 'tools.pdfCrop', availability: 'ready' },
-    { id: 'pdf-encrypt', labelKey: 'tools.pdfEncrypt', availability: 'ready' },
-    { id: 'pdf-decrypt', labelKey: 'tools.pdfDecrypt', availability: 'ready' },
-    { id: 'pdf-to-word', labelKey: 'tools.pdfToWord', availability: 'ready' },
-    { id: 'pdf-to-excel', labelKey: 'tools.pdfToExcel', availability: 'ready' },
-    { id: 'pdf-to-ppt', labelKey: 'tools.pdfToPpt', availability: 'ready' },
-    { id: 'office-to-pdf', labelKey: 'tools.officeToPdf', availability: 'ready' },
-    { id: 'html-to-pdf', labelKey: 'tools.htmlToPdf', availability: 'ready' },
-    { id: 'ocr-export', labelKey: 'tools.ocrExport', availability: 'ready' },
-    { id: 'pdf-repair', labelKey: 'tools.pdfRepair', availability: 'ready' },
+    { id: 'pdf-home', labelKey: 'tools.pdfHome', availability: 'ready' },
+    // 整理
+    { id: 'pdf-organize', labelKey: 'tools.pdfOrganize', availability: 'ready', group: 'organize' },
+    { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'ready', group: 'organize' },
+    { id: 'pdf-split', labelKey: 'tools.pdfSplit', availability: 'ready', group: 'organize' },
+    { id: 'pdf-extract', labelKey: 'tools.pdfExtract', availability: 'ready', group: 'organize' },
+    { id: 'pdf-rotate', labelKey: 'tools.pdfRotate', availability: 'ready', group: 'organize' },
+    { id: 'pdf-crop', labelKey: 'tools.pdfCrop', availability: 'ready', group: 'organize' },
+    { id: 'pdf-page-numbers', labelKey: 'tools.pdfPageNumbers', availability: 'ready', group: 'organize' },
+    // 转换
+    { id: 'pdf-to-word', labelKey: 'tools.pdfToWord', availability: 'ready', group: 'convert' },
+    { id: 'pdf-to-excel', labelKey: 'tools.pdfToExcel', availability: 'ready', group: 'convert' },
+    { id: 'pdf-to-ppt', labelKey: 'tools.pdfToPpt', availability: 'ready', group: 'convert' },
+    { id: 'office-to-pdf', labelKey: 'tools.officeToPdf', availability: 'ready', group: 'convert' },
+    { id: 'html-to-pdf', labelKey: 'tools.htmlToPdf', availability: 'ready', group: 'convert' },
+    { id: 'ocr-export', labelKey: 'tools.ocrExport', availability: 'ready', group: 'convert' },
+    { id: 'pdf-repair', labelKey: 'tools.pdfRepair', availability: 'ready', group: 'convert' },
+    { id: 'pdf-to-image', labelKey: 'tools.pdfToImage', availability: 'ready', group: 'convert' },
+    { id: 'pdf-images-to-pdf', labelKey: 'tools.pdfImagesToPdf', availability: 'ready', group: 'convert' },
+    { id: 'pdf-compress', labelKey: 'tools.pdfCompress', availability: 'ready', group: 'convert' },
+    { id: 'compress-deep', labelKey: 'tools.compressDeep', availability: 'ready', group: 'convert' },
+    // 编辑
+    { id: 'pdf-editor', labelKey: 'tools.pdfEditor', availability: 'ready', group: 'edit' },
+    { id: 'pdf-watermark', labelKey: 'tools.pdfWatermark', availability: 'ready', group: 'edit' },
+    { id: 'pdf-enhance', labelKey: 'tools.pdfEnhance', availability: 'ready', group: 'edit' },
+    { id: 'pdf-forms', labelKey: 'tools.pdfForms', availability: 'ready', group: 'edit' },
+    // 安全
+    { id: 'pdf-encrypt', labelKey: 'tools.pdfEncrypt', availability: 'ready', group: 'security' },
+    { id: 'pdf-decrypt', labelKey: 'tools.pdfDecrypt', availability: 'ready', group: 'security' },
+    { id: 'pdf-cert-sign', labelKey: 'tools.pdfCertSign', availability: 'ready', group: 'security' },
   ],
   ppt_center: [
     { id: 'ppt-to-pdf', labelKey: 'tools.pptToPdf', availability: 'ready' },

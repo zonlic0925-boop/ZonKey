@@ -21,6 +21,8 @@ import { ConvertView } from './ConvertView'
 
 export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
   switch (tool) {
+    case 'pdf-home':
+      return null
     case 'pdf-organize':
       return <PdfOrganizeView />
     case 'pdf-editor':
@@ -34,11 +36,10 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
     case 'pdf-rotate':
       return <PdfRotateView />
     case 'pdf-compress':
-    case 'compress-deep':
       return <PdfCompressView />
     case 'pdf-to-image':
       return <PdfToImageView />
-    case 'images-to-pdf':
+    case 'pdf-images-to-pdf':
       return <PdfImagesToPdfView />
     case 'pdf-encrypt':
       return <PdfEncryptView />
@@ -56,6 +57,15 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <PdfFormsView />
     case 'pdf-cert-sign':
       return <PdfCertSignView />
+    case 'pdf-to-word':
+    case 'pdf-to-excel':
+    case 'pdf-to-ppt':
+    case 'office-to-pdf':
+    case 'compress-deep':
+    case 'html-to-pdf':
+    case 'ocr-export':
+    case 'pdf-repair':
+      return <ConvertView op={tool} />
     default:
       if (tool.startsWith('cv-')) {
         return <ConvertView op={tool} />

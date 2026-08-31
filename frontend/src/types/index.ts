@@ -16,6 +16,7 @@ export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit
 
 /** PDF 工坊 */
 export type PdfToolId =
+  | 'pdf-home'
   | 'pdf-editor'
   | 'pdf-organize'
   | 'images-to-pdf'
