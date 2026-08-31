@@ -388,6 +388,7 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
         pdfDownloadUrl={pdfDownloadUrl}
         downloadLabel={exportLabel}
         onNotify={onNotify}
+        showFooterRedactButton
       />
       </div>
     </div>

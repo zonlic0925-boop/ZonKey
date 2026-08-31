@@ -876,31 +876,41 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
-          {showFooterRedactButton && downloadInfo && (
-            <ExportDownloadButton
-              info={downloadInfo}
-              openInfo={pdfOpenInfo}
-              label={downloadLabel ?? t('export.labelPdf')}
-              onNotify={onNotify}
-              className="memphis-btn-secondary flex items-center gap-1.5 text-xs ml-1"
-            />
-          )}
           {showFooterRedactButton && (
-            <button
-              onClick={onExecuteRedact}
-              disabled={
-                isProcessing ||
-                isScanning ||
-                previewMode === 'after' ||
-                candidates.filter((c) => c.is_selected).length === 0
-              }
-              className="memphis-btn-primary flex items-center gap-2 text-xs ml-1"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {isProcessing ? t('redact.executing') : isScanning ? t('redact.scanning') : t('redact.execute')}
-              </span>
-            </button>
+            <div className="lg:hidden flex items-center gap-1 shrink-0">
+              {downloadInfo && (
+                <ExportDownloadButton
+                  info={downloadInfo}
+                  openInfo={pdfOpenInfo}
+                  label={downloadLabel ?? t('export.labelPdf')}
+                  onNotify={onNotify}
+                  className="memphis-btn-secondary flex items-center gap-1.5 text-xs"
+                />
+              )}
+              <button
+                type="button"
+                onClick={onExecuteRedact}
+                disabled={
+                  isProcessing ||
+                  isScanning ||
+                  previewMode === 'after' ||
+                  candidates.filter((c) => c.is_selected).length === 0
+                }
+                aria-label={
+                  isProcessing
+                    ? t('redact.executing')
+                    : isScanning
+                      ? t('redact.scanning')
+                      : t('redact.execute')
+                }
+                className="memphis-btn-primary flex items-center gap-2 text-xs max-md:zs-touch-target-mobile px-3 py-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {isProcessing ? t('redact.executing') : isScanning ? t('redact.scanning') : t('redact.execute')}
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>

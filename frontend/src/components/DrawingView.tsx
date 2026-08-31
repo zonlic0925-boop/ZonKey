@@ -776,6 +776,7 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
           pdfDownloadUrl={pdfDownloadUrl}
           downloadLabel={exportLabel}
           onNotify={onNotify}
+          showFooterRedactButton
         />
         </div>
       </div>
