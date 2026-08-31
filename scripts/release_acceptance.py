@@ -163,6 +163,55 @@ def _verify_output_pdf_terms(pdf_path: Path, terms: list[str]) -> list[str]:
     return leftovers
 
 
+def _check_cleanup_endpoints() -> dict:
+    """P4：工作目录清理端点可用（GET status + POST cleanup 结构正确）。"""
+    try:
+        from fastapi.testclient import TestClient
+
+        from server_bridge import app
+
+        client = TestClient(app)
+        status_r = client.get("/api/system/cleanup/status")
+        if status_r.status_code != 200:
+            return {"pass": False, "error": f"status HTTP {status_r.status_code}"}
+        body = status_r.json()
+        dirs = body.get("dirs") or {}
+        ok_keys = {"temp_bridge_files", "output"}.issubset(dirs.keys())
+        post_r = client.post("/api/system/cleanup")
+        post_ok = post_r.status_code == 200 and post_r.json().get("status") == "success"
+        return {
+            "status_keys": sorted(dirs.keys()),
+            "post_cleaned_files": post_r.json().get("cleaned_files") if post_ok else None,
+            "pass": ok_keys and post_ok,
+        }
+    except Exception as exc:
+        return {"pass": False, "error": str(exc)}
+
+
+def _check_convert_capability_gate() -> dict:
+    """P4：COM 缺失时转换能力门控仍应返回结构化 capability（禁止 500）。"""
+    try:
+        from fastapi.testclient import TestClient
+
+        from server_bridge import app
+
+        client = TestClient(app)
+        r = client.get("/api/convert/capability")
+        if r.status_code != 200:
+            return {"pass": False, "error": f"HTTP {r.status_code}"}
+        data = r.json()
+        required = {"engines", "pywin32", "word_com", "excel_com", "rapidocr"}
+        missing = required - set(data.keys())
+        return {
+            "keys": sorted(data.keys()),
+            "pywin32": data.get("pywin32"),
+            "pass": not missing,
+            "missing": sorted(missing),
+        }
+    except Exception as exc:
+        return {"pass": False, "error": str(exc)}
+
+
 def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> dict:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     rules_root = get_app_root() / "rules"
@@ -201,6 +250,8 @@ def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> 
 
     report["checks"]["synthetic_pipeline"] = _synthetic_drawing_test(OUTPUT_DIR)
     report["checks"]["no_agpl_components"] = _check_no_agpl_components(exe_dir)
+    report["checks"]["cleanup_endpoints"] = _check_cleanup_endpoints()
+    report["checks"]["convert_capability_gate"] = _check_convert_capability_gate()
 
     generic_only = load_terms(rules_root / "sensitive_terms.txt")
     report["checks"]["generic_terms_in_rules"] = {
@@ -261,6 +312,12 @@ def main() -> int:
                 print("       fitz 仍可导入")
             if check.get("bundle_hits"):
                 print(f"       打包产物含 AGPL 文件: {check['bundle_hits']}")
+        if name == "cleanup_endpoints":
+            print(f"       监控目录: {check.get('status_keys')}")
+        if name == "convert_capability_gate":
+            print(f"       capability 键: {check.get('keys')}")
+            if check.get("missing"):
+                print(f"       缺失键: {check['missing']}")
 
     print("-" * 60)
     print(f"报告文件: {OUTPUT_DIR / 'release_acceptance_report.json'}")

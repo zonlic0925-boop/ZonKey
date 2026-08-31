@@ -22,6 +22,10 @@ openpyxl>=3.1
 mammoth>=1.6
 reportlab>=4.0
 
+# P3 PDF 证书签名（PAdES，MIT 许可；用户自带 PEM 证书+私钥）
+pyhanko>=0.36
+pyhanko-certvalidator>=0.31
+
 # Windows Office COM 兜底（PPT/Word/Excel 转 PDF 的能力探测后路）
 pywin32>=306; sys_platform == "win32"
 

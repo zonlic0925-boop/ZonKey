@@ -75,6 +75,12 @@ try:
 except Exception as e:
     print(f"Warning: Failed to load convert_tools router: {e}")
 
+try:
+    from backend_p3_tools import router as p3_tools_router
+    app.include_router(p3_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load p3_tools router: {e}")
+
 TEMP_DIR = PROJECT_ROOT / "temp_bridge_files"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1054,6 +1060,53 @@ def get_audit_history():
 
 # 静态资源挂载 (前端打包后分发)
 DIST_DIR = get_dist_web_dir()
+
+# ----------------- 工作目录清理（output/ + temp_bridge_files/） -----------------
+
+def _dir_usage_bytes(d: Path) -> tuple[int, int]:
+    """返回 (文件数, 总字节)。"""
+    if not d.is_dir():
+        return 0, 0
+    count = 0
+    total = 0
+    for p in d.iterdir():
+        try:
+            if p.is_file():
+                count += 1
+                total += p.stat().st_size
+        except OSError:
+            pass
+    return count, total
+
+
+@app.get("/api/system/cleanup/status")
+def cleanup_status():
+    dirs = {"temp_bridge_files": TEMP_DIR, "output": OUTPUT_DIR}
+    detail: dict[str, dict] = {}
+    for name, d in dirs.items():
+        files, bytes_ = _dir_usage_bytes(d)
+        detail[name] = {"path": str(d.resolve()), "files": files, "bytes": bytes_}
+    return {"status": "ok", "dirs": detail}
+
+
+@app.post("/api/system/cleanup")
+def cleanup_temp_files():
+    cleaned_bytes = 0
+    cleaned_files = 0
+    for d in (TEMP_DIR, OUTPUT_DIR):
+        if not d.exists():
+            continue
+        for p in d.iterdir():
+            try:
+                if p.is_file():
+                    cleaned_bytes += p.stat().st_size
+                    p.unlink()
+                    cleaned_files += 1
+            except Exception as e:
+                print(f"Failed to delete {p}: {e}")
+    return {"status": "success", "cleaned_files": cleaned_files, "cleaned_bytes": cleaned_bytes}
+
+
 if DIST_DIR.exists():
     app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")
 
@@ -1085,20 +1138,3 @@ if __name__ == "__main__":
     parser.add_argument("--no-browser", action="store_true")
     cli = parser.parse_args()
     launch_server(port=cli.port, open_browser=not cli.no_browser, lan=cli.lan)
-
-# ----------------- 清理接口 -----------------
-@app.post("/api/system/cleanup")
-def cleanup_temp_files():
-    import shutil
-    cleaned_bytes = 0
-    dirs = [TEMP_DIR, OUTPUT_DIR]
-    for d in dirs:
-        if d.exists():
-            for p in d.iterdir():
-                try:
-                    if p.is_file():
-                        cleaned_bytes += p.stat().st_size
-                        p.unlink()
-                except Exception as e:
-                    print(f"Failed to delete {p}: {e}")
-    return {"status": "success", "cleaned_bytes": cleaned_bytes}

@@ -236,12 +236,33 @@ def _run_ffmpeg_with_progress(
     job_id: str,
     stage: str,
 ) -> None:
-    """跑 ffmpeg 并解析 -progress pipe:1 的 out_time 更新进度（10%~95% 区间）。"""
+    """跑 ffmpeg 并解析 -progress pipe:1 的 out_time 更新进度（10%~95% 区间）。
+
+    stderr 用后台线程持续排空：ffmpeg 的警告日志会写满 64KB 管道缓冲区，
+    若等 stdout 读完再收 stderr 会永久死锁在 95%（Windows 实测复现）。
+    """
+    import threading
+
     cmd = [ffmpeg, "-hide_banner", "-nostdin", "-y", *args, "-progress", "pipe:1", "-nostats"]
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
     )
     _set_job(job_id, pid=process.pid)
+
+    stderr_chunks: list[str] = []
+
+    def _drain_stderr() -> None:
+        assert process.stderr is not None
+        try:
+            for err_line in process.stderr:
+                if len(stderr_chunks) < 64:
+                    stderr_chunks.append(err_line)
+        except (OSError, ValueError):
+            pass
+
+    stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+    stderr_thread.start()
+
     assert process.stdout is not None
     for line in process.stdout:
         line = line.strip()
@@ -253,13 +274,9 @@ def _run_ffmpeg_with_progress(
             except ValueError:
                 pass
     process.wait()
+    stderr_thread.join(timeout=5)
     if process.returncode != 0:
-        stderr = ""
-        if process.stderr:
-            try:
-                stderr = process.stderr.read()[-800:]
-            except OSError:
-                stderr = ""
+        stderr = "".join(stderr_chunks)[-800:]
         raise RuntimeError(f"ffmpeg 失败 (code {process.returncode}): {stderr}")
 
 
