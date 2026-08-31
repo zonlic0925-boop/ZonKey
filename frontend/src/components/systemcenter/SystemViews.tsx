@@ -16,6 +16,17 @@ export function formatBytes(bytes?: number | null): string {
   return `${value.toFixed(value >= 100 || unit === 0 ? 0 : 1)} ${units[unit]}`
 }
 
+function biosDate(raw?: unknown): string {
+  if (typeof raw !== 'string') return '—'
+  const m = raw.match(/\/Date\((\d+)\)\//)
+  if (m) {
+    const d = new Date(Number(m[1]))
+    return Number.isNaN(d.getTime()) ? '—' : d.toISOString().slice(0, 10)
+  }
+  const d = new Date(raw)
+  return Number.isNaN(d.getTime()) ? raw : d.toISOString().slice(0, 10)
+}
+
 export const KVTile: React.FC<{ label: string; value: React.ReactNode; wide?: boolean }> = ({ label, value, wide }) => (
   <div className={`p-3 bg-white border-2 border-mem-ink rounded-xl ${wide ? 'col-span-full' : ''}`}>
     <p className="text-xs font-bold text-mem-ink/60">{label}</p>
@@ -58,6 +69,8 @@ export const SystemInfoView: React.FC<{ endpoint: string; title: string }> = ({ 
   const disks = (data?.disks ?? null) as Array<Record<string, unknown>> | null
   const gpus = (data?.gpus ?? null) as Array<Record<string, unknown>> | null
   const adapters = (data?.adapters ?? null) as Array<Record<string, unknown>> | null
+  const board = (data?.board ?? null) as Record<string, unknown> | null
+  const bios = (data?.bios ?? null) as Record<string, unknown> | null
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -73,6 +86,17 @@ export const SystemInfoView: React.FC<{ endpoint: string; title: string }> = ({ 
           {entries.map(([key, value]) => (
             <KVTile key={key} label={key} value={renderValue(key, value)} />
           ))}
+        </div>
+      )}
+
+      {board && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <KVTile label={t('systemcenter.boardManufacturer')} value={renderValue('m', board.manufacturer)} />
+          <KVTile label={t('systemcenter.boardModel')} value={renderValue('m', board.product)} />
+          <KVTile label={t('systemcenter.boardVersion')} value={renderValue('m', board.version)} />
+          <KVTile label={t('systemcenter.biosManufacturer')} value={renderValue('m', bios?.manufacturer)} />
+          <KVTile label={t('systemcenter.biosVersion')} value={renderValue('m', bios?.version)} />
+          <KVTile label={t('systemcenter.biosDate')} value={biosDate(bios?.release_date)} />
         </div>
       )}
 
@@ -183,6 +207,9 @@ export const CleanupView: React.FC = () => {
         </p>
       )}
       <ErrorLine message={error} />
+      {!scan && !error && (
+        <p className="text-xs font-bold text-mem-ink/60">{t('systemcenter.scanning')}</p>
+      )}
       {scan && (
         <div className="space-y-2">
           {scan.tiers.map((tier) => (

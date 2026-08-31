@@ -861,7 +861,7 @@ export async function encryptPdfFileAdvanced(
   formData.append('allow_modify', perms.modify ? 'true' : 'false');
   formData.append('allow_fill', perms.fill ? 'true' : 'false');
 
-  const res = await fetch('http://127.0.0.1:8765/api/convert/protect-advanced', {
+  const res = await fetch('/api/convert/protect-advanced', {
     method: 'POST',
     body: formData
   });
