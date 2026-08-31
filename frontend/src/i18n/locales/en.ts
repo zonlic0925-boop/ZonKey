@@ -21,6 +21,12 @@ export const en: MessageTree = {
     engineOnline: 'Engine online',
     rulesCount: '{count} rules',
   },
+  window: {
+    minimize: 'Minimize',
+    maximize: 'Maximize',
+    restore: 'Restore',
+    close: 'Close',
+  },
   centers: {
     redact: 'Smart Redact',
     pdfCenter: 'PDF Studio',
@@ -527,6 +533,22 @@ export const en: MessageTree = {
       'ocr-export': 'OCR the PDF text, export TXT or a searchable sandwich PDF (page image + invisible text layer).',
       'pdf-repair': 'Repairs broken PDF structure (qpdf kernel); unrecoverable files error out instead of producing garbage.',
     },
+  },
+  mobileNav: {
+    label: 'Bottom navigation',
+    home: 'Home',
+    favorites: 'Starred',
+    more: 'More',
+    allCenters: 'All centers',
+  },
+  favorites: {
+    title: 'My starred tools',
+    hint: 'Star the tools you use often for one-tap access.',
+    emptyTitle: 'No starred tools yet',
+    emptyHint: 'Open the PDF workshop home and tap the star on any card to add it here (up to 12).',
+    add: 'Star this tool',
+    remove: 'Unstar',
+    limitReached: 'Star list is full (12): unstar one first.',
   },
   mediaJob: {
     outputFiles: 'Output files',

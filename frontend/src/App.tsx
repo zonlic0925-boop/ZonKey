@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Header } from './components/Header';
+import { WindowControls } from './components/WindowControls';
+import { WindowDragStrip } from './components/WindowDragStrip';
 import { DrawingView } from './components/DrawingView';
 import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { TextCenter } from './components/textcenter/TextCenter';
@@ -14,10 +16,13 @@ import { WordView } from './components/WordView';
 import { RuleCenter } from './components/RuleCenter';
 import { AuditLogView } from './components/AuditLogView';
 import { SubNavPills } from './components/navigation/SubNavPills';
+import { MobileBottomNav, type MobileTabId } from './components/navigation/MobileBottomNav';
+import { FavoritesView } from './components/navigation/FavoritesView';
 import { CenterPlaceholder } from './components/common/CenterPlaceholder';
 import { MemphisDecor } from './components/MemphisDecor';
 import { CenterId, ToolId } from './types';
 import { CENTER_TOOLS, getCenterMeta } from './lib/navigation';
+import type { ToolMeta } from './lib/navigation';
 import { CheckCircle2, AlertCircle, Info, X, WifiOff } from 'lucide-react';
 import { useBackendStatus } from './lib/api';
 import { useI18n } from './i18n';
@@ -65,9 +70,40 @@ export default function App() {
   const tools = CENTER_TOOLS[activeCenter];
   const centerMeta = getCenterMeta(activeCenter);
 
+  // 手机端底部导航：favorites 为虚拟视图；home 回智能脱敏首工具
+  const mobileTab: MobileTabId =
+    activeCenter === 'redact' && activeTool === 'favorites-view'
+      ? 'favorites'
+      : activeCenter === 'redact' && activeTool === 'drawing'
+        ? 'home'
+        : activeCenter;
+
+  const openCenterFromMobile = (center: CenterId) => {
+    handleCenterChange(center);
+  };
+
+  /** 收藏直达：定位到工具所属中心并切换（含 redact 原生工具） */
+  const openFavoriteTool = (toolId: ToolId) => {
+    if (toolId === 'favorites-view') return;
+    for (const center of Object.keys(CENTER_TOOLS) as CenterId[]) {
+      const meta = CENTER_TOOLS[center].find((m) => m.id === toolId) as ToolMeta | undefined;
+      if (meta) {
+        if (center !== activeCenter) {
+          lastToolByCenter.current[activeCenter] = activeTool;
+          setActiveCenter(center);
+        }
+        setActiveTool(toolId);
+        refresh();
+        return;
+      }
+    }
+  };
+
   return (
     <div className="relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
       <MemphisDecor />
+      <WindowDragStrip />
+      <WindowControls />
 
       {online === false && (
         <div className="relative z-50 px-4 py-2.5 bg-mem-coral border-b-[3px] border-mem-ink flex items-center justify-center gap-2 text-sm font-medium text-white">
@@ -108,7 +144,11 @@ export default function App() {
       </div>
 
       <main className="relative z-10 flex-1 w-full min-h-0 overflow-hidden flex">
-        {activeCenter === 'redact' && (
+        {activeCenter === 'redact' && activeTool === 'favorites-view' ? (
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <FavoritesView onOpenTool={openFavoriteTool} />
+          </div>
+        ) : (
           <>
             {activeTool === 'drawing' && (
               <DrawingView onNotify={showNotify} backendOnline={online} />
@@ -125,8 +165,7 @@ export default function App() {
             {activeTool === 'audit' && (
               <AuditLogView onNotify={showNotify} backendOnline={online} />
             )}
-          </>
-        )}
+
         {activeCenter === 'calc_dev' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
             <CalcDevCenter tool={activeTool} />
@@ -140,7 +179,7 @@ export default function App() {
         {activeCenter === 'pdf_center' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
             {activeTool === 'pdf-home' ? (
-              <PdfToolHome onSelect={handleToolChange} />
+              <PdfToolHome onSelect={handleToolChange} onNotify={showNotify} />
             ) : (
               <PdfCenter tool={activeTool} />
             )}
@@ -169,7 +208,26 @@ export default function App() {
         {activeCenter !== 'redact' && activeCenter !== 'calc_dev' && activeCenter !== 'text_center' && activeCenter !== 'pdf_center' && activeCenter !== 'image_center' && activeCenter !== 'ppt_center' && activeCenter !== 'media_center' && activeCenter !== 'system_tools' && (
           <CenterPlaceholder center={centerMeta} toolCount={tools.length} />
         )}
+        </>
+        )}
       </main>
+
+      <MobileBottomNav
+        activeTab={mobileTab}
+        onTabChange={(tab) => {
+          if (tab === 'favorites') {
+            // 收藏是 redact 中心下的虚拟视图：先回中心再切 tool，避免落进占位符
+            if (activeCenter !== 'redact') handleCenterChange('redact');
+            handleToolChange('favorites-view' as ToolId);
+          } else if (tab === 'home') {
+            if (activeCenter !== 'redact') handleCenterChange('redact');
+            else handleToolChange('drawing');
+          } else {
+            openCenterFromMobile(tab as CenterId);
+          }
+        }}
+        onOpenCenter={openCenterFromMobile}
+      />
 
       {notification && (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 z-50 memphis-toast animate-in fade-in slide-in-from-bottom-5 max-w-full">

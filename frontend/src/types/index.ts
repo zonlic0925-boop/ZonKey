@@ -12,7 +12,7 @@ export type CenterId =
   | 'system_tools';
 
 /** 智能脱敏中心（ZonScale 原生功能） */
-export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit';
+export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit' | 'favorites-view';
 
 /** PDF 工坊 */
 export type PdfToolId =

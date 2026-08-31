@@ -21,6 +21,12 @@ export const zhTW: MessageTree = {
     engineOnline: '引擎在線',
     rulesCount: '{count} 規則',
   },
+  window: {
+    minimize: '最小化',
+    maximize: '最大化',
+    restore: '還原',
+    close: '關閉',
+  },
   centers: {
     redact: '智慧脫敏',
     pdfCenter: 'PDF 工坊',
@@ -527,6 +533,22 @@ export const zhTW: MessageTree = {
       'ocr-export': 'OCR 識別 PDF 文字，導出 TXT 或「可搜尋夾心 PDF」（原頁視覺 + 隱形文字層）。',
       'pdf-repair': '修復損壞的 PDF 結構（qpdf 內核），嚴重損壞時報錯而不是輸出壞檔案。',
     },
+  },
+  mobileNav: {
+    label: '底部導覽',
+    home: '首頁',
+    favorites: '收藏',
+    more: '更多',
+    allCenters: '全部功能中心',
+  },
+  favorites: {
+    title: '我的收藏',
+    hint: '常用的工具點星標收進來，一屏直達。',
+    emptyTitle: '還沒有收藏的工具',
+    emptyHint: '開啟 PDF 工坊首頁，點擊卡片右上角的星標即可收藏（最多 12 個）。',
+    add: '收藏此工具',
+    remove: '取消收藏',
+    limitReached: '收藏已滿（12 個）：請先取消一個再新增。',
   },
   mediaJob: {
     outputFiles: '輸出文件',

@@ -2,15 +2,17 @@ import React from 'react'
 import { CENTER_TOOLS } from '../../lib/navigation'
 import type { ToolId } from '../../types'
 import { useI18n } from '../../i18n'
+import { FavoriteStar } from '../navigation/FavoriteStar'
 
 const PDF_GROUPS = ['organize', 'convert', 'edit', 'security'] as const
 
 interface PdfToolHomeProps {
   onSelect: (tool: ToolId) => void
+  onNotify?: (msg: string, type: 'success' | 'error' | 'info') => void
 }
 
-/** PDF 工坊首页：按 iLovePDF 四组展示工具网格 */
-export const PdfToolHome: React.FC<PdfToolHomeProps> = ({ onSelect }) => {
+/** PDF 工坊首页：按 iLovePDF 四组展示工具网格，卡片右上角可收藏 */
+export const PdfToolHome: React.FC<PdfToolHomeProps> = ({ onSelect, onNotify }) => {
   const { t } = useI18n()
   const tools = CENTER_TOOLS.pdf_center.filter((m) => m.id !== 'pdf-home')
 
@@ -31,16 +33,18 @@ export const PdfToolHome: React.FC<PdfToolHomeProps> = ({ onSelect }) => {
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
               {groupTools.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => onSelect(tool.id)}
-                  className="text-left px-3 py-3 rounded-xl border-2 border-mem-ink bg-white shadow-memphis-sm hover:bg-mem-sky/10 hover:border-mem-sky transition-colors"
-                >
-                  <span className="font-display font-semibold text-sm text-mem-ink leading-snug">
-                    {t(tool.labelKey)}
-                  </span>
-                </button>
+                <div key={tool.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(tool.id)}
+                    className="w-full text-left px-3 py-3 rounded-xl border-2 border-mem-ink bg-white shadow-memphis-sm hover:bg-mem-sky/10 hover:border-mem-sky transition-colors"
+                  >
+                    <span className="font-display font-semibold text-sm text-mem-ink leading-snug">
+                      {t(tool.labelKey)}
+                    </span>
+                  </button>
+                  <FavoriteStar toolId={tool.id} onNotify={onNotify} />
+                </div>
               ))}
             </div>
           </section>

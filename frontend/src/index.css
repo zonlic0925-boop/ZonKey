@@ -126,6 +126,21 @@
     @apply font-brand-script text-mem-ink/60 leading-none;
     letter-spacing: 0.04em;
   }
+
+  /* 无边框窗口的自绘控制按钮（仅桌面壳渲染，见 WindowControls.tsx）。
+     孟菲斯风：白底粗描边，悬停抬升；关闭键悬停珊瑚红——Windows 用户
+     仍能从右上角位置与红色悬停获得肌肉记忆。 */
+  .zs-win-ctrl {
+    @apply grid place-items-center h-8 w-8 rounded-lg border-2 border-mem-ink
+           bg-white text-mem-ink/70 shadow-memphis-sm
+           hover:text-mem-ink hover:bg-mem-yellow/50 hover:-translate-y-px
+           active:translate-y-0 active:scale-95 transition-all duration-100
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mem-teal;
+  }
+
+  .zs-win-ctrl-close {
+    @apply hover:bg-mem-coral hover:text-white hover:border-mem-ink;
+  }
 }
 
 /* 滚动条 */

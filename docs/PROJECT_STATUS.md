@@ -1,6 +1,21 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-31（晚：转换 8 工具浏览器引擎兜底上线 Pages，6/6 实机验证通过）。
+> 更新于：2026-08-31（深夜：手机端底部导航 + 工具收藏上线 Pages，实机 390×844 验证通过）。
+
+## 2026-08-31 深夜进度（手机端导航 + 收藏）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 底部导航栏 | ✅ | `MobileBottomNav.tsx`：手机端固定底部 5 tab（收藏/首页/智能脱敏/PDF 工坊/更多）；「更多」弹层列出全部中心；桌面端（md+）不渲染，零影响 |
+| 工具收藏 | ✅ | `favoritesCore.ts`（localStorage，上限 12，跨中心）+ `FavoriteStar.tsx`（PDF 工坊首页卡片右上角星标）+ `FavoritesView.tsx`（收藏页：卡片跳转、取消收藏、空态引导文案） |
+| 收藏页路由 | ✅ | redact 中心下虚拟 tool `favorites-view`；底部 tab 切换时**先回 redact 中心再切 tool**（修了一个真 bug：在其他中心直接切收藏会落进「功能维护中」占位符） |
+| 触控目标 | ✅ | 底部 tab ≥44px 命中区（`zs-touch-target-mobile` 体系），active 态 Memphis 风格高亮 |
+| i18n | ✅ | `favorites.*` / `mobileNav.*` 三语（zh-CN/zh-TW/en） |
+| 实机验证 | ✅ | Playwright 390×844：底部导航渲染与高亮、收藏点星→收藏页出现→点击跳转全链路、三个页面横向溢出=0、零 pageerror；截图 `temp_ui_test/shots_mnav/`；脚本 `mobile_nav_check.mjs` / `mobile_fav_flow.mjs` |
+| App.tsx 修复 | ✅ | 上会话遗留的 JSX 片段闭合错乱（构建失败 TS1381）已修 |
+| 设计检测 | ✅ | impeccable detect.mjs 0 findings |
+| 构建/回归/部署 | ✅ | npm build 2m44s 成功；pytest 127 passed；Pages 已部署（线上 = 本地 `index-SPDzCuv0.js`，HTTP 200） |
+| 桌面壳 | ✅ | 无边框窗口改造（WindowDragStrip/WindowControls/frameless_window.py）随本轮一起提交——desktop_app.py 自绘标题栏，不影响浏览器端 |
 
 ## 2026-08-31 晚进度（转换工具浏览器引擎兜底）
 

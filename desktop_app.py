@@ -74,20 +74,78 @@ def _run_uvicorn(bind_host: str) -> None:
 def _open_pywebview(title: str) -> None:
     import webview
 
+    from core.frameless_window import attach_frameless_behaviour
+
     # 工坊类工具（PDF/PPT/图像/音视频等）的产物走浏览器下载（blob → 另存为）。
     # pywebview 默认 ALLOW_DOWNLOADS=False 会在 WebView2 里静默取消全部下载，
     # 必须显式放开；放开后 WebView2 弹原生"另存为"对话框，不覆盖原始文件。
     webview.settings['ALLOW_DOWNLOADS'] = True
 
+    # 无边框窗口：去掉系统标题栏，由前端自绘窗口控制；拖拽/缩放/Snap
+    # 由 core/frameless_window.py 的 Win32 钩子补回（仅 Windows）。
     # 窗口/任务栏图标由 PyInstaller 打包时写入 EXE；pywebview 的 create_window 不支持 icon 参数
-    webview.create_window(
+    window = webview.create_window(
         title,
         URL,
         width=1440,
         height=900,
         min_size=(1024, 720),
+        frameless=True,
+        js_api=WindowApi(),
+        background_color="#FFF9F0",
     )
+    attach_frameless_behaviour(window)
     webview.start()
+
+
+class WindowApi:
+    """暴露给前端 window.pywebview.api 的窗口控制（frameless 标题栏按钮）。"""
+
+    def _window(self):
+        import webview
+
+        return webview.windows[0] if webview.windows else None
+
+    def minimize(self) -> None:
+        win = self._window()
+        if win:
+            win.minimize()
+
+    def toggle_maximize(self) -> None:
+        """前端在最大化/还原二态间切换；真实状态由前端事件+轮询同步后选择调用。"""
+        win = self._window()
+        if not win:
+            return
+        # pywebview 无 is_maximized 查询，前端把当前状态作为参数传来更可靠：
+        # 见 WindowControls.tsx —— toggle_maximize 只做最大化，还原走 restore()。
+        win.maximize()
+
+    def is_maximized(self) -> bool:
+        """供前端同步最大化状态（窗口事件不透传到 JS，按钮态轮询此接口）。"""
+        win = self._window()
+        native = getattr(win, "native", None) if win else None
+        if native is None:
+            return False
+        try:
+            # WinForms.FormWindowState.Maximized == 2
+            return int(native.WindowState) == 2
+        except Exception:  # noqa: BLE001
+            return False
+
+    def maximize(self) -> None:
+        win = self._window()
+        if win:
+            win.maximize()
+
+    def restore(self) -> None:
+        win = self._window()
+        if win:
+            win.restore()
+
+    def close(self) -> None:
+        win = self._window()
+        if win:
+            win.destroy()
 
 
 def _open_browser_fallback() -> None:

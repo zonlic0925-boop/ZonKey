@@ -1,9 +1,18 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（晚：转换 8 工具浏览器引擎兜底 + Pages 部署）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（深夜：手机端底部导航 + 收藏 + 无边框桌面壳，已部署）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇、2026-08-31 晚（转换工具浏览器引擎兜底，线上已部署）
+## 〇、2026-08-31 深夜（手机端导航 + 收藏 + 无边框桌面壳，已部署 Pages）
+
+- **手机端底部导航**（`navigation/MobileBottomNav.tsx`）：5 tab = 收藏 / 首页 / 智能脱敏 / PDF 工坊 / 更多（弹层列全部中心）。仅移动视口渲染，桌面零影响。tab 命中区 ≥44px。
+- **工具收藏**：`lib/toolknit/favoritesCore.ts`（localStorage，上限 12，跨中心，change 事件同步）+ `FavoriteStar.tsx`（PdfToolHome 卡片星标）+ `FavoritesView.tsx`（redact 中心虚拟 tool `favorites-view`：跳转/取消/空态）。
+- **真 bug 修复 ×2**：① 上会话遗留 App.tsx JSX 片段闭合错乱（TS1381 构建失败）；② 底部 tab 切收藏只切 tool 不切 center，非 redact 中心下落「功能维护中」占位符——现在先 `handleCenterChange('redact')` 再切。
+- **桌面壳无边框窗口**：`core/frameless_window.py` + `WindowControls.tsx` + `WindowDragStrip.tsx` + `desktop_app.py` 改造（自绘标题栏/最小化/最大化/关闭）。
+- **验证**：Playwright 390×844 实机（`temp_ui_test/mobile_nav_check.mjs` / `mobile_fav_flow.mjs`，截图 `shots_mnav/`）：收藏全链路 + 三页横向溢出=0 + 零 pageerror；impeccable detect.mjs 0 findings；npm build 成功；pytest 127 passed（注意：后台跑 pytest 时 shell cwd 会漂到 frontend 导致 "no tests ran"，必须确认在仓库根执行）；Pages 已部署且线上=本地（`index-SPDzCuv0.js`）。
+- **接手注意**：EXE 下轮打包会自动带上本轮前端（后端仅 desktop_app.py 无边框改造，需实机开一次确认拖拽/按钮正常）。
+
+## 2026-08-31 晚（转换工具浏览器引擎兜底，线上已部署）
 
 - **需求背景**：用户要求「桌面版有的功能，网页版尽最大可能复刻；做不了的提醒只能桌面端」。对齐 toolknit.com 的产品模型（网页版轻量引流 + 桌面版重能力）。
 - **新前端引擎 `frontend/src/lib/toolknit/convertWebCore.ts`**：后端离线（公网 Pages/手机）时自动降级浏览器本地处理，文件零上传。7/8 工具可兜底：

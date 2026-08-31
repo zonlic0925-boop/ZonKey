@@ -21,6 +21,12 @@ export const zhCN: MessageTree = {
     engineOnline: '引擎在线',
     rulesCount: '{count} 规则',
   },
+  window: {
+    minimize: '最小化',
+    maximize: '最大化',
+    restore: '还原',
+    close: '关闭',
+  },
   centers: {
     redact: '智能脱敏',
     pdfCenter: 'PDF 工坊',
@@ -530,6 +536,22 @@ export const zhCN: MessageTree = {
       'ocr-export': 'OCR 识别 PDF 文字，导出 TXT 或「可搜索夹心 PDF」（原页视觉 + 隐形文字层）。',
       'pdf-repair': '修复损坏的 PDF 结构（qpdf 内核），严重损坏时报错而不是输出坏文件。',
     },
+  },
+  mobileNav: {
+    label: '底部导航',
+    home: '首页',
+    favorites: '收藏',
+    more: '更多',
+    allCenters: '全部功能中心',
+  },
+  favorites: {
+    title: '我的收藏',
+    hint: '常用的工具点星标收进来，一屏直达。',
+    emptyTitle: '还没有收藏的工具',
+    emptyHint: '打开 PDF 工坊首页，点击卡片右上角的星标即可收藏（最多 12 个）。',
+    add: '收藏此工具',
+    remove: '取消收藏',
+    limitReached: '收藏已满（12 个）：请先取消一个再添加。',
   },
   mediaJob: {
     outputFiles: '输出文件',
