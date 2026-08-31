@@ -1,6 +1,25 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-31（收尾轮：P3 安全工具 + P4 收尾全绿，EXE/Pages 部署验证，127 passed）。
+> 更新于：2026-08-31（晚：转换 8 工具浏览器引擎兜底上线 Pages，6/6 实机验证通过）。
+
+## 2026-08-31 晚进度（转换工具浏览器引擎兜底）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 浏览器转换引擎 | ✅ | 新增 `frontend/src/lib/toolknit/convertWebCore.ts`：后端离线时 7/8 转换工具自动降级浏览器本地处理（pdf→word/excel/ppt、office→pdf、html→pdf、compress-deep、pdf-repair）；文件零上传 |
+| OCR 诚实降级 | ✅ | ocr-export 浏览器做不了（OCR 模型过大），显示「此工具需要本机引擎」引导桌面版，不虚标 |
+| ConvertView 接线 | ✅ | capability 失败 → webFallback 自动启用；蓝条标注保真度差异；产物走 deliver.downloadBlob 统一出口；UI 布局零变化 |
+| 许可合规 | ✅ | docx MIT / xlsx Apache-2.0 / pptxgenjs MIT / mammoth BSD-2 / html2canvas MIT / pdf-lib MIT——零 AGPL；动态 import 分 chunk 不进主包 |
+| 栅格化技术路线 | ✅ | **html2canvas 逐节点重绘为首选**；foreignObject data-URL SVG 在 Chrome 100% 复现「source image cannot be decoded」，仅作回退（首版踩坑重做一次的教训） |
+| 实机验证 | ✅ | Playwright 后端离线场景 6/6：pdf-to-word(excel/ppt) 产物 magic bytes 正确（PK/PK/PK）、compress-deep 与 html-to-pdf %PDF、中文加粗正常、ocr 桌面引导显示。脚本 `temp_ui_test/webconvert_final.mjs` |
+| 构建 | ✅ | npm run build 32.8s；pptxgen 282KB / xlsx 430KB 独立 chunk |
+| 后端回归 | ✅ | pytest 127 passed（后端零改动） |
+| Pages 部署 | ✅ | zonscale.pages.dev → `index-CBxmc5sG.js`（含引擎特征串），HTTP 200 |
+| EXE | — | 无需重打包（后端零改动，前端构建时自动打入 dist_web） |
+
+### UI 测试基建备注
+
+- Header 中心按钮在窄视口溢出隐藏：Playwright 须用 `button[title="…"]:visible` + ≥1366px 视口，否则解析到隐藏节点超时。
 
 ## 2026-08-31 收尾轮进度（P3 安全工具 + P4 收尾 + 打包/部署验证）
 

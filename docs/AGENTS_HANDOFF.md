@@ -1,9 +1,32 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（收尾轮：P3/P4 全绿 + EXE + Pages 部署 + git 收尾）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（晚：转换 8 工具浏览器引擎兜底 + Pages 部署）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇、2026-08-31 收尾轮（P3 安全工具 + P4 收尾 + 打包/部署，已提交）
+## 〇、2026-08-31 晚（转换工具浏览器引擎兜底，线上已部署）
+
+- **需求背景**：用户要求「桌面版有的功能，网页版尽最大可能复刻；做不了的提醒只能桌面端」。对齐 toolknit.com 的产品模型（网页版轻量引流 + 桌面版重能力）。
+- **新前端引擎 `frontend/src/lib/toolknit/convertWebCore.ts`**：后端离线（公网 Pages/手机）时自动降级浏览器本地处理，文件零上传。7/8 工具可兜底：
+  - pdf-to-word：PDF.js 文本行（字号/粗体/坐标聚类）→ docx.js 重建（标题分级/分页；复杂表格线性化，如实标注）；
+  - pdf-to-excel：行聚类 + x 间隙分列 → SheetJS（每页一 sheet；无框线检测，简化口径）；
+  - pdf-to-ppt：PDF.js 逐页渲染贴图 → pptxgenjs（与后端同思路）；
+  - office-to-pdf：docx→mammoth→HTML、xlsx→SheetJS→HTML → 栅格化 → pdf-lib（.doc/.xls 旧格式引导桌面版）；
+  - html-to-pdf：Markdown/HTML 子集解析 → 栅格化（与后端同语义子集）；
+  - compress-deep：逐页栅格化 + JPEG 重编码 → pdf-lib（无文本层，与后端同语义）；
+  - pdf-repair：pdf-lib 容错解析重建（尽力而为）；
+  - **ocr-export 浏览器做不了**（OCR 模型过大）：诚实显示「此工具需要本机引擎」引导桌面版，不虚标。
+- **ConvertView 接线**：capability 探测失败 → `webFallback` 自动启用（UI 无任何布局变化）；顶部蓝条如实标注「浏览器本地引擎 + 保真度低于桌面版」；产物走 `deliver.downloadBlob` 统一出口（壳内=服务端中转另存为，浏览器=直接下载）；成功后显示引擎标识 + 重新下载按钮。
+- **许可合规（零 AGPL）**：docx@9.7.1 MIT / xlsx@0.18.5 Apache-2.0 / pptxgenjs@4.0.1 MIT / mammoth@1.12.2 BSD-2 / html2canvas@1.4.1 MIT / pdf-lib MIT（已有）。重量级依赖全部动态 import() 分 chunk（pptxgen 282KB / xlsx 430KB 独立 chunk 不进主包）。
+- **关键坑（重做一次的教训）**：foreignObject data-URL SVG 栅格化在 Chrome 上报「The source image cannot be decoded」（100% 复现，dev 与产物一致）——**首版用 foreignObject 方案在实机测试全挂**，换 html2canvas 逐节点重绘后解决，foreignObject 仅作加载失败的回退。教训：栅格化 HTML 一律 html2canvas 起步。
+- **实机验证（Playwright，dev server + 后端离线场景，`temp_ui_test/webconvert_final.mjs`）**：6/6 通过——pdf-to-word（PK/docx 8.6KB）、pdf-to-excel（PK/xlsx 16KB）、compress-deep（%PDF/30KB）、pdf-to-ppt（PK/pptx 119KB）、html-to-pdf（%PDF/9.4KB 中文加粗正常）、ocr-export 桌面引导正确显示。产物 magic bytes 全部正确。
+- **验证三绿**：`npm run build` 成功（32.8s）；pytest `--ignore=tests/test_native_dialog.py` → **127 passed**（后端零改动）；`zonscale.pages.dev` 已部署新构建（`index-CBxmc5sG.js` 含引擎特征串，HTTP 200）。
+- **手机导航坑（测试脚本层面，非产品 bug）**：1280px 视口下 Header 中心按钮组溢出隐藏，Playwright `button[title="PDF 工坊"]` 解析到隐藏节点超时——UI 测试须用 `:visible` 选择器 + ≥1366px 视口。
+- **尚未做（接手顺序建议）**：
+  1. 手机真机体验浏览器转换（Playwright 已过，真机 Safari/微信 X5 未测——html2canvas 老内核兼容性待观察）；
+  2. EXE 无需重打包（后端零改动），下轮打包时自然带上新前端；
+  3. 31 样本回归仍开放（样本目录未到位）。
+
+## 2026-08-31 收尾轮（P3 安全工具 + P4 收尾 + 打包/部署，已提交）
 
 - **工作树干净**：`git status` 无未提交变更；master 最新提交 `e80eb98`（20:36，6 笔提交一次收尾）。文档（本文件 + PROJECT_STATUS.md）在收尾轮内最后更新并另行提交，若接手时工作树出现这两文件变更即属正常。
 - **P3 安全工具全链路（已提交 `33a91ea` 后端 / `838776d` 前端 / `67ff56c` 测试）**：
@@ -136,7 +159,7 @@ D1-D8 债务、T1-T4 设计取舍、F1/F2 功能需求、修复实施记录、31
 
 ## 六、下一步
 
-以本文档「〇」节为准（2026-08-31 收尾轮起）：**P3 编辑/表单/签名与 P4 收尾均已完成并提交**，Phase M 与 P2 已完成，EXE 与 Pages 已部署验证。仅剩 31 样本回归（样本到位后跑 `scripts/regression_acceptance.py`）。
+以本文档「〇」节为准（2026-08-31 晚起）：P3/P4/Phase M/P2 均已完成并提交，EXE 与 Pages 已部署，**转换 8 工具已有浏览器引擎兜底并上线**。剩余：手机真机复测浏览器转换 → 31 样本回归（样本到位后跑 `scripts/regression_acceptance.py`）。
 
 每批次完成标准：`npm run build` 零错误 + 工具实机可走通 + `availability` 从 `planned` 改 `ready`（`frontend/src/lib/navigation.tsx`）+ 更新本文档与 PROJECT_STATUS.md。
 

@@ -14,6 +14,8 @@ import {
   type ConvertJobStatus,
   type ConvertOp,
 } from '../../lib/api'
+import { downloadBlob } from '../../lib/deliver'
+import { WEB_SUPPORTED_OPS, runWebConversion, type WebConvertResult } from '../../lib/toolknit/convertWebCore'
 
 const OPS: ConvertOp[] = [
   'pdf-to-word',
@@ -53,6 +55,8 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
   const [error, setError] = useState<string | null>(null)
   const [job, setJob] = useState<ConvertJobStatus | null>(null)
   const [outputs, setOutputs] = useState<{ name: string; dir: string }[]>([])
+  const [webResult, setWebResult] = useState<WebConvertResult | null>(null)
+  const [webStage, setWebStage] = useState('')
 
   useEffect(() => {
     getConvertCapability().then(setCaps).catch(() => setCaps(null))
@@ -65,18 +69,39 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
     setError(null)
     setJob(null)
     setOutputs([])
+    setWebResult(null)
+    setWebStage('')
   }, [op])
 
   const isRepair = op === 'pdf-repair'
   const isHtml = op === 'html-to-pdf'
   const isJobOp = !isRepair && !isHtml
 
+  // 后端离线时：浏览器引擎可承接的工具自动降级，其余引导桌面版
+  const backendOffline = !caps
+  const webFallback = backendOffline && WEB_SUPPORTED_OPS.has(op)
+
   const run = async () => {
     setBusy(true)
     setError(null)
     setJob(null)
     setOutputs([])
+    setWebResult(null)
+    setWebStage('')
     try {
+      if (webFallback) {
+        if (!file && !(isHtml && content.trim())) throw new Error(t('convert.errNoFile'))
+        const result = await runWebConversion(op, file, {
+          dpi,
+          quality,
+          imageFormat: pptFormat,
+          content,
+          title,
+        }, (stage) => setWebStage(stage))
+        setWebResult(result)
+        await downloadBlob(result.blob, result.filename)
+        return
+      }
       if (isRepair) {
         if (!file) throw new Error(t('convert.errNoFile'))
         const result = await convertRepair(file)
@@ -109,8 +134,14 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
 
   const gateMessage = caps
     ? ''
-    : t('convert.backendOffline')
+    : webFallback
+      ? ''
+      : t('convert.backendOffline')
   const ocrBlocked = isJobOp && op === 'ocr-export' && !!caps && !caps.rapidocr
+  // 浏览器兜底模式下也允许粘贴内容（html-to-pdf）
+  const inputBlocked = busy || (webFallback
+    ? false
+    : (!!caps && ocrBlocked) || (!file && !(isHtml && content.trim())))
 
   return (
     <div className="max-w-xl mx-auto space-y-4">
@@ -121,6 +152,16 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
       <p className="text-xs font-bold text-mem-ink/60">{t(`convert.hint.${op}`)}</p>
 
       <CapabilityGate ok={!!caps} message={gateMessage} />
+      {webFallback && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-sky/20 text-xs font-bold text-mem-ink">
+          {t('convert.webEngineNote')}
+        </div>
+      )}
+      {backendOffline && !webFallback && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-sky/20 text-xs font-bold text-mem-ink">
+          {t('convert.desktopOnlyNote')}
+        </div>
+      )}
       {ocrBlocked && <CapabilityGate ok={false} message={t('convert.ocrUnavailable')} />}
 
       <input
@@ -199,10 +240,13 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
         </>
       )}
 
-      <MemphisButton variant="sky" onClick={run} disabled={busy || (!!caps && ocrBlocked) || (!file && !(isHtml && content.trim()))}>
+      <MemphisButton variant="sky" onClick={run} disabled={inputBlocked}>
         {busy ? t('convert.running') : t('convert.start')}
       </MemphisButton>
 
+      {busy && webFallback && webStage && (
+        <p className="text-xs font-bold text-mem-ink/60">{t('convert.stage', { stage: webStage })}</p>
+      )}
       {busy && job && (
         <div className="space-y-1">
           <ProgressBar progress={job.progress} />
@@ -227,6 +271,19 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
             </p>
           )}
           {job.note && <p className="text-xs font-bold text-mem-ink/70">{job.note}</p>}
+        </div>
+      )}
+      {webResult && !busy && (
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-mem-teal">{t('convert.done')}</p>
+          <p className="text-xs font-bold text-mem-ink/60">{t('convert.engine', { engine: webResult.engine })}</p>
+          <p className="text-xs font-bold text-mem-ink/70">{t('convert.webDownloaded', { name: webResult.filename })}</p>
+          <MemphisButton
+            variant="paper"
+            onClick={() => downloadBlob(webResult.blob, webResult.filename)}
+          >
+            {t('mediaJob.download')}
+          </MemphisButton>
         </div>
       )}
       {outputs.length > 0 && !busy && <MediaOutputList outputs={outputs} />}
