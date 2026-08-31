@@ -1,6 +1,17 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-31（深夜：手机端底部导航 + 工具收藏上线 Pages，实机 390×844 验证通过）。
+> 更新于：2026-08-31（深夜后续：无边框桌面壳死锁/遮任务栏双修复，实机消息级验证全绿）。
+
+## 2026-08-31 深夜后续进度（无边框桌面壳加固）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| GUI 线程死锁修复 | ✅ | `frameless_window.py` 所有 CLR 访问改经 `BeginInvoke(Action)` 排到 GUI 线程；`CoreWebView2` 改事件订阅（`CoreWebView2InitializationCompleted`）设 `IsNonClientRegionSupportEnabled=True`。修复前壳窗口必现 `IsHungAppWindow=True` 挂死 |
+| 最大化遮任务栏修复 | ✅ | `WM_NCCALCSIZE` 钩子在 `IsZoomed` 时把客户区内缩到 `_monitor_workarea`（Chromium 同款）+ `Form.MaximizedBounds=WorkingArea`；实测最大化 client==workarea (0,0,2560,1528) |
+| 64 位 ctypes 原型 | ✅ | `SetWindowLongPtrW`/`CallWindowProcW` 等显式 `argtypes/restype`（默认 32 位传参导致窗口过程指针 OverflowError） |
+| 端到端验证 | ✅ | 壳内 evaluate_js：右上 3 按钮渲染 + pywebview.api 桥接；最小化→1 / 最大化→2 / 还原→0 状态机全通；窗口不挂死。Win32 消息级：HTTOP/HTLEFT/HTCLIENT 命中正确。Playwright：浏览器模式控制按钮不渲染、零 pageerror |
+| 回归 | ✅ | pytest 127 passed（--ignore test_native_dialog）；release_acceptance 全过 |
+| 遗留 | ⏳ | EXE 打包后需人工确认真实鼠标拖拽/边缘缩放手感（WebView2 鼠标路径无法消息级测试） |
 
 ## 2026-08-31 深夜进度（手机端导航 + 收藏）
 

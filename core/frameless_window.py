@@ -108,6 +108,24 @@ class _MINMAXINFO(ctypes.Structure):
     ]
 
 
+def _monitor_workarea(hwnd: int) -> wintypes.RECT | None:
+    """窗口所在显示器的工作区（排除任务栏）。"""
+    hwnd_monitor = user32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+    info = _MONITORINFO()
+    info.cbSize = ctypes.sizeof(info)
+    if user32.GetMonitorInfoW(hwnd_monitor, ctypes.byref(info)):
+        return info.rcWork
+    return None
+
+
+def _is_maximized(hwnd: int) -> bool:
+    return bool(user32.IsZoomed(hwnd))
+
+
+user32.IsZoomed.argtypes = [wintypes.HWND]
+user32.IsZoomed.restype = wintypes.BOOL
+
+
 def _install(hwnd: int) -> None:
     """给指定窗口装上窗体层无边框行为钩子。仅在 Windows 上生效。"""
     if sys.platform != "win32" or hwnd in _hooks:
@@ -138,7 +156,19 @@ def _call_old(hwnd: int, msg: int, wp: int, lp: int) -> int:
 
 def _window_proc(hwnd: int, msg: int, wp: int, lp: int) -> int:
     if msg == WM_NCCALCSIZE and wp:
-        # 客户区 = 整个窗口矩形：返回 0 且不动 rgrc
+        # 客户区 = 窗口矩形（无边框观感）。最大化时系统按 DWM 隐形边框把
+        # 窗口矩形外扩约 8-11px，客户区若跟随会盖住任务栏边缘 ——
+        # 此时把各边内缩到工作区（Chromium frameless 同款处理）。
+        try:
+            rect = wintypes.RECT.from_address(lp)
+            wa = _monitor_workarea(hwnd)
+            if wa is not None and _is_maximized(hwnd):
+                rect.left = max(rect.left, wa.left)
+                rect.top = max(rect.top, wa.top)
+                rect.right = min(rect.right, wa.right)
+                rect.bottom = min(rect.bottom, wa.bottom)
+        except Exception:  # noqa: BLE001
+            pass
         return 0
 
     if msg == WM_NCACTIVATE:
@@ -256,6 +286,30 @@ def _enable_webview_nonclient(native_form) -> bool:
     return result["ok"]
 
 
+def _set_maximized_bounds(native_form) -> None:
+    """让 WinForms 最大化矩形对齐工作区（不遮任务栏）。
+
+    实测仅靠 WM_GETMINMAXINFO 钩子会被 DWM 隐形边框外扩约 11px
+    （最大化 rect 超出工作区）；WinForms 的 Form.MaximizedBounds 是
+    框架级的正确挂点，它内部处理 WM_GETMINMAXINFO 的完整逻辑。
+    """
+    from System.Windows.Forms import Screen
+
+    def _on_gui() -> None:
+        try:
+            wa = Screen.FromControl(native_form).WorkingArea
+            native_form.MaximizedBounds = wa
+        except Exception:  # noqa: BLE001
+            pass
+
+    try:
+        from System import Action
+
+        native_form.BeginInvoke(Action(_on_gui))
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def attach_frameless_behaviour(window) -> None:
     """pywebview 窗口创建完成后调用。等待 native 句柄就绪后安装钩子。
 
@@ -279,6 +333,7 @@ def attach_frameless_behaviour(window) -> None:
                     hwnd = int(native.Handle.ToInt64())
                     _install(hwnd)
                     nc_ok = _enable_webview_nonclient(native)
+                    _set_maximized_bounds(native)
                     logger.info(
                         "frameless behaviour installed (hwnd=%s, webview_nonclient=%s)",
                         hwnd, nc_ok,

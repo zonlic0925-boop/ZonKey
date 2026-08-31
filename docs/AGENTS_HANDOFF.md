@@ -1,7 +1,15 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（深夜：手机端底部导航 + 收藏 + 无边框桌面壳，已部署）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（深夜后续：无边框桌面壳死锁修复 + 最大化遮任务栏修复，实机验证全绿）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
+
+## 〇-1、2026-08-31 深夜后续（无边框壳两处致命 bug 修复，实机全绿）
+
+- **① GUI 线程死锁（上一轮遗留，必现挂死）**：`frameless_window.py` 最初从 attach 线程直接枚举 `native_form.Controls` / 轮询 `CoreWebView2`，COM 互操作在非 STA 线程上把 GUI 线程卡死（`IsHungAppWindow=True`，实测复现）。修复：所有 CLR 访问经 `native_form.BeginInvoke(System.Action)` 排到 GUI 线程；`CoreWebView2` 不轮询，改订阅 `CoreWebView2InitializationCompleted` 事件回调里一次性设 `IsNonClientRegionSupportEnabled=True`（Tauri 同款：CSS `app-region: drag` → 原生拖拽/Snap/双击最大化）。
+- **② 最大化遮任务栏**：仅靠 `WM_GETMINMAXINFO` 钩子会被 DWM 隐形边框外扩 ~11px（最大化 client 实测盖到任务栏）。修复：`WM_NCCALCSIZE` 钩子里当 `IsZoomed` 时把客户区内缩到 `_monitor_workarea`（Chromium frameless 同款）+ BeginInvoke 设 `Form.MaximizedBounds=WorkingArea` 双保险。
+- **附加修正**：64 位下 `SetWindowLongPtrW` 必须显式声明 `argtypes/restype`（否则窗口过程指针溢出 OverflowError）；`IntPtr` 转换用 `.ToInt64()`；`wintypes` 无 `MONITORINFO`（自定义 `_MONITORINFO`）。
+- **实机验证（Win32 消息级 + 壳内 evaluate_js 端到端）**：钩子安装后 `IsHungAppWindow=False`；命中测试 top=HTTOP/left=HTLEFT/center=HTCLIENT；右上 3 个自绘按钮渲染且 `pywebview.api` 桥接 OK；最小化→WindowState 1、最大化→2 且 client==workarea(0,0,2560,1528)、还原→0；浏览器模式（Playwright）`.zs-win-ctrl` 不渲染、零 pageerror。pytest 127 passed + release_acceptance 全过。
+- **给下一位**：EXE 打包后仍需人工双击确认真实鼠标拖拽/边缘缩放手感（消息级测试无法覆盖 WebView2 鼠标路径）；若拖拽带无响应，优先查 `zonscale.frameless` logger 里 `webview_nonclient=True` 是否出现。诊断脚本留存：`/tmp/zs_probe9.py`（钩子+nonclient）、`/tmp/zs_final_verify.py`（按钮状态机）。
 
 ## 〇、2026-08-31 深夜（手机端导航 + 收藏 + 无边框桌面壳，已部署 Pages）
 
