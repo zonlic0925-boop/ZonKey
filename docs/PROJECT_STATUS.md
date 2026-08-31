@@ -1,6 +1,31 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-30（P2 端点补齐 + ConvertView 前端接线轮——转换引擎 8 工具全链路完成，121 passed）。
+> 更新于：2026-08-31（收尾轮：P3 安全工具 + P4 收尾全绿，EXE/Pages 部署验证，127 passed）。
+
+## 2026-08-31 收尾轮进度（P3 安全工具 + P4 收尾 + 打包/部署验证）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| P3 权限保护 | ✅ | pikepdf 全量加密（口令 + 权限位），端点 `/api/security/protect`；测试断言权限位与打开口令 |
+| P3 证书签名 | ✅ | pyHanko 真 PAdES 签名 `/api/security/pades-sign`（自签证书+私钥 PEM 上传）+ `/api/security/verify` 验签；前端 Cert Sign 证书/私钥上传 UI 修复（838776d） |
+| P3 路由与前端修正 | ✅ | p3 router 挂载 server_bridge（33a91ea）；同源 API 路径、mainboard/bios 渲染、cleanup 加载态、i18n 三语补键（838776d） |
+| P4 导航重组 | ✅ | PDF 中心导航分组（组织/转换/编辑/安全）+ 工具首页宫格（7fc07e0） |
+| P4 清理端点 | ✅ | `/api/system/cleanup/status`（监控 output + temp_bridge_files）；门禁 `cleanup_endpoints` 断言（e33aa2e + 67ff56c） |
+| 桌面全功能复测 | ✅ | `temp_ui_test/full_feature_test*.mjs`（mobile 390×844 / desktop 1366×900 双模式）覆盖 8 中心 76 工具 + 导航 + 隐私弹窗 + 横向溢出检测；CanvasViewport 移动端触控目标微调（e80eb98，`zs-touch-target-mobile`） |
+| Phase 9：EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260831.zip`（~280MB / 3776 条目）。**已验证内嵌前端与源码一致**：`_internal/dist_web/assets/index-BP5sWohB.js` 含最后一笔提交特征串，资产哈希与根 dist_web/、线上 Pages 三方一致 |
+| Phase 10：Pages 部署 | ✅ | wrangler 直传生产 `https://zonscale.pages.dev`（部署 `50f68f08`）；线上资产 = 本地 dist_web/；curl 200 / 0.30s |
+| 全量 pytest | ✅ | **127 passed**（33.8s，--ignore=tests/test_native_dialog.py；唯一告警 Starlette httpx 弃用提示）。121 → 127：新增 test_p3_security_tools.py（protect 权限位 / pades 真签真验 / verify）+ test_p4_gates.py（cleanup 结构 / capability 键） |
+| 发布门禁 | ✅ | `release_acceptance.py` 全部通过：exe_exists / synthetic_pipeline（零残留）/ no_agpl_components / cleanup_endpoints / convert_capability_gate / generic_terms_in_rules（词表 9 条通用词） |
+| 31 样本回归 | ⏳ | `Testing Drawings\` 目录本机不存在，`scripts/regression_acceptance.py` 未跑——样本到位后必跑 |
+
+### 2026-08-31 提交清单（6 笔，e33aa2e → e80eb98）
+
+- `e33aa2e` chore: system cleanup endpoint + release acceptance 通过
+- `7fc07e0` feat(p4): PDF 中心导航分组 + 工具首页宫格
+- `33a91ea` fix(backend): p3 router 挂载、pyhanko 真 PAdES、ffmpeg stderr 死锁、cleanup 端点+门禁
+- `838776d` fix(frontend): 证书签名证书/私钥上传 UI、主板/BIOS 渲染、cleanup 加载态、同源 API 路径、i18n 键
+- `67ff56c` test: p3 安全端点 + p4 清理门禁测试
+- `e80eb98` chore(ui): 画布把手微调、docpdf/drawing 调整、全功能测试资产
 
 ## 2026-08-30 第2版进度 (P3 编辑器与纯前端特性集成)
 - 表单填写(PDF Forms)

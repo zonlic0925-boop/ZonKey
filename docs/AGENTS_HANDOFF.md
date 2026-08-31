@@ -1,9 +1,30 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-30（第二轮：P2 端点补齐 + ConvertView 接线收尾轮）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（收尾轮：P3/P4 全绿 + EXE + Pages 部署 + git 收尾）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇、2026-08-30 第二轮（P2 端点补齐 + ConvertView 接线，未提交）
+## 〇、2026-08-31 收尾轮（P3 安全工具 + P4 收尾 + 打包/部署，已提交）
+
+- **工作树干净**：`git status` 无未提交变更；master 最新提交 `e80eb98`（20:36，6 笔提交一次收尾）。文档（本文件 + PROJECT_STATUS.md）在收尾轮内最后更新并另行提交，若接手时工作树出现这两文件变更即属正常。
+- **P3 安全工具全链路（已提交 `33a91ea` 后端 / `838776d` 前端 / `67ff56c` 测试）**：
+  - 权限保护 Protect PDF：pikepdf 全量加密（用户权限位 + 口令），`/api/security/protect`；
+  - 证书签名 Cert Sign：pyHanko 真 PAdES 签名（`/api/security/pades-sign`），自签证书/私钥上传 UI（PEM）已修好，`/api/security/verify` 验签；
+  - 同源 API 路径修正、mainboard/bios 渲染、cleanup 加载态、i18n 三语补键；
+  - 测试 `tests/test_p3_security_tools.py`（143 行：protect 权限位 + pades 真签真验 + verify 断言）+ `tests/test_p4_gates.py`（42 行：cleanup 端点结构 + convert capability 键）。
+- **P4 收尾（已提交 `7fc07e0` / `e33aa2e`）**：PDF 中心导航分组（组织/转换/编辑/安全）+ 工具首页宫格；系统清理端点 `/api/system/cleanup/status`（监控 output + temp_bridge_files，门禁 `cleanup_endpoints` 断言）。
+- **桌面复测完成**：`temp_ui_test/full_feature_test*.mjs`（MODE=mobile|desktop）覆盖 8 中心 76 工具 + 导航 + 隐私弹窗 + 横向溢出，产物 `temp_ui_test/shots_full/`；本轮含最后一笔 UI 微调（CanvasViewport 移动端把手/按钮区 `zs-touch-target-mobile` 等）。
+- **Phase 9 完成（EXE 重打包）**：`dist_release/ZonScale_Windows_x64_20260831.zip`（20:29，~280MB，3776 条目）。**已验证内嵌前端 = 当前构建**：`_internal/dist_web/assets/index-BP5sWohB.js` 与根 `dist_web/` 及线上 Pages 资产哈希完全一致（含最后一笔提交的特征串）。
+- **Phase 10 完成（Pages 部署）**：生产 `zonscale.pages.dev` 已部署（wrangler 直传，非 Git 集成），线上资产 = 本地 `dist_web/`；`curl` 200 + 0.30s。
+- **三道验证全绿（2026-08-31 复核）**：
+  - `pytest -q --ignore=tests/test_native_dialog.py` → **127 passed**（33.8s，唯一告警为 Starlette httpx 弃用提示，可忽略）；
+  - `python scripts/release_acceptance.py` → 全部通过（exe_exists / synthetic_pipeline 零残留 / no_agpl_components / cleanup_endpoints / convert_capability_gate / generic_terms_in_rules）；
+  - 线上 URL `https://zonscale.pages.dev` → HTTP 200。
+- **仍开放（接手顺序建议）**：
+  1. **31 样本回归**（`Testing Drawings\` 目录本机不存在，`scripts/regression_acceptance.py` 未跑）——样本到位后必跑作最终确认；
+  2. `temp_ui_test/`（含 shots_full/ 截图、合成样本、full_feature_test*.mjs）为已提交的测试资产目录，如需瘦身/清理请确认后处理；
+  3. 后续功能迭代（若有）按第四节 UI 偏好与第三节技术路线执行，不得回退。
+
+## 2026-08-30 第二轮（P2 端点补齐 + ConvertView 接线，未提交）
 
 - **P2 四端点全绿**（backend_convert_tools.py，均含合成样本端到端测试）：
   - `compress-deep`：pypdfium2 栅格化（72–200dpi）+ JPEG 质量档（30–95）重编码 + reportlab 画布回写，job 模式，响应含压缩比；诚实标注栅格化后无文本层；
@@ -115,7 +136,7 @@ D1-D8 债务、T1-T4 设计取舍、F1/F2 功能需求、修复实施记录、31
 
 ## 六、下一步
 
-以本文档「〇」节的接手顺序为准（2026-08-30 第二轮起）：浏览器级 UI 实测轮（已跑通，跳过单页拆分与下载断言异常）→ 31 样本回归（样本到位后）→ **P3（编辑/表单/手绘签名第一期已完成）** → P4 收尾。Phase M（PyMuPDF 退出迁移）与 P2（端点补齐 + ConvertView 接线）**均已完成**。
+以本文档「〇」节为准（2026-08-31 收尾轮起）：**P3 编辑/表单/签名与 P4 收尾均已完成并提交**，Phase M 与 P2 已完成，EXE 与 Pages 已部署验证。仅剩 31 样本回归（样本到位后跑 `scripts/regression_acceptance.py`）。
 
 每批次完成标准：`npm run build` 零错误 + 工具实机可走通 + `availability` 从 `planned` 改 `ready`（`frontend/src/lib/navigation.tsx`）+ 更新本文档与 PROJECT_STATUS.md。
 
