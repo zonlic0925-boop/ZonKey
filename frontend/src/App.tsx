@@ -22,6 +22,7 @@ import { HomeNavView } from './components/navigation/HomeNavView';
 import { FavoriteStar } from './components/navigation/FavoriteStar';
 import { CenterPlaceholder } from './components/common/CenterPlaceholder';
 import { MemphisDecor } from './components/MemphisDecor';
+import { FluidBackground } from './components/FluidBackground';
 import { useTheme } from './lib/theme/ThemeProvider';
 import { pageFadeSlide } from './motion/springs';
 import { CenterId, ToolId } from './types';
@@ -120,15 +121,18 @@ export default function App() {
   return (
     <div className="zs-theme-root relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
       <MemphisDecor />
-      {/* 背景纹理层（用户可选）：铺在装饰层之下、内容之下，不接指针 */}
-      {texture !== 'none' && (
+      {/* 背景外观层（用户可选）：fluid=流动渐变 blob；其余为静态纹理。
+          铺在装饰层之下、内容之下，不接指针。 */}
+      {texture === 'fluid' ? (
+        <FluidBackground />
+      ) : texture !== 'none' ? (
         <div
           aria-hidden="true"
           className={`zs-texture pointer-events-none z-0 ${
             texture === 'grid' ? 'zs-texture-grid' : texture === 'dots' ? 'zs-texture-dots' : 'zs-texture-paper'
           }`}
         />
-      )}
+      ) : null}
       <WindowControls />
 
       {online === false && (
