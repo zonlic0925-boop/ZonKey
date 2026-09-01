@@ -1,6 +1,17 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-01（第六轮：用户实测 3 问题——引擎芯片竖条/方框拖动劫持真根因/手动框选 500 防御，EXE+Pages 已交付）。
+> 更新于：2026-09-01（第七轮：用户实测 2 问题——CCITT 扫描图脱敏必败/外观纹理标签墨块化，EXE+Pages 已交付）。
+
+## 2026-09-01 第七轮进度（用户实测 2 问题修复）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 问题2 脱敏全失效（TiffImageFile.fromarray） | ✅ | 触发条件：**CCITTFaxDecode 1 位扫描图**（工程图纸扫描件标准格式，用户两样本均是）。pikepdf 对 CCITT 经 TIFF 包装解码返回 `TiffImageFile`，`_write_image_stream` 极性反转误用 `pil.__class__.fromarray`（该类无此方法，Phase M 引入）→ AttributeError →「拒绝静默保留敏感内容」拒执行。修复：模块级 `Image.fromarray`。回归：pytest 新增 2 用例（端到端 G4 扫描 PDF 脱敏 + TiffImageFile 直灌单测），**修复前代码实测复现崩溃** |
+| 问题3 外观纹理标签墨块化 | ✅ | 根因：预览 span 复用全页 overlay 定位类 `.zs-texture`（absolute inset-0）铺满按钮垫到文字下，文字压 background-image 渲染时 WebView2 走劣化光栅路径，10px 粗体中文字画粘连。修复：预览只挂图案类（32px 文档流色块），`.zs-texture` 保留给 App.tsx 全页层。真实 Chromium 渲染验证 5 标签全清晰（round7_diag 断言预览 static + 零重叠） |
+| 回归 | ✅ | pytest **133 passed**；npm build 成功；round7_diag **15/15**（新）、round6_diag **9/9** |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`；指纹：zip 内 `index-IBiqWJA6.js`=本地=线上、旧拼接串 `zs-texture zs-texture-fluid-preview` 已消失、woff2×27；PYZ `_write_image_stream` co_names 含 PIL/Image/fromarray |
+| Pages 部署 | ✅ | 线上主 chunk `index-IBiqWJA6.js` = 本地，live bundle 带修复指纹 |
+| 遗留 | ⏳ | 扫描件脱敏（两样本）+ 纹理标签显示需用户最新 EXE 实测闭环；抹除块不越框目检（验收证据 2）待用户确认 |
 
 ## 2026-09-01 第六轮进度（用户实测 3 问题修复）
 
