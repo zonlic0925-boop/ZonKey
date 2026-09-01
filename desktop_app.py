@@ -55,10 +55,12 @@ from core.port_util import free_port
 
 
 def _log(msg: str) -> None:
+    # 窗口化 EXE（console=False）里 sys.stdout 为 None（不是坏了，是没有），
+    # 任何 print 都会 TypeError； except 只捕 UnicodeEncodeError 挡不住。
     try:
         print(msg)
-    except UnicodeEncodeError:
-        print(msg.encode("ascii", errors="replace").decode("ascii"))
+    except Exception:  # noqa: BLE001 — 日志失败绝不挡启动
+        pass
 
 
 def _wait_for_server(timeout: float = 30.0) -> bool:
@@ -211,6 +213,17 @@ def _open_browser_fallback() -> None:
         _log(f"[!] 服务启动超时，请手动访问: {URL}")
 
 
+def _die(msg: str) -> None:
+    """失败退出：窗口化 EXE 无 stdin，input() 会 RuntimeError；至少留痕。"""
+    _log(f"[!] {msg}")
+    if getattr(sys, "frozen", False) and sys.stdin is not None:
+        try:
+            input("按 Enter 退出...")
+        except Exception:  # noqa: BLE001
+            pass
+    sys.exit(1)
+
+
 def main() -> None:
     global HOST, URL
 
@@ -234,10 +247,7 @@ def main() -> None:
 
     ensure_runtime_layout()
     if not get_dist_web_dir().exists():
-        _log("[!] dist_web 未找到。请先执行: cd frontend && npm run build")
-        if getattr(sys, "frozen", False):
-            input("按 Enter 退出...")
-        sys.exit(1)
+        _die("dist_web 未找到。请先执行: cd frontend && npm run build")
 
     free_port(PORT, log=_log)
 
@@ -258,29 +268,35 @@ def main() -> None:
     server.start()
 
     if not _wait_for_server():
-        _log("[!] 本地服务启动失败")
-        if getattr(sys, "frozen", False):
-            input("按 Enter 退出...")
-        sys.exit(1)
+        _die("本地服务启动失败")
 
     use_browser = args.browser
     if not use_browser:
         try:
             import webview  # noqa: F401
-
-            _log("[*] 正在打开桌面窗口...")
-            _open_pywebview(WINDOW_TITLE)
-            return
         except ImportError:
             _log("[*] 未安装 pywebview，改用系统浏览器")
             use_browser = True
 
-    if use_browser:
-        _open_browser_fallback()
+    if not use_browser:
+        # pywebview 打开失败（WebView2 运行时缺失、GPU 进程崩溃等）时
+        # webview.start() 可能直接抛异常——兜底退回浏览器，不让进程白死
+        # （用户视角即「双击后窗口一闪而过/永远白屏」）。
         try:
-            server.join()
-        except KeyboardInterrupt:
-            pass
+            _log("[*] 正在打开桌面窗口...")
+            _open_pywebview(WINDOW_TITLE)
+            return
+        except Exception:  # noqa: BLE001
+            import traceback
+
+            traceback.print_exc()
+            _log("[!] 桌面窗口打开失败，改用系统浏览器兜底")
+
+    _open_browser_fallback()
+    try:
+        server.join()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
