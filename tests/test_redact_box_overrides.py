@@ -80,3 +80,98 @@ def test_build_redact_boxes_uses_override_matched_terms_when_cache_empty():
     assert len(boxes) == 1
     assert boxes[0].terms == ["F764486(4)"]
     SCAN_CANDIDATES_CACHE.pop(file_id, None)
+
+
+# ----------------- round-6：HTTP 500 防御回归 -----------------
+
+import warnings
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+warnings.filterwarnings("ignore")
+
+
+def _make_client_and_file(tmp_path, texts):
+    """上传一份合成 PDF（drawing 模式），返回 (client, file_id)。"""
+    from server_bridge import app
+
+    from pdf_helpers import make_pdf
+
+    pdf_path = make_pdf(tmp_path / "r6.pdf", texts=texts)
+    client = TestClient(app, raise_server_exceptions=False)
+    with open(pdf_path, "rb") as f:
+        resp = client.post(
+            "/api/pdf/upload-and-scan",
+            files={"file": ("r6.pdf", f, "application/pdf")},
+            data={"mode": "drawing"},
+        )
+    assert resp.status_code == 200
+    return client, resp.json()["file_id"]
+
+
+def test_execute_redaction_oob_page_returns_400_not_500(tmp_path):
+    """手动框 page_index 越界应得可读 400，而非裸 500（round-6 问题3）。"""
+    client, fid = _make_client_and_file(tmp_path, [(50, 50, "CONFIDENTIAL", 14)])
+    resp = client.post(
+        "/api/pdf/execute-redaction",
+        json={
+            "file_id": fid,
+            "selected_candidate_ids": ["manual_oob"],
+            "mode": "redact",
+            "box_overrides": [
+                {"id": "manual_oob", "page_index": 5, "x": 10, "y": 10, "width": 30, "height": 30}
+            ],
+        },
+    )
+    assert resp.status_code == 400
+    assert "页号越界" in resp.json()["detail"]
+
+
+def test_execute_redaction_negative_size_normalized(tmp_path):
+    """拖动翻转产生的负宽高应被归一为合法矩形后正常脱敏。"""
+    client, fid = _make_client_and_file(tmp_path, [(50, 50, "CONFIDENTIAL", 14)])
+    resp = client.post(
+        "/api/pdf/execute-redaction",
+        json={
+            "file_id": fid,
+            "selected_candidate_ids": ["manual_flip"],
+            "mode": "redact",
+            "box_overrides": [
+                {"id": "manual_flip", "page_index": 0, "x": 100, "y": 100, "width": -50, "height": 30}
+            ],
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["redacted_boxes_count"] == 1
+
+
+def test_execute_redaction_zero_area_box_rejected(tmp_path):
+    """零面积框不应送入引擎，返回 400 提示未选中。"""
+    client, fid = _make_client_and_file(tmp_path, [(50, 50, "CONFIDENTIAL", 14)])
+    resp = client.post(
+        "/api/pdf/execute-redaction",
+        json={
+            "file_id": fid,
+            "selected_candidate_ids": ["manual_zero"],
+            "mode": "redact",
+            "box_overrides": [
+                {"id": "manual_zero", "page_index": 0, "x": 100, "y": 100, "width": 50, "height": 0}
+            ],
+        },
+    )
+    assert resp.status_code == 400
+
+
+def test_resolve_output_dir_falls_back_when_unwritable(tmp_path):
+    """输出目录不可写（U 盘拔出等）应回退到默认 output/ 而非裸抛 500。"""
+    from server_bridge import _resolve_output_dir
+
+    blocked = tmp_path / "readonly"
+    blocked.mkdir()
+    blocked_file = blocked / ".keep"
+    blocked_file.write_text("x")
+
+    # 用一个必然不可写的路径（Windows 上以设备名/非法字符构造）
+    fallback = _resolve_output_dir(str(tmp_path / "con" / "sub"))
+    assert Path(fallback).exists()

@@ -10,6 +10,7 @@ import uuid
 import shutil
 import base64
 import datetime
+import traceback
 import webbrowser
 import threading
 import asyncio
@@ -38,6 +39,7 @@ from core.pdfio import PdfDocView
 from core.word.pipeline import WordPipeline
 from core.word.rules_loader import normalize_word_replace_rules
 from core.model import WordReplaceRule, RedactMode, Box, RedactBox
+from core.errors import RedactError
 from core.redact.executor import redact_pdf, output_path_for, export_to_zip
 
 app = FastAPI(title=f"{APP_NAME} Native Bridge · {APP_TAGLINE}", version="3.0.0")
@@ -114,6 +116,17 @@ def append_audit_log(entry: Dict[str, Any]):
     logs.insert(0, entry)
     try:
         AUDIT_LOG_FILE.write_text(json.dumps(logs[:500], ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+ENGINE_ERROR_LOG = PROJECT_ROOT / "engine_error.log"
+
+def _log_engine_error(where: str, tb: str) -> None:
+    """把引擎异常 traceback 追加落盘：壳内窗口化 EXE 的 stdout 不可见，
+    只有文件日志能支撑事后诊断（round-6 HTTP 500 排查教训）。"""
+    try:
+        with ENGINE_ERROR_LOG.open("a", encoding="utf-8") as f:
+            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {where}\n{tb}\n")
     except Exception:
         pass
 
@@ -245,14 +258,24 @@ def _get_export_settings() -> dict[str, Any]:
 
 
 def _resolve_output_dir(custom: str | None) -> Path:
+    def _mkdir_or_fallback(p: Path) -> Path:
+        try:
+            p.mkdir(parents=True, exist_ok=True)
+            # 目录存在但只读（如拔出的 U 盘残留挂载点）在写文件时才爆，
+            # 这里用探测文件提前暴露并回退
+            probe = p / ".zs_write_probe"
+            probe.touch()
+            probe.unlink()
+            return p
+        except Exception:
+            _log_engine_error("resolve-output-dir", traceback.format_exc())
+            OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+            return OUTPUT_DIR
+
     if custom and custom.strip():
-        p = Path(custom.strip())
-        p.mkdir(parents=True, exist_ok=True)
-        return p
+        return _mkdir_or_fallback(Path(custom.strip()))
     settings = _get_export_settings()
-    p = Path(settings.get("output_dir", str(OUTPUT_DIR)))
-    p.mkdir(parents=True, exist_ok=True)
-    return p
+    return _mkdir_or_fallback(Path(settings.get("output_dir", str(OUTPUT_DIR))))
 
 
 def _resolve_output_file(filename: str, dir_hint: str | None = None) -> Path:
@@ -298,6 +321,18 @@ def _build_redact_boxes_from_selection(
             page_index = cand["page_index"]
             x, y, w, h = cand["x"], cand["y"], cand["width"], cand["height"]
         else:
+            continue
+        # 输入防御：前端异常状态下可能传来 NaN/负值坐标（round-6 排查教训），
+        # NaN 会让引擎行为未定义（dict 查找/比较全是 False），先归一成合法矩形
+        try:
+            x, y, w, h = float(x), float(y), float(w), float(h)
+        except (TypeError, ValueError):
+            continue
+        if not (x == x and y == y and w == w and h == h):  # NaN 快速筛
+            continue
+        x, y = min(x, x + w), min(y, y + h)
+        w, h = abs(w), abs(h)
+        if w <= 0 or h <= 0:
             continue
         if cid.startswith("manual_"):
             box_terms = ["人工框选"]
@@ -750,19 +785,33 @@ def execute_pdf_redaction(req: RedactExecuteRequest):
     if not redact_boxes:
         raise HTTPException(status_code=400, detail="未选中任何脱敏项")
 
-    redact_pdf(str(src_path), redact_boxes, redact_mode, str(out_path))
+    try:
+        redact_pdf(str(src_path), redact_boxes, redact_mode, str(out_path))
+    except RedactError as e:
+        # 引擎拒绝（页号越界等）：给前端可读的 400，而非裸 500
+        raise HTTPException(status_code=400, detail=f"脱敏无法执行：{e.message}（{e.detail}）")
+    except Exception:
+        # 壳内 stdout 不可见（窗口化 EXE print 被吞），异常必须落文件留痕
+        _log_engine_error("execute-redaction", traceback.format_exc())
+        raise HTTPException(status_code=500, detail="脱敏执行失败，详见引擎错误日志 engine_error.log")
+
     redacted_count = len(redact_boxes)
 
     export_zip = req.export_as_zip or _get_export_settings().get("export_as_zip", False)
     zip_path: str | None = None
     download_name = out_name
-    if export_zip:
-        zip_name = f"{Path(out_name).stem}.zip"
-        zip_full = out_dir / zip_name
-        zip_path = export_to_zip([out_path], zip_full, include_audit=False)
-        download_name = Path(zip_path).name
+    try:
+        if export_zip:
+            zip_name = f"{Path(out_name).stem}.zip"
+            zip_full = out_dir / zip_name
+            zip_path = export_to_zip([out_path], zip_full, include_audit=False)
+            download_name = Path(zip_path).name
 
-    redacted_pages = _render_pdf_file_pages(out_path)
+        redacted_pages = _render_pdf_file_pages(out_path)
+    except Exception:
+        # 抹除已成功，导出/预览渲染失败同样留痕（用户报"500 但文件已生成"类问题时可查）
+        _log_engine_error("execute-redaction/zip-or-render", traceback.format_exc())
+        raise
 
     append_audit_log({
         "id": str(uuid.uuid4())[:8],
@@ -874,7 +923,12 @@ def execute_word_redaction(req: WordRedactRequest):
     rule_engine = RuleEngine.load_document()
     custom_rules = _parse_word_custom_rules(req.custom_rules)
     word_pipeline = _build_word_pipeline(extra_rules=custom_rules)
-    result = word_pipeline.process_document(str(src_path), str(out_path))
+    try:
+        result = word_pipeline.process_document(str(src_path), str(out_path))
+    except Exception:
+        # 壳内 stdout 不可见，异常落文件留痕（与 PDF 端点同口径）
+        _log_engine_error("word-execute-redaction", traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Word 脱敏执行失败，详见引擎错误日志 engine_error.log")
 
     # 记录审计
     append_audit_log({
