@@ -192,7 +192,11 @@ class WindowApi:
 
             from core.app_paths import get_app_root
 
-            data = {"theme": str(prefs.get("theme", "cream")), "texture": str(prefs.get("texture", "none"))}
+            data = {
+                "theme": str(prefs.get("theme", "cream")),
+                "texture": str(prefs.get("texture", "none")),
+                "font_size": str(prefs.get("font_size", "md")),
+            }
             (get_app_root() / "ui_prefs.json").write_text(json.dumps(data), encoding="utf-8")
         except Exception:  # noqa: BLE001
             pass
