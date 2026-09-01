@@ -1,6 +1,18 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-01（第五轮：用户实测 3 问题排查修复，EXE+Pages 已交付）。
+> 更新于：2026-09-01（第六轮：用户实测 3 问题——引擎芯片竖条/方框拖动劫持真根因/手动框选 500 防御，EXE+Pages 已交付）。
+
+## 2026-09-01 第六轮进度（用户实测 3 问题修复）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 问题1 引擎状态条文字竖条 | ✅ | 放大截图实证：引擎文字被压成 ~14px 竖条（布局挤压，非字体）——中列收缩 + span 无宽度底线。修复：`Header.tsx` 引擎文字 span 加 `min-w-[76px]`，压缩到底线才省略。round6_diag 断言 1024px 窄窗仍 ≥76px 可读 |
+| 问题2 方框拖动劫持（真根因） | ✅ | **pywebview 6.2.1 默认 `easy_drag=True`**：frameless+edgechromium 下注入 window 级 mousedown 拖窗器（`webview/js/customize.js`），画布任意拖动都被转成移窗口，**完全绕过 app-region 与 data-canvas-gesture**——round-3/4 CSS 修复真实生效却无效的原因（劫持不走 app-region 路径）。修复：`desktop_app.py` `easy_drag=False` 拔掉整条劫持路径，窗口拖动只剩 Header 品牌行 app-region: drag（=「限制在标题栏、像正常软件」）。**待用户 EXE 实测闭环** |
+| 问题3 手动框选脱敏 500 | ✅ | TestClient 矩阵确认触发条件：手动框 `page_index` 越界 → `RedactError` 未捕获冒泡成裸 500。多层防御：① `RedactError`→可读 400「页号越界…」；② 新增 `engine_error.log` 落盘（窗口化 EXE stdout 被吞=此前诊断盲区）；③ 坐标防御（null/NaN/负宽高/零面积归一或 400）；④ 输出目录写探针回退 `output/`；⑤ Word 端点同口径。pytest 新增 4 用例（131 total） |
+| 回归 | ✅ | pytest **131 passed**；npm build 成功；theme_drag_check **31/31**、round5_diag **16/16**、round6_diag **9/9**（新）；release_acceptance 全过 |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（PE 22:01）；核验：zip 内 js/css 与本地 md5 一致 + woff2×27；PYZ 含 server_bridge 四新特征；CArchive desktop_app 含 easy_drag kwarg |
+| Pages 部署 | ✅ | 线上主 chunk `index-CkKyymwk.js` md5 = 本地；live CSS 含 `min-width:76px` 修复特征 |
+| 遗留 | ⏳ | ① 拖动劫持与芯片竖条需用户最新 EXE 实测确认（Playwright 断言不了壳内真实鼠标路径）；② 若再报 500：先看仓库根/EXE 同级 `engine_error.log` |
 
 ## 2026-09-01 第五轮进度（用户实测 3 问题）
 

@@ -1,9 +1,18 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（第五轮：用户实测 3 问题——字体链实机验证/纹理预览修复/白屏卡死加固，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（第六轮：用户实测 3 问题——引擎芯片竖条/方框拖动劫持真根因/手动框选 500 防御，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇-0、2026-09-01 第五轮（用户实测 3 问题排查修复，本轮）
+## 〇-0、2026-09-01 第六轮（用户实测 3 问题修复，本轮）
+
+- **① 问题1 引擎状态条文字竖条（真 bug，非字体）**：用户提供放大截图（`temp_ui_test/rules_chip_zoom.png`）——「20 规则」左侧引擎文字被压成 ~14px 宽竖条逐字换行裁切。根因是布局挤压：桌面行中列收缩后状态条自身 `min-w-0`，引擎文字 span `overflow-hidden` 无宽度底线，被挤到亚字形宽度。修复：`Header.tsx` 引擎文字 span 加 `min-w-[76px]`（≈4 个中文字宽），压缩到 76px 后才省略号。1024px 窄窗实测文字仍 ≥76px 可读。
+- **② 问题2 方框拖动劫持（真根因锁定，三轮 CSS 修复失效的答案）**：**pywebview 6.2.1 默认 `easy_drag=True`**——frameless+edgechromium 下它向页面注入 **window 级 mousedown 拖窗器**（`webview/js/customize.js`：任意位置按下+移动 → `pywebviewMoveWindow`），画布上拖方框/缩放必被转成移窗口，**完全绕过 WebView2 app-region 命中与 `data-canvas-gesture` 手势标记**——这就是 round-3/4 CSS 层修复（class 驱动 + !important 翻转都真实生效）却仍复现的原因：劫持根本不走 app-region 路径。修复：`desktop_app.py` `create_window(..., easy_drag=False)` 一行拔掉整条劫持路径；窗口拖动只剩 Header 品牌行 `app-region: drag` 一条正路（WebView2 非客户区支持），即用户要求的「拖动范围限制在标题栏、像正常软件」。⚠️ 回归脚本断言不了壳内真实鼠标路径，**用户 EXE 实测确认**是闭环条件。
+- **③ 问题3 手动框选脱敏 HTTP 500（多层防御 + 留痕）**：TestClient 复现矩阵（A-H + 多页/旋转/公文模式）确认裸 500 触发条件：**手动框 `page_index` 越界（>最大页/负数）→ `RedactError: 页号越界` 未捕获冒泡**。另两路隐患一并修：① `server_bridge.py` execute-redaction 捕 `RedactError` → 可读 400「脱敏无法执行：页号越界…」；② 新增 `_log_engine_error()` 落 `engine_error.log`（壳内窗口化 EXE stdout 被吞、FastAPI traceback 用户侧不可见，正是「顽固」表象的诊断盲区），PDF 抹除/zip 导出/预览渲染/Word 脱敏全链路留痕；③ `_build_redact_boxes_from_selection` 输入防御：null/NaN/负宽高/零面积坐标归一或拒绝（负宽高=拖动翻转，归一为合法矩形继续执行）；④ `_resolve_output_dir` 加写探针，目录不可写（U 盘拔出）自动回退默认 `output/`；⑤ Word 端点同口径加固。
+- **验证**：pytest **131 passed**（127+4，新增 `test_redact_box_overrides.py` round-6 四用例：越界页 400/负宽高归一/零面积拒绝/目录回退）；`npm run build` 成功；UI 回归 `theme_drag_check.mjs` **31/31**、`round5_diag.mjs` **16/16**；新 `temp_ui_test/round6_diag.mjs` **9/9**（芯片 min-w 宽度/溢出策略/窄窗/easy_drag 静态断言/后端防御特征串）；desktop_app.py & server_bridge.py import 冒烟 OK；release_acceptance 全过。
+- **交付**：**EXE 重打包**（`dist_release/ZonScale_Windows_x64_20260901.zip`，PE 时间戳 22:01）+ **Pages 部署**。核验：zip 内 `_internal/dist_web/assets/index-CkKyymwk.js` 与本地 md5 一致、CSS 含 `min-width:76px`、woff2×27；PYZ 内 server_bridge 四特征（_log_engine_error/engine_error.log/.zs_write_probe/脱敏无法执行）命中、CArchive desktop_app 含 easy_drag kwarg；线上 `zonscale.pages.dev` 主 chunk md5 = 本地、live CSS 含修复。
+- **接手注意**：① 拖动劫持若在最新 EXE 仍复现（概率极低），下一步查 `frameless_window.py` Win32 钩子层 WM_NCHITTEST 兜底返回值，但 easy_drag 已关、app-region 命中路径应独立成立；② PYZ/CArchive 特征验证法：`PyInstaller.archive.readers.CArchiveReader/ZlibArchiveReader`，kwarg 名（如 easy_drag）在 **co_consts 的 tuple** 里不在 co_names，明文 grep 恒 False 别误判；③ 引擎异常日志在**仓库根/EXE 同级 `engine_error.log`**，用户再报 500 先看它；④ 手动框零面积（用户误点）现在返回 400「未选中任何脱敏项」属预期，不算回归；⑤ vite dev 测试跑法不变（port 5199），round6_diag 走 vite dev、round5_diag 走 dist_web 静态 8902。
+
+## 〇-0-0、2026-09-01 第五轮（用户实测 3 问题排查修复，上轮）
 
 - **① 问题2 字体匹配（实机验证，无 bug）**：引擎条计算样式 `"DM Sans", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif`、外观面板标题 Audiowide、`document.fonts` **27 faces 全本地加载**、CSS 零 Google Fonts CDN 引用——round-4 @fontsource 链路健康。**用户所见字体回退来自旧发布包**：实证 `dist_release/ZonScale_Windows_x64_20260831.zip` 内 `dist_web/assets/*.woff2` **为 0**（旧包未带字体），20260901 包已带 27 个。结论：确认用户用最新包即可，无需代码改动。
 - **② 问题3 纹理预览修复（真 bug）**：`AppearanceModal.tsx` 预览块内联 `style={{ background: 'rgb(var(--mem-cream))' }}`——`background` 简写会把 class 的 `background-image` 一并重置为 none（内联优先级压过样式表），4 个纹理档预览全显示为同色纯块 → 用户「切换无感知」。修复：改 `backgroundColor`（只设底色不碰 image）。**主体接线本来就通**（切档 → `zs-texture-*`/`zs-fluid` 层真实渲染，round-4 的默认 fluid 与新访客渲染层断言均 PASS）。
