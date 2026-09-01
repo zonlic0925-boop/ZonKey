@@ -1,9 +1,18 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（第四轮：用户实测 4 问题——方框拖动劫持根治/字体离线化/纹理可感知化+流动默认化，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（第五轮：用户实测 3 问题——字体链实机验证/纹理预览修复/白屏卡死加固，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇-0、2026-09-01 第四轮（用户实测 4 问题修复，本轮）
+## 〇-0、2026-09-01 第五轮（用户实测 3 问题排查修复，本轮）
+
+- **① 问题2 字体匹配（实机验证，无 bug）**：引擎条计算样式 `"DM Sans", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif`、外观面板标题 Audiowide、`document.fonts` **27 faces 全本地加载**、CSS 零 Google Fonts CDN 引用——round-4 @fontsource 链路健康。**用户所见字体回退来自旧发布包**：实证 `dist_release/ZonScale_Windows_x64_20260831.zip` 内 `dist_web/assets/*.woff2` **为 0**（旧包未带字体），20260901 包已带 27 个。结论：确认用户用最新包即可，无需代码改动。
+- **② 问题3 纹理预览修复（真 bug）**：`AppearanceModal.tsx` 预览块内联 `style={{ background: 'rgb(var(--mem-cream))' }}`——`background` 简写会把 class 的 `background-image` 一并重置为 none（内联优先级压过样式表），4 个纹理档预览全显示为同色纯块 → 用户「切换无感知」。修复：改 `backgroundColor`（只设底色不碰 image）。**主体接线本来就通**（切档 → `zs-texture-*`/`zs-fluid` 层真实渲染，round-4 的默认 fluid 与新访客渲染层断言均 PASS）。
+- **③ 问题4 白屏卡死（浏览器/软渲染端排除，壳环境加固）**：Playwright `--disable-gpu`（软件 raster）首帧挂载 **203ms 零 pageerror**、fluid 层正常——浏览器端无白屏路径。指向 EXE 环境的两项加固：**(a) 移除 `.zs-fluid-blob` 的 `filter: blur(72px)`**——radial-gradient 自带 70% 渐隐，blur 纯冗余，却是 WebView2 GPU 受限/老驱动下大半径模糊层 **GPU 进程挂死源**（开窗即白屏卡死的头号嫌疑），移除零观感损失；**(b) desktop_app.py 三处确定性缺陷修复**——`_log` 原只捕 `UnicodeEncodeError`，窗口化 EXE（`console=False`，sys.stdout=None）任何 print 都 TypeError（现捕 Exception）；失败路径 `input("按 Enter 退出...")` 在无 stdin 时必 `RuntimeError: lost sys.stdin`（新增 `_die()` 统一收口，仅当 stdin 存在才等待）；`webview.start()` 打开失败（WebView2 Runtime 缺失/GPU 崩溃）原本静默白死进程（新增兜底：traceback 留痕 + 退回系统浏览器）。
+- **验证**：新增 `temp_ui_test/round5_diag.mjs` **16/16**（首启 root 挂载非白屏/字体链实测/预览块 image 断言/切档渲染/五档映射）；`theme_drag_check.mjs` **31/31**；`gpu_diag.mjs` 软渲染 2/2；npm build 成功；pytest **127 passed**；desktop_app.py import 冒烟 OK。
+- **交付**：**EXE 重打包** + **Pages 部署**（本收尾轮次，按指纹法核验 zip 内 index.html/CSS 与本地一致）。
+- **接手注意**：① 白屏卡死若最新包仍复现：请用户提供 `startup_error.log`（EXE 同级目录，新 `_die`/兜底已确保留痕）+ WebView2 Runtime 版本；② 后续 UI 改动**禁止**在预览块/任何元素上用 `background` 简写叠加 class 的 `background-image`（要底色用 `backgroundColor`）；③ `.zs-fluid-blob` 现在无 blur，若未来恢复模糊请先评估 WebView2 软渲染风险；④ 20260831 及更早 EXE 缺 woff2，用户报字体问题先查包内 `_internal/dist_web/assets/*.woff2` 数量。
+
+## 〇-0-0、2026-09-01 第四轮（用户实测 4 问题修复，上轮）
 
 - **① 方框拖动劫持根治（round-3 修复为何失效）**：round-3 的 `html[data-canvas-gesture] [data-drag-row]` 覆盖规则是**死代码**——Header 拖拽行用内联 `style={appRegion:'drag'}`（Header.tsx dragRowStyle），内联样式优先级压过任何样式表规则，手势期转 no-drag 从未生效。修复：拖拽行改 **class 驱动**（`.zs-drag-row`，index.css `@layer components`），手势覆盖规则加 `!important`（含子元素通配 `[data-drag-row] *` 双保险）。回归升级：`theme_drag_check.mjs` 现断言 **getComputedStyle 的 app-region 真实翻转**（旧断言只查属性存在，死代码也 PASS——这是漏检根因）。
 - **②③ 字体离线化（引擎条/外观面板字体不显示的根因）**：`index.css:1` 原来走 Google Fonts CDN `@import`，离线 EXE 静默 404 回退系统字体。修复：**@fontsource 自托管**（dm-sans/space-grotesk/audiowide/caveat，全部 OFL 宽松许可，符合零 AGPL 政策），只引入实际用到的字重（DM Sans 400-700 / Space Grotesk 500-700 / Audiowide 400 / Caveat 500,600）；tailwind fontFamily 加 **CJK 回退链**（Microsoft YaHei / PingFang SC），离线下中文不缺字形。npm warning：@fontsource 包通过 npm install 正常安装无需 allow-scripts。
@@ -12,7 +21,7 @@
 - **交付**：**Pages 已部署**（线上主 chunk = `index-DCPRlCxW.js` 含 zs-drag-row 特征串，CSS = `index-D-tG7_4J.css` 零 CDN 引用 + zs-fluid-drift-d 在线）；**EXE 重打包**见 dist_release（打包后须按指纹法验证：zip 内 `_internal/dist_web/assets/index-DCPRlCxW.js` + woff2 字体文件存在）。
 - **接手注意**：① 方框拖动劫持的壳内真实鼠标验证仍需用户实测（Playwright 无法复现 WebView2 手势接管路径，但本轮计算样式断言已证明 CSS 层修复生效——round-3 是死代码层失效，本轮 class+!important 层真实翻转）；② `document.fonts.check` 只对已加载 face 返回 true，页面未用到的字重（如 Caveat 600）须先 `fonts.load` 再断言——测试脚本已按字重子集+显式 load 处理；③ 默认纹理不写 localStorage（无偏好=不落盘），断言默认值要看渲染层（`.zs-fluid-blob` 存在）而非 `localStorage.getItem`；④ 拖拽行今后只用 `zs-drag-row` class + `data-drag-row` 属性，**禁止再写内联 app-region 样式**。
 
-## 〇-0-1、2026-09-01 第三轮（用户实测 5 问题修复，上轮）
+## 〇-0-0-1、2026-09-01 第三轮（用户实测 5 问题修复）
 - **① 引擎状态条被窗口按钮遮挡**：`pr-[150px]` 原本只在 shellMode 生效，且中列不可收缩时状态条被挤进按钮区。修复：桌面行**恒定** `pr-[150px]` + 中列 `min-w-0` 可收缩 + 中心导航窄窗横向滚动（`zs-hide-scrollbar`）+ 状态条文字 ellipsis。回归断言：状态条右缘 ≤ 窗宽-148（实测 1290 ≤ 1292 @1440）。
 - **② 方框拖动变拖窗口（根因升级）**：`app-region` 命中是**逐消息判定**的（Electron/Chromium 同源语义）——方框拖动手势进行中指针滑入 Header drag 行（0-80px），WebView2 把同一手势接管成拖窗口且不归还。上轮静态几何修复覆盖不了这个动态场景。修复：CanvasViewport 在 `editingId`（拖动/缩放）或 `isDrawing`（手动画框）时给 `<html>` 设 `data-canvas-gesture`，CSS `html[data-canvas-gesture] [data-drag-row]` 整行转 no-drag，手势结束（pointerup/cancel/unmount）自动恢复。零 React 重渲染，纯属性切换。
 - **③ 品牌重定位「日用百宝箱」**：`i18n brand.workbenchBadge`（脱敏工作台→日用百宝箱）+ `brand.subtitle`（列 8 中心能力）+ `meta.pageTitle` 三语齐；`core/brand.py` APP_TITLE/HTML_TITLE 同步。脱敏仍是核心能力，叙事覆盖全工具。

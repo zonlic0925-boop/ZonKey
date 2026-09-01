@@ -1,6 +1,18 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-01（第四轮：用户实测 4 问题修复，EXE+Pages 已交付）。
+> 更新于：2026-09-01（第五轮：用户实测 3 问题排查修复，EXE+Pages 已交付）。
+
+## 2026-09-01 第五轮进度（用户实测 3 问题）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 问题2 字体匹配排查 | ✅（无 bug） | 实机验证全链路健康：引擎条计算样式 `"DM Sans", "Microsoft YaHei", ...`、外观面板标题 Audiowide、`document.fonts` 27 faces 全本地加载、CDN 引用 0。用户所见字体回退来自 **20260831 及更早的发布包**（zip 内 woff2=0 实证）；20260901 包已带 27 个 woff2。结论：确认用最新包即可 |
+| 问题3 纹理预览修复 | ✅ | 根因：`AppearanceModal` 预览块内联 `style={{ background }}` 简写把 class 的 `background-image` 一并重置成 none（内联样式优先级），4 个纹理档预览全显示为同色纯块 →「切换无感知」。修复：改 `backgroundColor`（不重置 image）。主体接线（切档→`zs-texture-*`/`zs-fluid` 层渲染）本来就通，实机断言全过 |
+| 问题4 白屏卡死加固 | ✅ | 浏览器/软渲染端排除（--disable-gpu 首帧挂载 203ms 零 pageerror）。两项针对壳环境：① **移除 `.zs-fluid-blob` 的 `filter: blur(72px)`**——radial-gradient 自带 70% 渐隐，blur 纯冗余，却是 WebView2 GPU 受限/老驱动下大半径模糊层 GPU 进程挂死源（白屏卡死头号嫌疑），移除零观感损失；② desktop_app.py 三处加固：`_log` 挡 `stdout=None`（窗口化 EXE print 必 TypeError）、新增 `_die()` 替代失败路径 `input()`（无 stdin 时必 RuntimeError）、`webview.start()` 异常兜底退回系统浏览器（不再白死进程） |
+| 回归 | ✅ | round5_diag 新增 16 项全 PASS（首启挂载/字体链/纹理预览 image/切档渲染）；theme_drag_check 31/31；gpu_diag 软渲染 2/2；npm build 成功；pytest 127 passed |
+| EXE 重打包 | ✅ | 见 dist_release/（本收尾轮次重打包，zip 内 index.html 指纹 = 本地） |
+| Pages 部署 | ✅ | 线上 CSS 指纹（纹理预览 backgroundColor 修复 + 无 blur(72px)）与本地一致 |
+| 遗留 | ⏳ | 白屏卡死若最新包仍复现：需用户实机提供 `startup_error.log`（新 _die 已确保留痕）+ WebView2 Runtime 版本；方框拖动劫持壳内复验仍开放（round-4 遗留） |
 
 ## 2026-09-01 第四轮进度（用户实测 4 问题修复）
 
