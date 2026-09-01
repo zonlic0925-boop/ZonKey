@@ -31,6 +31,13 @@
 }
 
 @layer components {
+  /* 无边框壳拖拽层配套：拖拽行内的交互元素必须豁免（app-region: no-drag），
+     否则按钮点击会被 WebView2 当成标题栏拖动吞掉。见 WindowDragStrip.tsx。 */
+  .no-drag {
+    app-region: no-drag;
+    -webkit-app-region: no-drag;
+  }
+
   .zs-touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
