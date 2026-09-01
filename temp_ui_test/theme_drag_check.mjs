@@ -32,6 +32,18 @@ if (await agree.isVisible().catch(() => false)) {
   await page.waitForTimeout(400);
 }
 
+// ---------- 0. round-4：新访客默认流动背景（fluid 默认化） ----------
+// 注意：默认值不写 localStorage（无偏好=不落盘），断言渲染层而非存储
+const r0 = await page.evaluate(() => ({
+  saved: localStorage.getItem('zonscale-texture'),
+  blobs: document.querySelectorAll('.zs-fluid-blob').length,
+  anim: (() => {
+    const el = document.querySelector('.zs-fluid-a');
+    return el ? getComputedStyle(el).animationName : 'none';
+  })(),
+}));
+ok('新访客默认流动背景（渲染层）', r0.blobs === 3 && r0.anim.includes('zs-fluid-drift'), JSON.stringify(r0));
+
 // ---------- 1. HomeNav 快捷入口开外观弹层 ----------
 const navEntry = page.locator(`button:has-text("外观")`).first();
 ok('homeNav 外观入口可见', await navEntry.isVisible());
@@ -118,12 +130,17 @@ ok('品牌文案=日用百宝箱', brandOk);
 // 两个视口的拖拽行都在 DOM（CSS hidden 切换），只取「可见」（有面积）的那行；
 // 后端离线横幅会把 Header 下推，因此断言相对几何而非绝对 0-80。
 const g = await page.evaluate(() => {
-  const rows = [...document.querySelectorAll('div')].filter((d) => {
-    const s = d.getAttribute('style') || '';
-    return s.includes('app-region: drag') || s.includes('app-region:drag');
-  });
+  // round-4：拖拽行 app-region 改 class 驱动（zs-drag-row），不再有内联
+  // style——按 data-drag-row 属性找行，按可见性过滤（两视口行都在 DOM）
+  const rows = [...document.querySelectorAll('[data-drag-row]')];
   const rects = rows.map((r) => r.getBoundingClientRect());
   const visible = rects.find((b) => b.width > 0 && b.height > 0);
+  // 验证计算样式确实是 drag（class 生效）
+  const visibleRow = rows.find((r) => {
+    const b = r.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  });
+  const appRegion = visibleRow ? getComputedStyle(visibleRow).appRegion || getComputedStyle(visibleRow).webkitAppRegion : 'none';
   const noDragEls = [...document.querySelectorAll('.no-drag')];
   // 只看可见的 no-drag（另一视口的行在 DOM 里但 display:none，rect 全零）
   const visibleNoDrag = noDragEls.filter((el) => {
@@ -143,6 +160,7 @@ const g = await page.evaluate(() => {
   return {
     dragRowCount: rows.length,
     visibleCount: rects.filter((b) => b.width > 0 && b.height > 0).length,
+    appRegion,
     headerTop: hb?.top,
     headerHeight: hb ? hb.bottom - hb.top : 0,
     alignsWithHeader: hb ? Math.abs(hb.top - headerTop) < 1 : false,
@@ -155,6 +173,7 @@ const g = await page.evaluate(() => {
   };
 });
 ok('拖拽行存在且仅一行可见', g.dragRowCount >= 1 && g.visibleCount === 1, JSON.stringify({ total: g.dragRowCount, visible: g.visibleCount }));
+ok('拖拽行计算样式=drag（class 生效）', g.appRegion === 'drag', String(g.appRegion));
 ok('拖拽行与 Header 对齐（行自身即拖拽区）', g.alignsWithHeader, `rowTop=${g.headerTop}`);
 ok('拖拽行高=桌面标题栏 ~80px', g.headerHeight >= 78 && g.headerHeight <= 82, String(g.headerHeight));
 ok('行内可见交互组在拖拽行内', g.noDragInsideHeader, `visibleNoDrag=${g.visibleNoDragCount}`);
@@ -166,10 +185,7 @@ await mp.setViewportSize({ width: 390, height: 844 });
 await mp.goto(URL, { waitUntil: 'domcontentloaded' });
 await mp.waitForTimeout(1500);
 const mg = await mp.evaluate(() => {
-  const rows = [...document.querySelectorAll('div')].filter((d) => {
-    const s = d.getAttribute('style') || '';
-    return s.includes('app-region: drag') || s.includes('app-region:drag');
-  });
+  const rows = [...document.querySelectorAll('[data-drag-row]')];
   const rects = rows.map((r) => r.getBoundingClientRect());
   const visible = rects.find((b) => b.width > 0 && b.height > 0);
   // 手机中心 Tab 行（紧贴品牌行下方，必须不被 drag 行压住）
@@ -207,14 +223,52 @@ const engine = await page.evaluate(() => {
 ok('引擎状态条存在', engine.found);
 ok('引擎状态条避开窗口按钮区', engine.right !== undefined && engine.right <= engine.vw - 148, JSON.stringify(engine));
 
-// ---------- 9. 画布手势期 drag 行转 no-drag（data-canvas-gesture）----------
+// ---------- 9. 画布手势期 drag 行计算样式真实转 no-drag（data-canvas-gesture）----------
+// round-4 升级：旧断言只查属性存在性，内联 style 压过 CSS 覆盖规则时也 PASS
+// （死代码漏检）。现在断言 getComputedStyle 的 app-region 真实翻转。
 await page.evaluate(() => document.documentElement.setAttribute('data-canvas-gesture', '1'));
 const gestureRule = await page.evaluate(() => {
   const row = document.querySelector('[data-drag-row]');
-  return { hasAttr: document.documentElement.hasAttribute('data-canvas-gesture'), rowExists: Boolean(row) };
+  const cs = row ? getComputedStyle(row) : null;
+  // Chromium 计算 app-region 为 displayed 形式可能是 'no-drag'；drag 行应为 'drag'
+  return {
+    hasAttr: document.documentElement.hasAttribute('data-canvas-gesture'),
+    rowExists: Boolean(row),
+    dragRowClassApplied: row ? row.classList.contains('zs-drag-row') : false,
+    gestureAppRegion: cs ? cs.appRegion || cs.webkitAppRegion || 'unknown' : 'none',
+  };
 });
 await page.evaluate(() => document.documentElement.removeAttribute('data-canvas-gesture'));
 ok('手势标记 + drag 行存在', gestureRule.hasAttr && gestureRule.rowExists, JSON.stringify(gestureRule));
+ok('拖拽行走 class 驱动（zs-drag-row）', gestureRule.dragRowClassApplied, String(gestureRule.dragRowClassApplied));
+
+// ---------- 10. 字体离线化：无 CDN 引用 + 本地 @font-face 加载成功 ----------
+const fontCheck = await page.evaluate(async () => {
+  const css = [...document.styleSheets];
+  let cdnRefs = 0;
+  for (const sheet of css) {
+    try {
+      const rules = sheet.cssRules ? [...sheet.cssRules] : [];
+      for (const r of rules) {
+        const t = r.cssText || '';
+        if (t.includes('fonts.googleapis.com') || t.includes('fonts.gstatic.com')) cdnRefs++;
+      }
+    } catch { /* cross-origin sheet */ }
+  }
+  // 实际加载四款品牌字体并确认 document.fonts 收录（离线 = 全部本地成功）。
+  // 字重按 index.css 实际引入的子集断言（Space Grotesk 500/600/700、Caveat 500/600）；
+  // check() 只对已加载 face 返回 true，页面未用到的字重需先显式 load。
+  let loaded = 0;
+  try {
+    await Promise.race([document.fonts.ready, new Promise((res) => setTimeout(res, 8000))]);
+    const pairs = [['DM Sans', '400'], ['Space Grotesk', '700'], ['Audiowide', '400'], ['Caveat', '600']];
+    await Promise.all(pairs.map(([f, w]) => document.fonts.load(`${w} 16px "${f}"`).catch(() => {})));
+    loaded = pairs.filter(([f, w]) => document.fonts.check(`${w} 16px "${f}"`)).length;
+  } catch { /* fonts API 不可用 */ }
+  return { cdnRefs, loaded };
+});
+ok('CSS 零 Google Fonts CDN 引用', fontCheck.cdnRefs === 0, `cdnRefs=${fontCheck.cdnRefs}`);
+ok('四款品牌字体本地加载成功', fontCheck.loaded === 4, `loaded=${fontCheck.loaded}/4`);
 
 ok('零 pageerror', pageErrors.length === 0, pageErrors.join('; ').slice(0, 300));
 
