@@ -1,0 +1,7 @@
+PASS  initial is_maximized=False
+PASS  after 1st toggle -> maximized
+PASS  after 2nd toggle -> restored
+PASS  after 3rd toggle -> maximized
+PASS  frontend drag strips + window ctrl
+drag_detail={"dragCount":2,"rects":[[0,80,1054],[0,0,0]],"ctrlVisible":true}
+SHELL SMOKE OK

@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE-ERR', m.text().slice(0,100)); });
+await page.goto('http://127.0.0.1:5199/', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2500);
+const agree = page.locator('text=我已了解，放心使用').first();
+if (await agree.isVisible().catch(() => false)) await agree.click();
+await page.waitForTimeout(500);
+await page.locator('button:has-text("PDF 工坊")').first().click();
+await page.waitForTimeout(900);
+await page.locator('button[aria-label="收藏此工具"]').first().click();
+await page.waitForTimeout(300);
+await page.locator('button[title="欢迎来到 ZonScale"]').first().click();
+await page.waitForTimeout(800);
+await page.locator('button:has-text("页面整理")').first().click();
+await page.waitForTimeout(1200);
+// 打印当前工具态：点击 chip 后停留在哪
+const homeBtnVisible = await page.locator('button[title="欢迎来到 ZonScale"]').first().isVisible().catch(() => false);
+console.log('home btn visible (false=已离开首页):', homeBtnVisible);
+const viewerVisible = await page.locator('text=PDF Editor Viewer').first().isVisible().catch(() => false);
+console.log('landed on pdf-organize editor?', viewerVisible);
+await page.screenshot({ path: 'shots_homenav/diag_after_chip.png' });
+await browser.close();
