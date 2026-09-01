@@ -114,6 +114,14 @@ def _open_pywebview(title: str) -> None:
     # 无边框窗口：去掉系统标题栏，由前端自绘窗口控制；拖拽/缩放/Snap
     # 由 core/frameless_window.py 的 Win32 钩子补回（仅 Windows）。
     # 窗口/任务栏图标由 PyInstaller 打包时写入 EXE；pywebview 的 create_window 不支持 icon 参数
+    #
+    # easy_drag 必须关（round-6 拖动劫持真根因）：pywebview 6.x 在
+    # frameless+edgechromium 下默认 easy_drag=True，向页面注入 window 级
+    # mousedown 拖窗器（webview/js/customize.js），画布上按下拖动任意位置
+    # 都被转成 pywebviewMoveWindow 移动窗口——完全绕过 WebView2 的
+    # app-region 命中与前端 data-canvas-gesture 手势标记，CSS 层修复三轮
+    # 无效即因此。关掉后窗口拖动只剩 Header 品牌行 app-region: drag 一条
+    # 正路（WebView2 非客户区支持），与正常软件「只有标题栏能拖」一致。
     window = webview.create_window(
         title,
         URL,
@@ -121,6 +129,7 @@ def _open_pywebview(title: str) -> None:
         height=900,
         min_size=(1024, 720),
         frameless=True,
+        easy_drag=False,
         js_api=WindowApi(),
         background_color=_load_shell_bg(),
     )
