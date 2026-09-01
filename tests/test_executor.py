@@ -8,7 +8,14 @@ import pytest
 from core.errors import RedactError
 from core.model import Box, RedactBox, RedactMode
 from core.redact.executor import output_path_for, redact_pdf
-from pdf_helpers import cell_lines, count_vector_lines, extract_text, make_pdf, render_pil
+from pdf_helpers import (
+    cell_lines,
+    count_vector_lines,
+    extract_text,
+    make_ccitt_scan_pdf,
+    make_pdf,
+    render_pil,
+)
 
 
 @pytest.fixture
@@ -78,6 +85,71 @@ def test_image_pixelated_after_erase(synthetic_pdf: str, tmp_path) -> None:
     samples = [pil.getpixel((x, y)) for x in range(120, 160, 2) for y in range(155, 175, 2)]
     assert samples
     assert all(c == (255, 255, 255) for c in samples)
+
+
+def test_ccitt_scan_pixelated_after_erase(tmp_path) -> None:
+    """CCITT G4 整页扫描图脱敏（回归：TiffImageFile.fromarray 曾使像素化必败）。
+
+    pikepdf 对 CCITTFaxDecode 图像经 TIFF 包装解码，返回 TiffImageFile；
+    修复前 _write_image_stream 反转极性时调 pil.__class__.fromarray →
+    AttributeError → 「图像像素化失败（拒绝静默保留敏感图像内容）」，
+    系统识别与手动框选全部无法执行。"""
+    dark = (60, 25, 140, 75)
+    src = str(make_ccitt_scan_pdf(tmp_path / "ccitt_scan.pdf", dark_rect=dark))
+    out = str(tmp_path / "ccitt_out.pdf")
+    box = RedactBox(
+        page_index=0,
+        box=Box(dark[0] + 2, dark[1] + 2, dark[2] - 2, dark[3] - 2),
+        boxed=True,
+        manual_required=False,
+        terms=["MANUAL"],
+        channel_labels=["manual"],
+    )
+    redact_pdf(src, [box], RedactMode.ERASE, out)
+    pil = render_pil(out, scale=1.0)
+    # 深色矩形内部应被像素化填充为背景白，不再保留敏感内容
+    samples = [pil.getpixel((x, y)) for x in range(66, 134, 4) for y in range(31, 69, 4)]
+    assert samples
+    assert all(c >= (240, 240, 240) for c in samples)
+
+
+def test_write_image_stream_accepts_tiff_image_file() -> None:
+    """单测：CCITT 源极性反转必须用模块级 Image.fromarray（TiffImageFile 无此方法）。"""
+    import io
+
+    from PIL import Image
+
+    from core.redact.pikepdf_engine import _write_image_stream
+
+    buf = io.BytesIO()
+    Image.new("1", (32, 16), 1).save(buf, format="TIFF", compression="group4")
+    buf.seek(0)
+    pil = Image.open(buf)
+    assert pil.__class__.__name__ == "TiffImageFile", "前提：G4 TIFF 解出 TiffImageFile"
+
+    class _StreamStub:
+        def __init__(self) -> None:
+            object.__setattr__(self, "data", b"")
+            object.__setattr__(self, "kv", {})
+
+        def write(self, chunk: bytes) -> None:
+            object.__setattr__(self, "data", chunk)
+
+        def __setattr__(self, key: str, value) -> None:
+            self.kv[key] = value
+
+        def __contains__(self, key: str) -> bool:
+            return key in self.kv
+
+        def __delattr__(self, key: str) -> None:
+            self.kv.pop(key, None)
+
+        def __delitem__(self, key: str) -> None:
+            self.kv.pop(key, None)
+
+    stub = _StreamStub()
+    _write_image_stream(stub, pil, is_mask=False, source_filter="CCITTFaxDecode")
+    assert stub.data, "应回写出 Flate 1bpp 样本"
 
 
 def test_page_index_out_of_range_raises(synthetic_pdf: str, tmp_path) -> None:

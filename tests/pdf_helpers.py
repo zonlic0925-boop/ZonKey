@@ -166,3 +166,74 @@ def shattered_cell_lines(x0: float, y0: float, x1: float, y1: float):
         out.append((x0, sy0, x0, sy1))
         out.append((x1, sy0, x1, sy1))
     return out
+
+
+# ---------------------------------------------------------------------------
+# CCITT G4 扫描图 PDF（工程图纸扫描件语义：整页 1 位传真图 + CCITTFaxDecode）
+# ---------------------------------------------------------------------------
+
+
+def _ccitt_strip_from_g4_tiff(tiff_bytes: bytes) -> tuple[bytes, int, int]:
+    """从 PIL 生成的单条带 G4 TIFF 提取 CCITT 原始码流与宽高。"""
+    import struct
+
+    bo = ">" if tiff_bytes[:2] == b"MM" else "<"
+    ifd_off = struct.unpack(bo + "I", tiff_bytes[4:8])[0]
+    (n_tags,) = struct.unpack(bo + "H", tiff_bytes[ifd_off : ifd_off + 2])
+    tags: dict[int, tuple[int, int]] = {}
+    for i in range(n_tags):
+        entry = ifd_off + 2 + 12 * i
+        tag, typ, count = struct.unpack(bo + "HHI", tiff_bytes[entry : entry + 8])
+        if typ == 3:  # SHORT
+            (val,) = struct.unpack(bo + "H", tiff_bytes[entry + 8 : entry + 10])
+        elif typ == 4:  # LONG
+            (val,) = struct.unpack(bo + "I", tiff_bytes[entry + 8 : entry + 12])
+        else:
+            continue
+        tags[tag] = (count, val)
+    # 测试图很小，PIL 必然单条带；多条带说明断言前提失效，直接失败
+    assert tags[273][0] == 1 and tags[279][0] == 1, "expected single-strip G4 TIFF"
+    offset, length = tags[273][1], tags[279][1]
+    return tiff_bytes[offset : offset + length], tags[256][1], tags[257][1]
+
+
+def make_ccitt_scan_pdf(
+    path: str | Path,
+    *,
+    width: int = 200,
+    height: int = 100,
+    dark_rect: tuple[float, float, float, float] = (60, 25, 140, 75),
+) -> Path:
+    """构造整页 CCITTFaxDecode 1 位扫描 PDF：白底 + dark_rect 深色块（敏感内容语义）。
+
+    pikepdf 对 CCITT 图像走 TIFF 包装解码（返回 TiffImageFile）——
+    像素化回写路径的专属回归样本，普通 Flate RGB 图触发不了该分支。
+    """
+    import io
+
+    import pikepdf
+    from PIL import Image, ImageDraw
+    from pikepdf import Name
+
+    buf = io.BytesIO()
+    img = Image.new("1", (width, height), 1)  # 1 = 白
+    ImageDraw.Draw(img).rectangle(dark_rect, fill=0)  # 0 = 黑
+    img.save(buf, format="TIFF", compression="group4")
+    strip, cols, rows = _ccitt_strip_from_g4_tiff(buf.getvalue())
+
+    pdf = pikepdf.new()
+    pdf.add_blank_page(page_size=(width, height))
+    page = pdf.pages[0]
+    im = pdf.make_stream(strip)
+    im.Type = Name.XObject
+    im.Subtype = Name.Image
+    im.Width = cols
+    im.Height = rows
+    im.ColorSpace = Name.DeviceGray
+    im.BitsPerComponent = 1
+    im.Filter = Name.CCITTFaxDecode
+    im.DecodeParms = pikepdf.Dictionary(K=-1, Columns=cols, Rows=rows, BlackIs1=False)
+    page.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=im))
+    page.Contents = pdf.make_stream(f"q {width} 0 0 {height} 0 0 cm /Im0 Do Q".encode())
+    pdf.save(str(path))
+    return Path(path)

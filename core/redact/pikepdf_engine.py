@@ -927,6 +927,7 @@ def _drop_decode_keys(obj: Any) -> None:
 def _write_image_stream(obj: Any, pil: Any, *, is_mask: bool, source_filter: str, to_gray: bool = False) -> None:
     """PIL 图像 → Flate 原始样本回写（保持/推导 PDF 图像语义）。"""
     import numpy as np
+    from PIL import Image
 
     if is_mask:
         if pil.mode != "1":
@@ -944,10 +945,12 @@ def _write_image_stream(obj: Any, pil: Any, *, is_mask: bool, source_filter: str
         return
 
     if pil.mode == "1":
-        # CCITT 源解码出的 1 位图为传真极性（0=白）；DeviceGray 输出约定 1=白，需反转
+        # CCITT 源解码出的 1 位图为传真极性（0=白）；DeviceGray 输出约定 1=白，需反转。
+        # pikepdf 对 CCITT 经 TIFF 包装解码，pil 是 TiffImageFile——该类（以及
+        # Image.Image 本身）没有 fromarray，必须走模块级 Image.fromarray。
         if "CCITTFaxDecode" in source_filter:
             arr = 255 - np.asarray(pil.convert("L"))
-            pil = pil.__class__.fromarray(arr.astype("uint8"), mode="L").convert("1")
+            pil = Image.fromarray(arr.astype("uint8"), mode="L").convert("1")
         arr = np.asarray(pil, dtype=np.uint8)
         packed = np.packbits(arr > 0, axis=1)
         obj.write(packed.tobytes())
