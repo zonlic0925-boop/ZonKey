@@ -18,8 +18,10 @@ import {
   ScrollText,
   ClipboardList,
   LayoutGrid,
+  Palette,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { AppearanceModal } from '../AppearanceModal';
 import { CENTERS, CENTER_TOOLS } from '../../lib/navigation';
 import type { MemphisAccent } from '../../lib/navigation';
 import type { CenterId, ToolId } from '../../types';
@@ -57,6 +59,7 @@ export const HomeNavView: React.FC<HomeNavViewProps> = ({
 }) => {
   const { t } = useI18n();
   const [favIds, setFavIds] = useState<ToolId[]>(() => getFavorites());
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   useEffect(() => subscribeFavorites(() => setFavIds(getFavorites())), []);
 
@@ -196,8 +199,18 @@ export const HomeNavView: React.FC<HomeNavViewProps> = ({
             <LayoutGrid className="w-3.5 h-3.5" />
             {t('favorites.title')}
           </button>
+          <button
+            type="button"
+            onClick={() => setAppearanceOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-mem-ink bg-white shadow-memphis-sm text-xs font-semibold text-mem-ink hover:bg-mem-lavender/20 transition-colors"
+          >
+            <Palette className="w-3.5 h-3.5 text-mem-lavender" />
+            {t('appearance.entry')}
+          </button>
         </motion.div>
       </motion.section>
+
+      <AppearanceModal open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from './components/Header';
 import { WindowControls } from './components/WindowControls';
-import { WindowDragStrip } from './components/WindowDragStrip';
 import { DrawingView } from './components/DrawingView';
 import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { TextCenter } from './components/textcenter/TextCenter';
@@ -23,6 +22,7 @@ import { HomeNavView } from './components/navigation/HomeNavView';
 import { FavoriteStar } from './components/navigation/FavoriteStar';
 import { CenterPlaceholder } from './components/common/CenterPlaceholder';
 import { MemphisDecor } from './components/MemphisDecor';
+import { useTheme } from './lib/theme/ThemeProvider';
 import { pageFadeSlide } from './motion/springs';
 import { CenterId, ToolId } from './types';
 import { CENTER_TOOLS, getCenterMeta } from './lib/navigation';
@@ -35,6 +35,7 @@ import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components
 
 export default function App() {
   const { t } = useI18n();
+  const { texture } = useTheme();
   // 默认落地页 = 首页导航（home-nav）：先看分类再进功能，不直接进脱敏画布
   const [activeCenter, setActiveCenter] = useState<CenterId>('redact');
   const [activeTool, setActiveTool] = useState<ToolId>('home-nav');
@@ -117,9 +118,17 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
+    <div className="zs-theme-root relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
       <MemphisDecor />
-      <WindowDragStrip />
+      {/* 背景纹理层（用户可选）：铺在装饰层之下、内容之下，不接指针 */}
+      {texture !== 'none' && (
+        <div
+          aria-hidden="true"
+          className={`zs-texture pointer-events-none z-0 ${
+            texture === 'grid' ? 'zs-texture-grid' : texture === 'dots' ? 'zs-texture-dots' : 'zs-texture-paper'
+          }`}
+        />
+      )}
       <WindowControls />
 
       {online === false && (
