@@ -14,7 +14,9 @@
 | 壳层闪屏联动 | ✅ | 前端 `save_ui_prefs` api → `ui_prefs.json`；`desktop_app.py::_load_shell_bg()` 启动读它设 `background_color`（THEME_SHELL_BG 与 themeCore.ts 同表，须同步改）；round-trip 实测 dark→`#181826` |
 | MemphisDecor | ✅ | 硬编码 hex 全改变量类；缓漂浮 CSS 动画（prefers-reduced-motion 关闭） |
 | 回归 | ✅ | `theme_drag_check.mjs` 17/17（主题切换/持久化/防闪屏/纹理/拖拽几何双视口/零 pageerror）；`homenav_fav_flow.mjs` 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
-| 遗留 | ⏳ | EXE 未重打包（跑 `build_zonscale_exe.bat` 带上全部前端）；Pages 未部署本轮；真实 WebView2 鼠标拖拽手感待实机确认 |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`；内嵌前端指纹验证 = 本轮构建（`index-B556ldtk.js` + `zs-texture-grid` 特征串，与 dist_web/线上三方一致）；PyInstaller 因 `desktop_app.py changed` 重建 PKG（ui_prefs 闪屏联动进包）；release acceptance 全过 |
+| Pages 部署 | ✅ | 生产 branch=main（2026-09-01），线上主 chunk = `index-B556ldtk.js` = 本地 dist_web，线上内容含本轮主题特征串 |
+| 遗留 | ⏳ | 真实 WebView2 鼠标拖拽手感/深夜模式观感待壳内实机确认（Playwright 无法覆盖） |
 
 ## 2026-08-31 深夜后续进度（无边框桌面壳加固）
 

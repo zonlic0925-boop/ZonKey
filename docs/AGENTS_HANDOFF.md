@@ -13,7 +13,7 @@
 - **壳层闪屏联动**：前端 ThemeProvider 经 `window.pywebview.api.save_ui_prefs({theme,texture})` 镜像到 `<app_root>/ui_prefs.json`；`desktop_app.py::_load_shell_bg()` 在 `create_window` 前读取设置 `background_color`（THEME_SHELL_BG 映射表与 `themeCore.ts` 同表，**两处必须同步改**）。损坏/缺失/键非法一律回退 cream。实测 round-trip：save(dark) → 文件 → `#181826`。
 - **MemphisDecor**：硬编码 hex 全部改 mem-* 变量类/SVG stroke 类；加缓漂浮 CSS 动画（transform only，`prefers-reduced-motion` 关闭）。
 - **验证**：`npm run build` 成功（30.2s）；新回归 `temp_ui_test/theme_drag_check.mjs` **17/17**（主题即点即换/持久化/防闪屏回放/纹理/拖拽几何桌面+手机/零 pageerror）；上轮 `homenav_fav_flow.mjs` **14/14**（脚本端口改为 localhost——本机 vite 6 默认绑 IPv6，127.0.0.1 拒连）；pytest **127 passed**；release_acceptance 全过；ui_prefs round-trip OK。
-- **接手注意**：① EXE 仍未重打包（现含 2026-08-31 前端），跑一次 `build_zonscale_exe.bat` 可带上首页导航+收藏+主题+拖拽重构全部前端与 desktop_app.py 联动；② Pages 也未部署本轮；③ 拖拽行内新增交互元素时只需给它 `.no-drag`，不要再建覆盖条；④ 主题切换过渡用 `.zs-theme-root` 类（App 根容器），新顶层容器记得带上。
+- **接手注意**：① **EXE 已重打包**（2026-09-01，`dist_release/ZonScale_Windows_x64_20260901.zip`）——内嵌前端经指纹法验证 = 本轮构建（`index-B556ldtk.js` 三方一致 + `zs-texture-grid` 特征串 + 主题文案），PyInstaller 日志确认 `desktop_app.py changed` 触发 PKG 重建（ui_prefs 闪屏联动已进包）；release acceptance 全过；② **Pages 已部署本轮构建**（生产 branch=main，线上主 chunk = `index-B556ldtk.js` = 本地，线上内容含主题特征串）；③ 拖拽行内新增交互元素时只需给它 `.no-drag`，不要再建覆盖条；④ 主题切换过渡用 `.zs-theme-root` 类（App 根容器），新顶层容器记得带上；⑤ **用户固定工作流（2026-09-01 明确）：每轮完成任务后必须重打包 EXE + 部署 Pages**，已写入 agent memory。
 
 ## 〇-0-1、2026-09-01 第一轮（首页导航 + 收藏闭环 + 壳层交互修复）
 
