@@ -1,6 +1,20 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-01（第二轮：主题/外观系统 + 拖拽层重构，实测全绿）。
+> 更新于：2026-09-01（第三轮：用户实测 5 问题修复，EXE+Pages 已交付）。
+
+## 2026-09-01 第三轮进度（用户实测 5 问题修复）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 引擎条遮挡修复 | ✅ | 桌面行恒定 `pr-[150px]` + 中列 min-w-0 收缩 + 中心导航横向滚动 + 状态条 ellipsis；回归断言右缘 ≤ 窗宽-148 |
+| 方框拖动劫持修复 | ✅ | 根因：app-region 逐消息判定，手势滑入 Header 行被接管。修复：`editingId`/`isDrawing` 时 `<html data-canvas-gesture>` → drag 行整体转 no-drag，手势结束恢复。**待壳内真机复验** |
+| 品牌重定位 | ✅ | 「日用百宝箱」badge/副标题/窗口标题/页面标题三语 + core/brand.py 同步 |
+| 字号档 | ✅ | 外观弹层 4 档（15/16/17.5/19px），`<html data-fontsize>` + 根字号，全站 rem 缩放真实生效，localStorage + 防闪屏回放 |
+| 流动背景 | ✅ | FluidBackground 3 blob（CSS animation，transform/opacity only，135-180s 循环，主题变量着色）；纹理 5 档含 fluid；reduced-motion 完全静止 |
+| 回归 | ✅ | theme_drag_check 25/25；homenav_fav_flow 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（14:24）；内嵌前端指纹验证（index-DZ96rTiz.js + zs-fluid CSS + legacy 齐）；brand.py/desktop_app.py 变更触发 PYZ/PKG 重建 |
+| Pages 部署 | ✅ | 线上主 chunk = index-DZ96rTiz.js，data-canvas-gesture 与 zs-fluid 指纹在线 |
+| 遗留 | ⏳ | 方框拖动劫持修复需用户壳内真机复验（WebView2 手势接管路径无法 Playwright 模拟） |
 
 ## 2026-09-01 第二轮进度（主题/外观系统 + 拖拽层重构）
 

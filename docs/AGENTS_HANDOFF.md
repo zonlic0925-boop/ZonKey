@@ -1,9 +1,20 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（主题系统 4 预设 + 背景纹理 + 拖拽层重构为 Header 行自身 drag，实测全绿）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（第三轮：5 项用户实测问题修复——引擎条遮挡/方框拖动劫持/日用百宝箱定位/字号档/流动背景，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇-0、2026-09-01 第二轮（主题/外观系统 + 拖拽层重构，本轮）
+## 〇-0、2026-09-01 第三轮（用户实测 5 问题修复，本轮）
+
+- **① 引擎状态条被窗口按钮遮挡**：`pr-[150px]` 原本只在 shellMode 生效，且中列不可收缩时状态条被挤进按钮区。修复：桌面行**恒定** `pr-[150px]` + 中列 `min-w-0` 可收缩 + 中心导航窄窗横向滚动（`zs-hide-scrollbar`）+ 状态条文字 ellipsis。回归断言：状态条右缘 ≤ 窗宽-148（实测 1290 ≤ 1292 @1440）。
+- **② 方框拖动变拖窗口（根因升级）**：`app-region` 命中是**逐消息判定**的（Electron/Chromium 同源语义）——方框拖动手势进行中指针滑入 Header drag 行（0-80px），WebView2 把同一手势接管成拖窗口且不归还。上轮静态几何修复覆盖不了这个动态场景。修复：CanvasViewport 在 `editingId`（拖动/缩放）或 `isDrawing`（手动画框）时给 `<html>` 设 `data-canvas-gesture`，CSS `html[data-canvas-gesture] [data-drag-row]` 整行转 no-drag，手势结束（pointerup/cancel/unmount）自动恢复。零 React 重渲染，纯属性切换。
+- **③ 品牌重定位「日用百宝箱」**：`i18n brand.workbenchBadge`（脱敏工作台→日用百宝箱）+ `brand.subtitle`（列 8 中心能力）+ `meta.pageTitle` 三语齐；`core/brand.py` APP_TITLE/HTML_TITLE 同步。脱敏仍是核心能力，叙事覆盖全工具。
+- **④ 外观字号档**：新增 `FontSizeId`（sm 15px/md 16px/lg 17.5px/xl 19px）——`<html data-fontsize>` + 内联 `style.fontSize` 驱动全站 rem 等比缩放，localStorage `zonscale-fontsize` 持久化，index.html 防闪屏脚本同步回放。AppearanceModal 加「界面字号」4 档（A 字号预览）。手机端 17.5px 媒体查询在用户显式选择时被内联样式覆盖（优先级正确）。
+- **⑤ 流动背景**：新增 `FluidBackground.tsx`（3 个 radial-gradient blob，blur(80px) 固定，只动 transform/opacity，135-180s 超慢 ease-in-out 循环，颜色走主题变量）；animate skill 规范判定：纯氛围动效 → reduced-motion **完全静止**（非放缓）。纹理档扩为 5 档（none/grid/dots/paper/**fluid**），ui_prefs 加 `font_size` 字段。
+- **验证**：`theme_drag_check.mjs` **25/25**（新增字号/流动/引擎条/手势标记断言）；`homenav_fav_flow.mjs` 14/14；npm build 成功；pytest **127 passed**；release_acceptance 全过。
+- **交付**：**EXE 已重打包**（`dist_release/ZonScale_Windows_x64_20260901.zip` 14:24，内嵌前端指纹验证：`index-DZ96rTiz.js` 含 data-canvas-gesture ×4 + 日用百宝箱 ×2，CSS 含 zs-fluid ×12，legacy chunk 齐，PyInstaller 因 brand.py/desktop_app.py 变更重建 PYZ/PKG）；**Pages 已部署**（线上主 chunk = `index-DZ96rTiz.js` + zs-fluid CSS 指纹在线）。
+- **接手注意**：① 方框拖动劫持修复依赖壳内真实鼠标验证（Playwright 无法复现 WebView2 手势接管路径）——用户实测若仍复现，下一步是查 `frameless_window.py` 窗体层兜底 WM_NCHITTEST 是否在 WebView2 层之外额外返回 HTCAPTION；② 拖拽行现在由 `data-drag-row` 属性标记（非 class），查找时用属性选择器；③ EXE 闪屏底色主题联动、字号持久化在壳内均走 localStorage + ui_prefs.json 双通道。
+
+## 〇-0-1、2026-09-01 第二轮（主题/外观系统 + 拖拽层重构）
 
 - **主题系统上线**：`tailwind.config.js` mem-* 色板挂 CSS 变量（`rgb(var(--x) / <alpha-value>)` 保住 `/30` 透明度语法）；`index.css` 定义 4 套 `data-theme` 预设——`cream`（默认）/ `paper`（素白）/ `slate`（冷灰）/ `dark`（深底浅描边）。**`white` 语义归一到 `--mem-surface`**：61 处 `bg-white` 卡片深色下自动翻转，`text-white` 全部落在强调色底上已核对可读（AuditView/RuleCenterModal 两个 glass 风格文件是无 import 的孤儿组件，不构成风险）。换主题 = `<html data-theme>` 一个属性，组件类名零改动。
 - **ThemeProvider**：`frontend/src/lib/theme/`（themeCore.ts 纯函数 + ThemeProvider.tsx context）；localStorage `zonscale-theme` / `zonscale-texture`；`index.html` 内联脚本在 React 挂载前回放 `data-theme`（防闪屏）。
