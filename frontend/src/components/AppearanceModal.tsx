@@ -108,12 +108,21 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose 
           <div className="grid grid-cols-5 gap-2">
             {TEXTURE_IDS.map((id) => {
               const active = texture === id;
+              // 只挂图案类、不挂 .zs-texture（那是全页 overlay 用的 absolute inset-0
+              // 定位类）：预览块若绝对定位铺满按钮，文字会压在 background-image
+              // 上，WebView2/Chromium 对叠加背景图的 10px 粗体中文走劣化光栅
+              // 路径，标签笔画粘连成墨块（round-7 问题3 根因）。h-8 块级 span
+              // 本身就是 32px 色块，图案类只负责 background-image。
               const previewClass =
                 id === 'none'
                   ? ''
                   : id === 'fluid'
-                    ? 'zs-texture zs-texture-fluid-preview'
-                    : `zs-texture ${id === 'grid' ? 'zs-texture-grid' : id === 'dots' ? 'zs-texture-dots' : 'zs-texture-paper'}`;
+                    ? 'zs-texture-fluid-preview'
+                    : id === 'grid'
+                      ? 'zs-texture-grid'
+                      : id === 'dots'
+                        ? 'zs-texture-dots'
+                        : 'zs-texture-paper';
               return (
                 <button
                   key={id}
