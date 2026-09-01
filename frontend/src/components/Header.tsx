@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Coffee, ShieldCheck, Palette } from 'lucide-react';
 import { CenterId } from '../types';
 import { CENTERS } from '../lib/navigation';
-import { useShellMode } from '../lib/deliver';
 import { BrandMark } from './BrandMark';
 import { SupportAuthorModal } from './SupportAuthorModal';
 import { AppearanceModal } from './AppearanceModal';
@@ -51,8 +50,6 @@ export const Header: React.FC<HeaderProps> = ({
   const { t } = useI18n();
   const [supportOpen, setSupportOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  // 壳内桌面布局右侧给自绘窗口按钮（fixed 右上）让位，避免盖住引擎状态条
-  const shellMode = useShellMode();
 
   const engineLabel =
     backendOnline === false
@@ -99,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="shrink-0 w-full max-w-full border-b-[3px] border-mem-ink bg-white z-40 relative shadow-memphis-sm">
         {/* 手机：紧凑顶栏——品牌行自身可拖，交互组 no-drag 豁免 */}
-        <div className="flex md:hidden items-center justify-between gap-2 px-3 py-2 min-h-[56px]" style={dragRowStyle}>
+        <div className="flex md:hidden items-center justify-between gap-2 px-3 py-2 min-h-[56px]" data-drag-row style={dragRowStyle}>
           <div className="no-drag">
             <BrandMark compact showSubtitle={false} />
           </div>
@@ -141,11 +138,14 @@ export const Header: React.FC<HeaderProps> = ({
           {CENTERS.map((center) => centerButton(center, true))}
         </nav>
 
-        {/* 桌面：品牌行自身可拖（h-20 标题栏），三组交互区 no-drag 豁免 */}
+        {/* 桌面：品牌行自身可拖（h-20 标题栏），三组交互区 no-drag 豁免。
+            画布手势期（html[data-canvas-gesture]）整行临时转 no-drag，
+            防止方框拖动滑进行内被 WebView2 接管成拖窗口。
+            布局：中列 min-w-0 可收缩 + 中心导航横向滚动 + 右列 spacer，
+            保证引擎状态条在任何窗宽下都不进入右侧窗口按钮区。 */}
         <div
-          className={`hidden md:flex h-20 w-full px-6 items-center justify-between gap-4 ${
-            shellMode ? 'pr-[150px]' : ''
-          }`}
+          data-drag-row
+          className="hidden md:flex h-20 w-full px-6 items-center justify-between gap-4 min-w-0 pr-[150px]"
           style={dragRowStyle}
         >
           <div className="flex items-center gap-2 shrink-0 min-w-0 no-drag">
@@ -186,14 +186,14 @@ export const Header: React.FC<HeaderProps> = ({
             <LanguageSwitcher />
           </div>
 
-          <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink-0 no-drag">
+          <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink min-w-0 overflow-x-auto zs-hide-scrollbar no-drag">
             {CENTERS.map((center) => centerButton(center, true))}
           </nav>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-xs shrink-0 no-drag">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-xs shrink min-w-0 no-drag">
             {statusDot}
-            <span className="text-mem-ink/60 whitespace-nowrap">{engineLabel}</span>
-            <span className="font-bold text-mem-ink whitespace-nowrap">
+            <span className="text-mem-ink/60 whitespace-nowrap overflow-hidden text-ellipsis">{engineLabel}</span>
+            <span className="font-bold text-mem-ink whitespace-nowrap shrink-0">
               {t('header.rulesCount', { count: systemStatus.activeRulesCount })}
             </span>
           </div>

@@ -106,7 +106,9 @@
     }
   }
 
-  /* 手机端可读性基准：整体 rem 等比放大，小字/触控目标同步增大，用户无需捏合缩放 */
+  /* 手机端可读性基准：整体 rem 等比放大，小字/触控目标同步增大，用户无需捏合缩放。
+     用户在「外观」里显式选过字号时（ThemeProvider 写内联 style.fontSize），
+     内联样式优先级高于本媒体查询，以用户选择为准。 */
   @media (max-width: 767px) {
     html {
       font-size: 17.5px;
@@ -118,6 +120,15 @@
   /* 无边框壳拖拽层配套：拖拽行内的交互元素必须豁免（app-region: no-drag），
      否则按钮点击会被 WebView2 当成标题栏拖动吞掉。见 Header.tsx 拖拽说明。 */
   .no-drag {
+    app-region: no-drag;
+    -webkit-app-region: no-drag;
+  }
+
+  /* 画布手势进行中（方框拖动/缩放/手动画框）：整个文档树禁用窗口拖拽区。
+     app-region 命中是逐消息判定的——手势中途指针滑进 Header drag 行会被
+     WebView2 接管成拖窗口且不会归还。CanvasViewport 在 <html> 上切换
+     data-canvas-gesture，Header 的 drag 行据此整体转为 no-drag。 */
+  html[data-canvas-gesture] [data-drag-row] {
     app-region: no-drag;
     -webkit-app-region: no-drag;
   }
@@ -148,6 +159,73 @@
       transparent 4px
     );
   }
+  /* 流动档预览缩略：静态示意三色 blob 分布 */
+  .zs-texture-fluid-preview {
+    background-image:
+      radial-gradient(circle at 22% 30%, rgb(var(--mem-teal) / 0.5), transparent 45%),
+      radial-gradient(circle at 75% 25%, rgb(var(--mem-yellow) / 0.45), transparent 40%),
+      radial-gradient(circle at 55% 80%, rgb(var(--mem-pink) / 0.45), transparent 42%);
+  }
+
+  /* ── 流动背景（AppearanceModal 可选）：3 个渐变 blob 超慢漂移 ──
+     只动 transform/opacity（GPU 合成层，离主线程）；filter 固定不动画；
+     颜色跟主题变量；reduced-motion 完全静止。 */
+  .zs-fluid {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .zs-fluid-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.5;
+    will-change: transform;
+  }
+  .zs-fluid-a {
+    width: 42vw;
+    height: 42vw;
+    left: -8vw;
+    top: -10vw;
+    background: radial-gradient(circle, rgb(var(--mem-teal) / 0.45), transparent 70%);
+    animation: zs-fluid-drift-a 150s ease-in-out infinite;
+  }
+  .zs-fluid-b {
+    width: 38vw;
+    height: 38vw;
+    right: -10vw;
+    top: 18vh;
+    background: radial-gradient(circle, rgb(var(--mem-yellow) / 0.4), transparent 70%);
+    animation: zs-fluid-drift-b 180s ease-in-out infinite;
+  }
+  .zs-fluid-c {
+    width: 34vw;
+    height: 34vw;
+    left: 22vw;
+    bottom: -14vw;
+    background: radial-gradient(circle, rgb(var(--mem-pink) / 0.38), transparent 70%);
+    animation: zs-fluid-drift-c 135s ease-in-out infinite;
+  }
+  @keyframes zs-fluid-drift-a {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    33% { transform: translate(14vw, 10vh) scale(1.15); opacity: 0.38; }
+    66% { transform: translate(4vw, 22vh) scale(0.92); opacity: 0.5; }
+  }
+  @keyframes zs-fluid-drift-b {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.42; }
+    40% { transform: translate(-16vw, 14vh) scale(0.88); opacity: 0.52; }
+    75% { transform: translate(-6vw, -10vh) scale(1.12); opacity: 0.36; }
+  }
+  @keyframes zs-fluid-drift-c {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    50% { transform: translate(10vw, -18vh) scale(1.18); opacity: 0.5; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zs-fluid-blob {
+      animation: none;
+    }
+  }
 
   .zs-touch-target {
     @apply min-h-[44px] min-w-[44px];
@@ -166,6 +244,14 @@
   }
 
   .zs-mobile-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Header 中心导航窄窗横向滚动时隐藏滚动条（保持 Memphis 观感） */
+  .zs-hide-scrollbar {
+    scrollbar-width: none;
+  }
+  .zs-hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
   /* 孟菲斯卡片：白底 + 粗描边 + 偏移阴影 */

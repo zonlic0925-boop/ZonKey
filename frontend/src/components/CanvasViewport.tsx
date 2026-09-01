@@ -347,6 +347,11 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 
   useEffect(() => {
     if (!editingId) return
+    // 壳内关键：方框拖动/缩放手势进行中，标记 <html data-canvas-gesture>，
+    // 让 Header 拖拽行临时切 no-drag——否则指针滑进 Header 行（0-80px）的
+    // 瞬间 WebView2 会把同一手势接管成拖窗口（app-region 命中是逐消息判定，
+    // 手势中途不会归还），这是「方框拖不动变拖窗口」的根因。
+    document.documentElement.setAttribute('data-canvas-gesture', '1')
     const onMove = (e: MouseEvent | PointerEvent) => {
       const session = editSessionRef.current
       if (!session || !imageMetrics || !displayPage) return
@@ -382,6 +387,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
       window.removeEventListener('pointercancel', onUp)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
+      document.documentElement.removeAttribute('data-canvas-gesture')
     }
   }, [displayPage, editingId, finishBoxEdit, imageMetrics])
 
@@ -449,6 +455,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedCandidateId, previewMode, onDeleteCandidate, onSelectCandidate, onToggleCandidate])
+
+  // 手动画框手势：同样让 Header 拖拽行临时失效（防止向上画框滑入 0-80px 被接管拖窗口）
+  useEffect(() => {
+    if (isDrawing) {
+      document.documentElement.setAttribute('data-canvas-gesture', '1')
+      return () => document.documentElement.removeAttribute('data-canvas-gesture')
+    }
+  }, [isDrawing])
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (mode !== 'rect' || !imageRef.current) return
