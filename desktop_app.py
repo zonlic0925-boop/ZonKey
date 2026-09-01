@@ -194,7 +194,7 @@ class WindowApi:
 
             data = {
                 "theme": str(prefs.get("theme", "cream")),
-                "texture": str(prefs.get("texture", "none")),
+                "texture": str(prefs.get("texture", "fluid")),
                 "font_size": str(prefs.get("font_size", "md")),
             }
             (get_app_root() / "ui_prefs.json").write_text(json.dumps(data), encoding="utf-8")

@@ -53,7 +53,9 @@ export function loadTexture(): TextureId {
   } catch {
     /* 同上 */
   }
-  return 'none';
+  // round-4：默认流动背景（fluid）——用户反馈「流动效果默认化」；
+  // 已存偏好（含显式选过「纯色/none」）优先，不受默认值影响。
+  return 'fluid';
 }
 
 export function loadFontSize(): FontSizeId {
