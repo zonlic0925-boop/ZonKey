@@ -598,6 +598,26 @@ export const zhTW: MessageTree = {
     traditional: '繁體中文',
     english: 'English',
   },
+  appearance: {
+    title: '外觀',
+    close: '關閉',
+    description: '選擇介面配色與背景紋理，設定立即生效並自動記憶。',
+    entry: '外觀',
+    themeLabel: '主題',
+    theme: {
+      cream: '奶油孟菲斯',
+      paper: '素白紙感',
+      slate: '冷灰護眼',
+      dark: '深夜模式',
+    },
+    textureLabel: '背景紋理',
+    texture: {
+      none: '純色',
+      grid: '網格紙',
+      dots: '波點',
+      paper: '細紋紙',
+    },
+  },
   app: {
     backendOffline:
       '後端未啟動 — 請雙擊運行 **啟動現代化脫敏工作台.bat** 或 **ZonScale.exe** 後刷新（http://127.0.0.1:8765）',

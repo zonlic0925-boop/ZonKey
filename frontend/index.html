@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="author" content="zonlic" />
     <title>ZonScale | 工程图纸与文档脱敏 · by zonlic</title>
+    <script>
+      // 防主题闪屏：React 挂载前先把已存主题写到 <html data-theme>，
+      // 首帧即用目标主题变量渲染（预设值非法则忽略，走 index.css :root 默认）。
+      (function () {
+        try {
+          var t = localStorage.getItem('zonscale-theme');
+          if (t) document.documentElement.setAttribute('data-theme', t);
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
   <body class="antialiased overflow-hidden select-none">
     <div id="root"></div>

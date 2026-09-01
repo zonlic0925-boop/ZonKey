@@ -4,6 +4,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * ============================================================
+ * 主题层：mem-* 色板真源（tailwind.config.js 挂载这些变量）。
+ * 颜色存「R,G,B」通道值，配合 rgb(var(--x) / alpha) 保住 Tailwind
+ * 的 /30 透明度语法；换主题 = <html data-theme> + data-texture。
+ * 预设：cream（默认）/ paper / slate / dark —— ink 描边在明亮主题
+ * 保持深色以守住 Memphis「粗描边+硬阴影」识别度，dark 整体反转。
+ * ============================================================
+ */
+:root,
+[data-theme='cream'] {
+  --mem-cream: 255 249 240; /* #FFF9F0 页面底 */
+  --mem-surface: 255 255 255; /* 卡片/面板白底 */
+  --mem-ink: 26 26 46; /* #1A1A2E 描边/正文 */
+  --mem-coral: 255 107 107; /* #FF6B6B */
+  --mem-teal: 78 205 196; /* #4ECDC4 */
+  --mem-yellow: 255 230 109; /* #FFE66D */
+  --mem-pink: 255 159 243; /* #FF9FF3 */
+  --mem-sky: 69 183 209; /* #45B7D1 */
+  --mem-lime: 150 230 161; /* #96E6A1 */
+  --mem-lavender: 167 139 250; /* #A78BFA */
+  --mem-orange: 255 169 77; /* #FFA94D */
+  --mem-shadow-rgb: 26 26 46; /* 硬阴影 = ink */
+}
+
+[data-theme='paper'] {
+  --mem-cream: 250 250 248; /* 素白纸底 */
+  --mem-surface: 255 255 255;
+  --mem-ink: 26 26 46;
+  --mem-coral: 240 100 100;
+  --mem-teal: 62 190 182;
+  --mem-yellow: 250 222 100;
+  --mem-pink: 245 150 235;
+  --mem-sky: 62 170 196;
+  --mem-lime: 140 218 150;
+  --mem-lavender: 158 130 240;
+  --mem-orange: 245 158 66;
+  --mem-shadow-rgb: 26 26 46;
+}
+
+[data-theme='slate'] {
+  --mem-cream: 226 232 240; /* 冷灰护眼底 */
+  --mem-surface: 241 245 249;
+  --mem-ink: 30 41 59; /* slate-800 描边 */
+  --mem-coral: 235 100 100;
+  --mem-teal: 56 178 172;
+  --mem-yellow: 240 214 92;
+  --mem-pink: 235 145 228;
+  --mem-sky: 54 158 184;
+  --mem-lime: 130 208 142;
+  --mem-lavender: 148 122 232;
+  --mem-orange: 236 148 58;
+  --mem-shadow-rgb: 30 41 59;
+}
+
+[data-theme='dark'] {
+  --mem-cream: 24 24 38; /* 深底 */
+  --mem-surface: 35 35 54; /* 暗卡底 */
+  --mem-ink: 224 225 235; /* 描边/正文翻浅色 */
+  --mem-coral: 255 118 118;
+  --mem-teal: 68 190 183;
+  --mem-yellow: 255 222 89;
+  --mem-pink: 245 150 235;
+  --mem-sky: 79 175 200;
+  --mem-lime: 140 215 152;
+  --mem-lavender: 160 135 245;
+  --mem-orange: 250 165 70;
+  --mem-shadow-rgb: 8 8 14; /* 深底上黑阴影 */
+}
+
 @layer base {
   html {
     /* 允许捏合缩放，仅禁双击缩放（消除误触与点击延迟）；-webkit-text-size-adjust 防手机浏览器自作主张改字号 */
@@ -22,6 +92,20 @@
     @apply h-full max-w-[100vw] overflow-hidden;
   }
 
+  /* 主题切换过渡：只动颜色属性，prefers-reduced-motion 用户零过渡 */
+  .zs-theme-root,
+  .zs-theme-root * {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zs-theme-root,
+    .zs-theme-root * {
+      transition-duration: 0ms;
+    }
+  }
+
   /* 手机端可读性基准：整体 rem 等比放大，小字/触控目标同步增大，用户无需捏合缩放 */
   @media (max-width: 767px) {
     html {
@@ -32,10 +116,37 @@
 
 @layer components {
   /* 无边框壳拖拽层配套：拖拽行内的交互元素必须豁免（app-region: no-drag），
-     否则按钮点击会被 WebView2 当成标题栏拖动吞掉。见 WindowDragStrip.tsx。 */
+     否则按钮点击会被 WebView2 当成标题栏拖动吞掉。见 Header.tsx 拖拽说明。 */
   .no-drag {
     app-region: no-drag;
     -webkit-app-region: no-drag;
+  }
+
+  /* 背景纹理层（AppearanceModal 二级选项）：铺在 MemphisDecor 底下，
+     纯 CSS/SVG data-URI，离线零资产。z-[1]：低于内容(z-10)/装饰层(z-0 之上不遮)。 */
+  .zs-texture {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-repeat: repeat;
+  }
+  .zs-texture-grid {
+    background-image: linear-gradient(rgb(var(--mem-ink) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--mem-ink) / 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .zs-texture-dots {
+    background-image: radial-gradient(rgb(var(--mem-ink) / 0.07) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
+  .zs-texture-paper {
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgb(var(--mem-ink) / 0.025) 0px,
+      rgb(var(--mem-ink) / 0.025) 1px,
+      transparent 1px,
+      transparent 4px
+    );
   }
 
   .zs-touch-target {
@@ -150,18 +261,18 @@
   }
 }
 
-/* 滚动条 */
+/* 滚动条（颜色跟主题变量走） */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #FFF9F0;
+  background: rgb(var(--mem-cream));
 }
 ::-webkit-scrollbar-thumb {
-  background: #1A1A2E;
+  background: rgb(var(--mem-ink) / 0.75);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF6B6B;
+  background: rgb(var(--mem-coral) / 0.9);
 }

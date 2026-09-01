@@ -598,6 +598,26 @@ export const en: MessageTree = {
     traditional: '繁體中文',
     english: 'English',
   },
+  appearance: {
+    title: 'Appearance',
+    close: 'Close',
+    description: 'Pick a color scheme and background texture. Changes apply instantly and are remembered.',
+    entry: 'Appearance',
+    themeLabel: 'Theme',
+    theme: {
+      cream: 'Cream Memphis',
+      paper: 'Paper White',
+      slate: 'Cool Slate',
+      dark: 'Midnight',
+    },
+    textureLabel: 'Background texture',
+    texture: {
+      none: 'Solid',
+      grid: 'Grid paper',
+      dots: 'Polka dots',
+      paper: 'Fine grain',
+    },
+  },
   app: {
     backendOffline:
       'Backend not running — launch **启动现代化脱敏工作台.bat** or **ZonScale.exe**, then refresh (http://127.0.0.1:8765)',
