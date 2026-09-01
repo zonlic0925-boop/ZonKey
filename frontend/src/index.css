@@ -196,8 +196,12 @@
      round-4 重设计：旧版 135-180s 一循环 + 低透明度，肉眼不可感知
      （用户反馈「看不出在动」）。新参数：26-42s 错相循环（氛围可感知
      但不抢焦点）、透明度提到 0.55-0.7、blob 加大到 46-56vw、漂移幅度
-     12-22vw。只动 transform/opacity（GPU 合成层，离主线程）；filter
-     固定不动画；颜色跟主题变量；reduced-motion 完全静止。 */
+     12-22vw。只动 transform/opacity（GPU 合成层，离主线程）；颜色跟
+     主题变量；reduced-motion 完全静止。
+     round-5：去掉 filter: blur(72px)——radial-gradient 自带 70% 渐隐，
+     blur 纯属冗余，却是 WebView2 GPU 受限/老驱动环境的大半径模糊层
+     GPU 进程挂死源（用户报「首启白屏卡死」的头号嫌疑）。移除后零观感
+     损失、消除该风险类。 */
   .zs-fluid {
     position: absolute;
     inset: 0;
@@ -207,7 +211,6 @@
   .zs-fluid-blob {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(72px);
     opacity: 0.62;
     will-change: transform;
   }

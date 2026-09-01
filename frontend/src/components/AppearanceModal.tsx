@@ -128,7 +128,10 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose 
                 >
                   <span
                     className={`block h-8 rounded ${previewClass}`}
-                    style={{ background: 'rgb(var(--mem-cream))' }}
+                    /* backgroundColor 而非 background：简写会把 class 的
+                       background-image 一并重置成 none，五个纹理预览全变纯色
+                       （round-5 问题3 根因） */
+                    style={{ backgroundColor: 'rgb(var(--mem-cream))' }}
                   />
                   <span className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-mem-ink">
                     {t(`appearance.texture.${id}`)}
