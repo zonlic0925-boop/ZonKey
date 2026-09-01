@@ -191,7 +191,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-mem-lime/30 border-2 border-mem-ink text-xs shrink min-w-0 no-drag">
             {statusDot}
-            <span className="text-mem-ink/60 whitespace-nowrap overflow-hidden text-ellipsis">{engineLabel}</span>
+            {/* min-w 底线：中列收缩把芯片挤窄时，引擎文字至少保留 4 字宽度再省略，
+                否则 span 被压成 ~14px 竖条逐字换行裁切（round-6 问题1 实测截图）。 */}
+            <span className="text-mem-ink/60 whitespace-nowrap overflow-hidden text-ellipsis min-w-[76px]">{engineLabel}</span>
             <span className="font-bold text-mem-ink whitespace-nowrap shrink-0">
               {t('header.rulesCount', { count: systemStatus.activeRulesCount })}
             </span>
