@@ -1,6 +1,19 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-01（第三轮：用户实测 5 问题修复，EXE+Pages 已交付）。
+> 更新于：2026-09-01（第四轮：用户实测 4 问题修复，EXE+Pages 已交付）。
+
+## 2026-09-01 第四轮进度（用户实测 4 问题修复）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 方框拖动劫持根治 | ✅ | **round-3 修复是死代码**：拖拽行内联 `style={appRegion:'drag'}` 压过样式表覆盖规则，手势期转 no-drag 从未生效。修复：拖拽行改 class 驱动（`.zs-drag-row`）+ 手势覆盖 `!important`（含子元素通配）。回归断言 getComputedStyle 真实翻转。**待壳内真机复验** |
+| 字体离线化 | ✅ | 根因：`index.css` 走 Google Fonts CDN，离线 EXE 静默 404。修复：@fontsource 自托管（dm-sans/space-grotesk/audiowide/caveat，全 OFL）只引入用到字重 + tailwind CJK 回退链（雅黑/苹方）；woff2 进 assets，CSS 零 CDN 引用 |
+| 纹理可感知化 | ✅ | 静态纹理 alpha 提升 2-3 倍（grid 0.11 / dots 0.16 / paper 0.07，旧值肉眼不可见） |
+| 流动背景重设计+默认化 | ✅ | 26-42s 错相循环（旧 135-180s 不可感知）/ opacity 0.5-0.68 / blob 40-56vw / blur 72px；**默认纹理=fluid**（loadTexture 默认值 + desktop_app.py 同步；显式选过「纯色」不受影响） |
+| 回归 | ✅ | theme_drag_check **31/31**（新增计算样式翻转/字体本地加载/默认 fluid 渲染层断言）；homenav_fav_flow 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（16:21）；zip 内 `_internal/dist_web/assets/index-DCPRlCxW.js` 与本地**字节级一致**（zs-drag-row + data-canvas-gesture×4 指纹）；27 个 woff2 字体嵌入 |
+| Pages 部署 | ✅ | 线上主 chunk = index-DCPRlCxW.js = 本地；CSS = index-D-tG7_4J.css 零 CDN 引用 + zs-fluid-drift-d 在线 |
+| 遗留 | ⏳ | 方框拖动劫持需用户壳内真机复验（本轮 CSS 层已证明真实翻转，若仍复现下一步查 WebView2 层）；手机真机 fluid 性能（blur 72px ×3 blob）待观察 |
 
 ## 2026-09-01 第三轮进度（用户实测 5 问题修复）
 
