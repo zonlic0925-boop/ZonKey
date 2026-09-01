@@ -1,7 +1,20 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-08-31（深夜后续：无边框桌面壳死锁修复 + 最大化遮任务栏修复，实机验证全绿）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（首页导航页 + 收藏闭环 + 壳层拖拽/最大化双 bug 修复 + 动效基建，实测全绿）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
+
+## 〇-0、2026-09-01（首页导航 + 收藏闭环 + 壳层交互修复，本轮）
+
+- **用户反馈 4 项处置**：①最大化要点两下=已修；②内容区拖动被窗口拖拽劫持（图纸方框拖不动）=已修；③「没有出现」=EXE 内是旧前端（上轮手机导航/收藏是 Pages 部署，EXE 未重打包），**下轮跑一次 `build_zonscale_exe.bat` 即带上**；④另一项无问题。
+- **① 最大化双击修复**：`desktop_app.py::toggle_maximize` 改为按 Win32 `IsZoomed` 实时状态切换最大化/还原（旧实现只会 maximize，前端轮询缓存滞后时第一次点击落错分支）；前端 `WindowControls.tsx` 统一走 `toggle_maximize` + 点击后 120ms 即时查 `is_maximized` 刷新图标。壳内实测三连击状态机 PASS（`temp_ui_test/shell_smoke2.py`，结果落 `shell_smoke_result.txt`）。
+- **② 拖拽劫持修复**：`WindowDragStrip.tsx` 旧版是 fixed 全宽 40px 覆盖条，内容滚动进顶部 40px 即被 WebView2 转 HTCAPTION 拖窗口。现改为**两条 Header 品牌行高度（桌面 80px/手机 56px）的 drag 层**，交互区（品牌标/隐私/支持/语言/中心导航/状态条）加 `.no-drag` 豁免（`index.css` 新增类）；几何实测 drag 条 0-80px、SubNav 91px 起、工具卡 97px 起，零重叠。⚠️ Playwright 合成点击会被 drag 层拦截（真实鼠标不受影响，no-drag 元素正常）——UI 测试对 header 区按钮用 `dispatchEvent('click')`。
+- **首页导航页**：新增虚拟工具 `home-nav`（types RedactToolId），**应用默认落地页**改为它（App.tsx 初始态）。`navigation/HomeNavView.tsx`：8 中心分类卡（ready/total 计数不虚报）+ 我的收藏 chip 区（有收藏才显示）+ 快捷入口（规则/审计/收藏页）。SubNav 行加「首页」回跳按钮（任何中心可见，首页自身隐藏）；home-nav 视图下 SubNav 整条隐藏。手机底部导航 home tab 语义同步改为回首页导航页。
+- **收藏闭环**：`SubNavPills` 新增 `trailingSlot`，当前工具星标内联显示在 redact 中心 SubNav 行（`FavoriteStar` 支持 className 覆盖定位）；PDF 工坊首页卡片星标（已有）+ 首页收藏区 + 收藏页（已有）三入口互通。壳模拟实测：星标→localStorage→首页 chip→点击直达工具全链路 PASS。
+- **动效基建**：`main.tsx` 包 `MotionConfig reducedMotion="user"`（系统减动效设置全app生效）；App.tsx 主视图切 `pageFadeSlide` 容器（key=中心:工具触发淡入）；HomeNavView 用既有 `staggerContainer/staggerItem` + Memphis 卡片 hover 微动。全部 transform/opacity，零新依赖。
+- **i18n**：`homeNav.*` 5 键三语（zh-CN/zh-TW/en）齐。
+- **验证**：`npm run build` 成功；Playwright `temp_ui_test/homenav_fav_flow.mjs` **14/14**（桌面 1440 + 手机 390 双视口：落地页/分类卡/跳转/收藏显示/收藏直达/零溢出/零 pageerror）；`dragstrip_check6.mjs` 几何 OK；`subnav_star_check3.mjs` OK；壳层烟测 OK；pytest **127 passed**（--ignore native dialog）。
+- **主题调研（只调研未动代码）**：`docs/THEME_BACKGROUND_RESEARCH.md`——推荐 CSS 变量主题层方案（tailwind mem 色板变量化 + 4 预设含深色），开放问题：是否要深色模式/背景纹理，待用户拍板。
+- **接手注意**：① EXE 仍带旧前端（2026-08-31 版），重打包才有首页导航+收藏+本轮修复；② Pages 也未部署本轮构建，部署命令见 memory（`npm run build` 后 wrangler/pages 上传 dist_web）；③ HomeNavView 落地后 `redact` 中心默认工具仍记忆 `drawing`，从外部直达 redact 中心的行为不变。
 
 ## 〇-1、2026-08-31 深夜后续（无边框壳两处致命 bug 修复，实机全绿）
 
