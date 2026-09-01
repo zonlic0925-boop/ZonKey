@@ -112,13 +112,20 @@ class WindowApi:
             win.minimize()
 
     def toggle_maximize(self) -> None:
-        """前端在最大化/还原二态间切换；真实状态由前端事件+轮询同步后选择调用。"""
+        """按窗口真实状态切换最大化/还原（自给自足，不依赖前端同步状态）。
+
+        前端按「轮询缓存的二态」决定调 toggle_maximize 还是 restore 时，
+        缓存滞后会让第一次点击落到错误分支（已最大化却再 maximize，
+        观感即"要点两下"）。本方法用 Win32 IsZoomed 读实时状态，
+        前端无论传什么参数都得到正确结果。
+        """
         win = self._window()
         if not win:
             return
-        # pywebview 无 is_maximized 查询，前端把当前状态作为参数传来更可靠：
-        # 见 WindowControls.tsx —— toggle_maximize 只做最大化，还原走 restore()。
-        win.maximize()
+        if self.is_maximized():
+            win.restore()
+        else:
+            win.maximize()
 
     def is_maximized(self) -> bool:
         """供前端同步最大化状态（窗口事件不透传到 JS，按钮态轮询此接口）。"""

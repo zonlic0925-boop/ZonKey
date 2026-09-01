@@ -34,7 +34,9 @@ export const WindowControls: React.FC = () => {
   const shellMode = useShellMode();
   const { t } = useI18n();
   const [maximized, setMaximized] = useState(false);
-  // 轮询兜底：用户用 Win+↑/↓、Snap、任务栏等系统途径改变窗口状态时前端收不到通知
+  // 轮询兜底：用户用 Win+↑/↓、Snap、任务栏等系统途径改变窗口状态时前端收不到通知。
+  // 注意：按钮动作本身不依赖这份缓存（后端 toggle_maximize 按 IsZoomed 实时切换），
+  // 轮询只负责还原图标与 aria 状态的视觉同步。
   const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -66,8 +68,17 @@ export const WindowControls: React.FC = () => {
 
   const maximizeLabel = maximized ? t('window.restore') : t('window.maximize');
 
-  const onToggleMaximize = () =>
-    call((api) => (maximized ? api.restore() : api.toggle_maximize()));
+  // 统一走 toggle_maximize：后端按窗口真实状态二态切换，前端缓存滞后也不会点错分支；
+  // 点击后立即查询刷新图标，不等下一轮轮询。
+  const onToggleMaximize = () => {
+    call((api) => api.toggle_maximize());
+    window.setTimeout(() => {
+      getShellApi()
+        ?.is_maximized()
+        .then((v) => setMaximized(Boolean(v)))
+        .catch(() => undefined);
+    }, 120);
+  };
 
   return (
     <div className="fixed top-2 right-3 z-[100] flex items-center gap-1 no-drag" role="group">
