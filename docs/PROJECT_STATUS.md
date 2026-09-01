@@ -1,6 +1,20 @@
 # Project Status（项目状态）
 
-> 更新于：2026-08-31（深夜后续：无边框桌面壳死锁/遮任务栏双修复，实机消息级验证全绿）。
+> 更新于：2026-09-01（第二轮：主题/外观系统 + 拖拽层重构，实测全绿）。
+
+## 2026-09-01 第二轮进度（主题/外观系统 + 拖拽层重构）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| CSS 变量主题层 | ✅ | `tailwind.config.js` mem-* 色板 + 硬阴影挂 CSS 变量（`rgb(var(--x) / <alpha-value>)` 保透明度语法）；`index.css` 4 套 `data-theme` 预设：cream/paper/slate/dark。`white` 归一到 `--mem-surface`，61 处 `bg-white` 深色下自动翻转；组件类名零改动 |
+| ThemeProvider | ✅ | `lib/theme/`（themeCore + context）；localStorage `zonscale-theme`/`zonscale-texture`；`index.html` 内联脚本防闪屏回放 |
+| 背景纹理 | ✅ | `none/grid/dots/paper` 纯 CSS 层（`zs-texture-*`），App 根容器渲染，跟随 ink 变量，零资产 |
+| 外观选择 UI | ✅ | `AppearanceModal.tsx`（主题缩略卡 + 纹理档位即点即换）；Header 桌面/手机入口 + HomeNav 快捷入口；i18n `appearance.*` 三语 |
+| 拖拽层重构 | ✅ | 删除 `WindowDragStrip.tsx`（覆盖条几何手工复刻，离线横幅下压时错位 + right-132px 魔法数字），改为 Header 品牌行自身 `app-region: drag` + 行内交互 `.no-drag`。实测横幅下推 43px 时拖拽行跟随对齐 |
+| 壳层闪屏联动 | ✅ | 前端 `save_ui_prefs` api → `ui_prefs.json`；`desktop_app.py::_load_shell_bg()` 启动读它设 `background_color`（THEME_SHELL_BG 与 themeCore.ts 同表，须同步改）；round-trip 实测 dark→`#181826` |
+| MemphisDecor | ✅ | 硬编码 hex 全改变量类；缓漂浮 CSS 动画（prefers-reduced-motion 关闭） |
+| 回归 | ✅ | `theme_drag_check.mjs` 17/17（主题切换/持久化/防闪屏/纹理/拖拽几何双视口/零 pageerror）；`homenav_fav_flow.mjs` 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
+| 遗留 | ⏳ | EXE 未重打包（跑 `build_zonscale_exe.bat` 带上全部前端）；Pages 未部署本轮；真实 WebView2 鼠标拖拽手感待实机确认 |
 
 ## 2026-08-31 深夜后续进度（无边框桌面壳加固）
 

@@ -1,9 +1,21 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（首页导航页 + 收藏闭环 + 壳层拖拽/最大化双 bug 修复 + 动效基建，实测全绿）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-01（主题系统 4 预设 + 背景纹理 + 拖拽层重构为 Header 行自身 drag，实测全绿）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇-0、2026-09-01（首页导航 + 收藏闭环 + 壳层交互修复，本轮）
+## 〇-0、2026-09-01 第二轮（主题/外观系统 + 拖拽层重构，本轮）
+
+- **主题系统上线**：`tailwind.config.js` mem-* 色板挂 CSS 变量（`rgb(var(--x) / <alpha-value>)` 保住 `/30` 透明度语法）；`index.css` 定义 4 套 `data-theme` 预设——`cream`（默认）/ `paper`（素白）/ `slate`（冷灰）/ `dark`（深底浅描边）。**`white` 语义归一到 `--mem-surface`**：61 处 `bg-white` 卡片深色下自动翻转，`text-white` 全部落在强调色底上已核对可读（AuditView/RuleCenterModal 两个 glass 风格文件是无 import 的孤儿组件，不构成风险）。换主题 = `<html data-theme>` 一个属性，组件类名零改动。
+- **ThemeProvider**：`frontend/src/lib/theme/`（themeCore.ts 纯函数 + ThemeProvider.tsx context）；localStorage `zonscale-theme` / `zonscale-texture`；`index.html` 内联脚本在 React 挂载前回放 `data-theme`（防闪屏）。
+- **背景纹理二级选项**：`none/grid/dots/paper` 纯 CSS（无资产），App 根容器 `zs-texture` 层渲染，跟随 ink 变量。
+- **外观选择 UI**：`AppearanceModal.tsx`（主题缩略预览 4 卡 + 纹理 4 档，即点即换即存）；入口 ×2——Header（桌面品牌行 + 手机顶栏，调色板图标）+ HomeNav 快捷入口（第 4 个 quick link）；i18n `appearance.*` 三语齐。
+- **拖拽层重构（评估结论：根因是覆盖条几何手工复刻，离线横幅下压 Header 时必然错位 + 右侧 132px 魔法数字）**：删除 `WindowDragStrip.tsx`，改为 **Header 品牌行自身 `app-region: drag`**（桌面 h-20 行 / 手机紧凑顶栏），行内交互组（品牌+外观+隐私+支持+语言/导航/状态条）保持 `.no-drag` 豁免。实测 Playwright：离线横幅把 Header 下推 43px 时拖拽行**跟随对齐**（旧方案会钉死 0-80 错位）——这是新结构的直接实证优势。导航结构（home-nav 落地页/SubNav 回首页）维持不动。
+- **壳层闪屏联动**：前端 ThemeProvider 经 `window.pywebview.api.save_ui_prefs({theme,texture})` 镜像到 `<app_root>/ui_prefs.json`；`desktop_app.py::_load_shell_bg()` 在 `create_window` 前读取设置 `background_color`（THEME_SHELL_BG 映射表与 `themeCore.ts` 同表，**两处必须同步改**）。损坏/缺失/键非法一律回退 cream。实测 round-trip：save(dark) → 文件 → `#181826`。
+- **MemphisDecor**：硬编码 hex 全部改 mem-* 变量类/SVG stroke 类；加缓漂浮 CSS 动画（transform only，`prefers-reduced-motion` 关闭）。
+- **验证**：`npm run build` 成功（30.2s）；新回归 `temp_ui_test/theme_drag_check.mjs` **17/17**（主题即点即换/持久化/防闪屏回放/纹理/拖拽几何桌面+手机/零 pageerror）；上轮 `homenav_fav_flow.mjs` **14/14**（脚本端口改为 localhost——本机 vite 6 默认绑 IPv6，127.0.0.1 拒连）；pytest **127 passed**；release_acceptance 全过；ui_prefs round-trip OK。
+- **接手注意**：① EXE 仍未重打包（现含 2026-08-31 前端），跑一次 `build_zonscale_exe.bat` 可带上首页导航+收藏+主题+拖拽重构全部前端与 desktop_app.py 联动；② Pages 也未部署本轮；③ 拖拽行内新增交互元素时只需给它 `.no-drag`，不要再建覆盖条；④ 主题切换过渡用 `.zs-theme-root` 类（App 根容器），新顶层容器记得带上。
+
+## 〇-0-1、2026-09-01 第一轮（首页导航 + 收藏闭环 + 壳层交互修复）
 
 - **用户反馈 4 项处置**：①最大化要点两下=已修；②内容区拖动被窗口拖拽劫持（图纸方框拖不动）=已修；③「没有出现」=EXE 内是旧前端（上轮手机导航/收藏是 Pages 部署，EXE 未重打包），**下轮跑一次 `build_zonscale_exe.bat` 即带上**；④另一项无问题。
 - **① 最大化双击修复**：`desktop_app.py::toggle_maximize` 改为按 Win32 `IsZoomed` 实时状态切换最大化/还原（旧实现只会 maximize，前端轮询缓存滞后时第一次点击落错分支）；前端 `WindowControls.tsx` 统一走 `toggle_maximize` + 点击后 120ms 即时查 `is_maximized` 刷新图标。壳内实测三连击状态机 PASS（`temp_ui_test/shell_smoke2.py`，结果落 `shell_smoke_result.txt`）。
