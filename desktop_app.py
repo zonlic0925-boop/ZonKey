@@ -14,6 +14,34 @@ PORT = 8765
 HOST = "127.0.0.1"
 URL = f"http://{HOST}:{PORT}"
 
+# 主题闪屏底色联动：前端 ThemeProvider 把主题镜像到 ui_prefs.json（经
+# save_ui_prefs api），create_window 前读它——Python 侧读不到 localStorage，
+# 文件是唯一桥。键值与 frontend/src/lib/theme/themeCore.ts THEME_SHELL_BG 同表，
+# 两处必须同步改。
+THEME_SHELL_BG = {
+    "cream": "#FFF9F0",
+    "paper": "#FAFAF8",
+    "slate": "#E2E8F0",
+    "dark": "#181826",
+}
+DEFAULT_SHELL_BG = THEME_SHELL_BG["cream"]
+
+
+def _load_shell_bg() -> str:
+    """读 ui_prefs.json 的主题底色；文件缺失/损坏/键非法一律回退默认。"""
+    try:
+        from core.app_paths import get_app_root
+
+        prefs_path = get_app_root() / "ui_prefs.json"
+        if not prefs_path.is_file():
+            return DEFAULT_SHELL_BG
+        import json
+
+        theme = json.loads(prefs_path.read_text(encoding="utf-8")).get("theme")
+        return THEME_SHELL_BG.get(theme, DEFAULT_SHELL_BG)
+    except Exception:  # noqa: BLE001 — 任何偏好文件异常都不能挡启动
+        return DEFAULT_SHELL_BG
+
 if getattr(sys, "frozen", False):
     _ROOT = Path(sys.executable).resolve().parent
 else:
@@ -92,7 +120,7 @@ def _open_pywebview(title: str) -> None:
         min_size=(1024, 720),
         frameless=True,
         js_api=WindowApi(),
-        background_color="#FFF9F0",
+        background_color=_load_shell_bg(),
     )
     attach_frameless_behaviour(window)
     webview.start()
@@ -153,6 +181,21 @@ class WindowApi:
         win = self._window()
         if win:
             win.destroy()
+
+    def save_ui_prefs(self, prefs: dict) -> None:
+        """前端 ThemeProvider 镜像主题偏好到文件（下次启动闪屏底色联动）。
+
+        写盘失败静默吞掉：这只影响下次启动闪屏颜色，不值得打断用户。
+        """
+        try:
+            import json
+
+            from core.app_paths import get_app_root
+
+            data = {"theme": str(prefs.get("theme", "cream")), "texture": str(prefs.get("texture", "none"))}
+            (get_app_root() / "ui_prefs.json").write_text(json.dumps(data), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _open_browser_fallback() -> None:
