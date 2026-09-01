@@ -9,6 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/audiowide": "^5.3.0",
+    "@fontsource/caveat": "^5.3.0",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "cryptpdf": "^0.1.1",

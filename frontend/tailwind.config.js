@@ -33,10 +33,12 @@ export default {
         'memphis-lg': '6px 6px 0px 0px rgb(var(--mem-shadow-rgb) / 1)',
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
-        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
-        brand: ['"Audiowide"', '"Righteous"', 'system-ui', 'sans-serif'],
-        'brand-script': ['"Caveat"', 'cursive'],
+        // CJK 回退链：拉丁字形走自托管字体（@fontsource，index.css 导入），
+        // 中文落到系统微软雅黑/苹方——离线 EXE 下中文不缺字形、品牌字不回退
+        display: ['"Space Grotesk"', '"Microsoft YaHei"', '"PingFang SC"', 'system-ui', 'sans-serif'],
+        body: ['"DM Sans"', '"Microsoft YaHei"', '"PingFang SC"', 'system-ui', 'sans-serif'],
+        brand: ['"Audiowide"', '"Microsoft YaHei"', '"PingFang SC"', 'system-ui', 'sans-serif'],
+        'brand-script': ['"Caveat"', '"Microsoft YaHei"', '"PingFang SC"', 'cursive'],
       },
     },
   },
