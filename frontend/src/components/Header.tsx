@@ -34,11 +34,11 @@ const centerActiveAccent: Record<string, string> = {
 /** 拖拽行样式：Header 品牌行自身就是窗口拖拽区（app-region: drag），
  *  行内交互元素逐个 .no-drag 豁免。旧方案是独立 fixed 覆盖条复刻行几何，
  *  离线横幅下压 Header 时几何错位，且每加一个按钮都要同步覆盖条挖洞——
- *  现在拖拽区天然等于标题栏真实几何，见 docs/AGENTS_HANDOFF.md。 */
-const dragRowStyle = {
-  appRegion: 'drag',
-  WebkitAppRegion: 'drag',
-} as React.CSSProperties;
+ *  现在拖拽区天然等于标题栏真实几何，见 docs/AGENTS_HANDOFF.md。
+ *  关键（round-4 教训）：drag 必须走 class 而非内联 style——内联样式
+ *  优先级压过任何样式表规则，导致 html[data-canvas-gesture] 手势期
+ *  转 no-drag 的覆盖规则从未生效（方框拖动劫持复现的根因）。 */
+const dragRowClass = 'zs-drag-row';
 
 export const Header: React.FC<HeaderProps> = ({
   activeCenter,
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="shrink-0 w-full max-w-full border-b-[3px] border-mem-ink bg-white z-40 relative shadow-memphis-sm">
         {/* 手机：紧凑顶栏——品牌行自身可拖，交互组 no-drag 豁免 */}
-        <div className="flex md:hidden items-center justify-between gap-2 px-3 py-2 min-h-[56px]" data-drag-row style={dragRowStyle}>
+        <div className={`flex md:hidden items-center justify-between gap-2 px-3 py-2 min-h-[56px] ${dragRowClass}`} data-drag-row>
           <div className="no-drag">
             <BrandMark compact showSubtitle={false} />
           </div>
@@ -145,8 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             保证引擎状态条在任何窗宽下都不进入右侧窗口按钮区。 */}
         <div
           data-drag-row
-          className="hidden md:flex h-20 w-full px-6 items-center justify-between gap-4 min-w-0 pr-[150px]"
-          style={dragRowStyle}
+          className={`hidden md:flex h-20 w-full px-6 items-center justify-between gap-4 min-w-0 pr-[150px] ${dragRowClass}`}
         >
           <div className="flex items-center gap-2 shrink-0 min-w-0 no-drag">
             <BrandMark />

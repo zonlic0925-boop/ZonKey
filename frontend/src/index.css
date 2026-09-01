@@ -1,4 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Caveat:wght@500;600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Righteous&family=Space+Grotesk:wght@500;600;700&display=swap');
+/* 字体自托管（@fontsource，全部 OFL 宽松许可）：离线 EXE / 无网环境
+   必须本地加载，禁止走 Google Fonts CDN（离线时 404 静默回退系统字体，
+   即「引擎条/外观面板字体不显示」的根因）。只引入实际用到的字重。 */
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/audiowide/400.css';
+@import '@fontsource/caveat/500.css';
+@import '@fontsource/caveat/600.css';
 
 @tailwind base;
 @tailwind components;
@@ -124,13 +136,26 @@
     -webkit-app-region: no-drag;
   }
 
+  /* Header 拖拽行（data-drag-row 元素挂这个类）：app-region: drag 必须
+     走 class 而非内联 style——内联优先级压过样式表，手势期 no-drag 覆盖
+     会失效（round-4 方框拖动劫持根因）。 */
+  .zs-drag-row {
+    app-region: drag;
+    -webkit-app-region: drag;
+  }
+
   /* 画布手势进行中（方框拖动/缩放/手动画框）：整个文档树禁用窗口拖拽区。
      app-region 命中是逐消息判定的——手势中途指针滑进 Header drag 行会被
      WebView2 接管成拖窗口且不会归还。CanvasViewport 在 <html> 上切换
-     data-canvas-gesture，Header 的 drag 行据此整体转为 no-drag。 */
+     data-canvas-gesture，Header 的 drag 行据此整体转为 no-drag。
+     !important：即使未来有人再写内联 app-region 也压不过手势期豁免。 */
   html[data-canvas-gesture] [data-drag-row] {
-    app-region: no-drag;
-    -webkit-app-region: no-drag;
+    app-region: no-drag !important;
+    -webkit-app-region: no-drag !important;
+  }
+  html[data-canvas-gesture] [data-drag-row] * {
+    app-region: no-drag !important;
+    -webkit-app-region: no-drag !important;
   }
 
   /* 背景纹理层（AppearanceModal 二级选项）：铺在 MemphisDecor 底下，
@@ -142,19 +167,19 @@
     background-repeat: repeat;
   }
   .zs-texture-grid {
-    background-image: linear-gradient(rgb(var(--mem-ink) / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--mem-ink) / 0.05) 1px, transparent 1px);
+    background-image: linear-gradient(rgb(var(--mem-ink) / 0.11) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--mem-ink) / 0.11) 1px, transparent 1px);
     background-size: 28px 28px;
   }
   .zs-texture-dots {
-    background-image: radial-gradient(rgb(var(--mem-ink) / 0.07) 1.2px, transparent 1.2px);
-    background-size: 22px 22px;
+    background-image: radial-gradient(rgb(var(--mem-ink) / 0.16) 1.3px, transparent 1.3px);
+    background-size: 20px 20px;
   }
   .zs-texture-paper {
     background-image: repeating-linear-gradient(
       0deg,
-      rgb(var(--mem-ink) / 0.025) 0px,
-      rgb(var(--mem-ink) / 0.025) 1px,
+      rgb(var(--mem-ink) / 0.07) 0px,
+      rgb(var(--mem-ink) / 0.07) 1px,
       transparent 1px,
       transparent 4px
     );
@@ -167,9 +192,12 @@
       radial-gradient(circle at 55% 80%, rgb(var(--mem-pink) / 0.45), transparent 42%);
   }
 
-  /* ── 流动背景（AppearanceModal 可选）：3 个渐变 blob 超慢漂移 ──
-     只动 transform/opacity（GPU 合成层，离主线程）；filter 固定不动画；
-     颜色跟主题变量；reduced-motion 完全静止。 */
+  /* ── 流动背景（默认外观）：4 个渐变 blob 慢速漂移 ──
+     round-4 重设计：旧版 135-180s 一循环 + 低透明度，肉眼不可感知
+     （用户反馈「看不出在动」）。新参数：26-42s 错相循环（氛围可感知
+     但不抢焦点）、透明度提到 0.55-0.7、blob 加大到 46-56vw、漂移幅度
+     12-22vw。只动 transform/opacity（GPU 合成层，离主线程）；filter
+     固定不动画；颜色跟主题变量；reduced-motion 完全静止。 */
   .zs-fluid {
     position: absolute;
     inset: 0;
@@ -179,47 +207,47 @@
   .zs-fluid-blob {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(80px);
-    opacity: 0.5;
+    filter: blur(72px);
+    opacity: 0.62;
     will-change: transform;
   }
   .zs-fluid-a {
-    width: 42vw;
-    height: 42vw;
-    left: -8vw;
-    top: -10vw;
-    background: radial-gradient(circle, rgb(var(--mem-teal) / 0.45), transparent 70%);
-    animation: zs-fluid-drift-a 150s ease-in-out infinite;
+    width: 52vw;
+    height: 52vw;
+    left: -12vw;
+    top: -16vw;
+    background: radial-gradient(circle, rgb(var(--mem-teal) / 0.6), transparent 70%);
+    animation: zs-fluid-drift-a 34s ease-in-out infinite;
   }
   .zs-fluid-b {
-    width: 38vw;
-    height: 38vw;
-    right: -10vw;
-    top: 18vh;
-    background: radial-gradient(circle, rgb(var(--mem-yellow) / 0.4), transparent 70%);
-    animation: zs-fluid-drift-b 180s ease-in-out infinite;
+    width: 46vw;
+    height: 46vw;
+    right: -14vw;
+    top: 12vh;
+    background: radial-gradient(circle, rgb(var(--mem-yellow) / 0.55), transparent 70%);
+    animation: zs-fluid-drift-b 26s ease-in-out infinite;
   }
-  .zs-fluid-c {
-    width: 34vw;
-    height: 34vw;
-    left: 22vw;
-    bottom: -14vw;
-    background: radial-gradient(circle, rgb(var(--mem-pink) / 0.38), transparent 70%);
-    animation: zs-fluid-drift-c 135s ease-in-out infinite;
+  .zs-fluid-d {
+    width: 40vw;
+    height: 40vw;
+    left: 24vw;
+    bottom: -16vw;
+    background: radial-gradient(circle, rgb(var(--mem-lavender) / 0.5), transparent 70%);
+    animation: zs-fluid-drift-d 42s ease-in-out infinite;
   }
   @keyframes zs-fluid-drift-a {
-    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
-    33% { transform: translate(14vw, 10vh) scale(1.15); opacity: 0.38; }
-    66% { transform: translate(4vw, 22vh) scale(0.92); opacity: 0.5; }
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.62; }
+    33% { transform: translate(10vw, 14vh) scale(1.12); opacity: 0.5; }
+    66% { transform: translate(3vw, 26vh) scale(0.94); opacity: 0.62; }
   }
   @keyframes zs-fluid-drift-b {
-    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.42; }
-    40% { transform: translate(-16vw, 14vh) scale(0.88); opacity: 0.52; }
-    75% { transform: translate(-6vw, -10vh) scale(1.12); opacity: 0.36; }
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.55; }
+    40% { transform: translate(-12vw, 18vh) scale(0.9); opacity: 0.68; }
+    75% { transform: translate(-5vw, -12vh) scale(1.1); opacity: 0.48; }
   }
-  @keyframes zs-fluid-drift-c {
-    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-    50% { transform: translate(10vw, -18vh) scale(1.18); opacity: 0.5; }
+  @keyframes zs-fluid-drift-d {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    50% { transform: translate(-9vw, -22vh) scale(1.16); opacity: 0.62; }
   }
   @media (prefers-reduced-motion: reduce) {
     .zs-fluid-blob {
