@@ -537,6 +537,13 @@ export const zhCN: MessageTree = {
       'pdf-repair': '修复损坏的 PDF 结构（qpdf 内核），严重损坏时报错而不是输出坏文件。',
     },
   },
+  homeNav: {
+    title: '欢迎来到 ZonScale',
+    subtitle: '共 {count} 项本地离线工具 · 选择一个功能分类开始',
+    myFavorites: '我的收藏',
+    toolCount: '{ready} / {total} 项工具',
+    quickLinks: '快捷入口',
+  },
   mobileNav: {
     label: '底部导航',
     home: '首页',

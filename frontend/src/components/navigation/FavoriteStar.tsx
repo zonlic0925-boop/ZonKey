@@ -15,9 +15,11 @@ import { isFavorite, toggleFavorite } from '../../lib/toolknit/favoritesCore';
 interface FavoriteStarProps {
   toolId: ToolId;
   onNotify?: (msg: string, type: 'success' | 'error' | 'info') => void;
+  /** 卡片右上角绝对定位（默认）；传入覆盖类则由调用方控制布局（如 SubNav 行内联） */
+  className?: string;
 }
 
-export const FavoriteStar: React.FC<FavoriteStarProps> = ({ toolId, onNotify }) => {
+export const FavoriteStar: React.FC<FavoriteStarProps> = ({ toolId, onNotify, className }) => {
   const { t } = useI18n();
   const [fav, setFav] = useState(() => isFavorite(toolId));
   const [pop, setPop] = useState(0);
@@ -39,7 +41,10 @@ export const FavoriteStar: React.FC<FavoriteStarProps> = ({ toolId, onNotify }) 
       onClick={handle}
       aria-pressed={fav}
       aria-label={fav ? t('favorites.remove') : t('favorites.add')}
-      className="absolute top-1 right-1 z-10 flex items-center justify-center w-7 h-7 min-h-[36px] min-w-[36px] rounded-lg hover:bg-mem-yellow/40 transition-colors"
+      className={
+        className ??
+        'absolute top-1 right-1 z-10 flex items-center justify-center w-7 h-7 min-h-[36px] min-w-[36px] rounded-lg hover:bg-mem-yellow/40 transition-colors'
+      }
     >
       <motion.span
         key={pop}

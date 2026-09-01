@@ -534,6 +534,13 @@ export const zhTW: MessageTree = {
       'pdf-repair': '修復損壞的 PDF 結構（qpdf 內核），嚴重損壞時報錯而不是輸出壞檔案。',
     },
   },
+  homeNav: {
+    title: '歡迎來到 ZonScale',
+    subtitle: '共 {count} 項本地離線工具 · 選擇一個功能分類開始',
+    myFavorites: '我的收藏',
+    toolCount: '{ready} / {total} 項工具',
+    quickLinks: '快捷入口',
+  },
   mobileNav: {
     label: '底部導覽',
     home: '首頁',

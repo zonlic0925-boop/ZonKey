@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Header } from './components/Header';
 import { WindowControls } from './components/WindowControls';
 import { WindowDragStrip } from './components/WindowDragStrip';
@@ -18,12 +19,15 @@ import { AuditLogView } from './components/AuditLogView';
 import { SubNavPills } from './components/navigation/SubNavPills';
 import { MobileBottomNav, type MobileTabId } from './components/navigation/MobileBottomNav';
 import { FavoritesView } from './components/navigation/FavoritesView';
+import { HomeNavView } from './components/navigation/HomeNavView';
+import { FavoriteStar } from './components/navigation/FavoriteStar';
 import { CenterPlaceholder } from './components/common/CenterPlaceholder';
 import { MemphisDecor } from './components/MemphisDecor';
+import { pageFadeSlide } from './motion/springs';
 import { CenterId, ToolId } from './types';
 import { CENTER_TOOLS, getCenterMeta } from './lib/navigation';
 import type { ToolMeta } from './lib/navigation';
-import { CheckCircle2, AlertCircle, Info, X, WifiOff } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, WifiOff, Home } from 'lucide-react';
 import { useBackendStatus } from './lib/api';
 import { useI18n } from './i18n';
 import { APP_NAME, APP_TAGLINE } from './lib/brand';
@@ -31,9 +35,10 @@ import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components
 
 export default function App() {
   const { t } = useI18n();
+  // 默认落地页 = 首页导航（home-nav）：先看分类再进功能，不直接进脱敏画布
   const [activeCenter, setActiveCenter] = useState<CenterId>('redact');
-  const [activeTool, setActiveTool] = useState<ToolId>('drawing');
-  // 记住每个中心最后使用的工具，切回时不打断用户上下文
+  const [activeTool, setActiveTool] = useState<ToolId>('home-nav');
+  // 记住每个中心最后使用的工具，切回时不打断用户上下文；home-nav 是虚拟视图不记录
   const lastToolByCenter = useRef<Partial<Record<CenterId, ToolId>>>({ redact: 'drawing' });
   const { online, status, refresh } = useBackendStatus();
   // 首次打开弹出「隐私与联网声明」；确认后 localStorage 记忆，页眉盾牌可重开
@@ -55,8 +60,10 @@ export default function App() {
   };
 
   const handleCenterChange = (center: CenterId) => {
-    if (center === activeCenter) return;
-    lastToolByCenter.current[activeCenter] = activeTool;
+    if (center === activeCenter && activeTool !== 'home-nav' && activeTool !== 'favorites-view') return;
+    lastToolByCenter.current[activeCenter] = activeTool === 'home-nav' || activeTool === 'favorites-view'
+      ? (lastToolByCenter.current[activeCenter] ?? 'drawing')
+      : activeTool;
     setActiveCenter(center);
     setActiveTool(lastToolByCenter.current[center] ?? CENTER_TOOLS[center][0].id);
     refresh();
@@ -70,11 +77,11 @@ export default function App() {
   const tools = CENTER_TOOLS[activeCenter];
   const centerMeta = getCenterMeta(activeCenter);
 
-  // 手机端底部导航：favorites 为虚拟视图；home 回智能脱敏首工具
+  // 手机端底部导航：favorites/home-nav 为虚拟视图；home 回首页导航页
   const mobileTab: MobileTabId =
     activeCenter === 'redact' && activeTool === 'favorites-view'
       ? 'favorites'
-      : activeCenter === 'redact' && activeTool === 'drawing'
+      : activeCenter === 'redact' && activeTool === 'home-nav'
         ? 'home'
         : activeCenter;
 
@@ -82,9 +89,19 @@ export default function App() {
     handleCenterChange(center);
   };
 
+  /** 首页导航「回到首页」按钮 */
+  const openHomeNav = () => {
+    if (activeCenter !== 'redact') {
+      lastToolByCenter.current[activeCenter] = activeTool;
+      setActiveCenter('redact');
+    }
+    setActiveTool('home-nav');
+    refresh();
+  };
+
   /** 收藏直达：定位到工具所属中心并切换（含 redact 原生工具） */
   const openFavoriteTool = (toolId: ToolId) => {
-    if (toolId === 'favorites-view') return;
+    if (toolId === 'favorites-view' || toolId === 'home-nav') return;
     for (const center of Object.keys(CENTER_TOOLS) as CenterId[]) {
       const meta = CENTER_TOOLS[center].find((m) => m.id === toolId) as ToolMeta | undefined;
       if (meta) {
@@ -125,26 +142,66 @@ export default function App() {
         onOpenPrivacy={() => setPrivacyNoticeOpen(true)}
       />
 
-      {/* 二级子工具导航：所有中心固定渲染此条（等高），避免切换时布局跳变 */}
-      <div className="relative z-30 shrink-0 w-full flex items-center px-3 py-2 bg-white/80 border-b-2 border-mem-ink/10">
-        <SubNavPills
-          key={activeCenter}
-          options={tools.map((tool) => ({
-            id: tool.id,
-            label: t(tool.labelKey),
-            group:
-              activeCenter === 'pdf_center' && tool.group
-                ? t(`pdfGroups.${tool.group}`)
-                : undefined,
-          }))}
-          activeId={activeTool}
-          onChange={(id) => handleToolChange(id as ToolId)}
-          colorVariant={centerMeta.accent}
-        />
-      </div>
+      {/* 二级子工具导航：home-nav 视图隐藏（首页有自己的分类卡），其余中心固定渲染（等高）避免跳变 */}
+      {!(activeCenter === 'redact' && activeTool === 'home-nav') && (
+        <div className="relative z-30 shrink-0 w-full flex items-center px-3 py-2 bg-white/80 border-b-2 border-mem-ink/10">
+          <SubNavPills
+            key={activeCenter}
+            options={tools.map((tool) => ({
+              id: tool.id,
+              label: t(tool.labelKey),
+              group:
+                activeCenter === 'pdf_center' && tool.group
+                  ? t(`pdfGroups.${tool.group}`)
+                  : undefined,
+            }))}
+            activeId={activeTool}
+            onChange={(id) => handleToolChange(id as ToolId)}
+            colorVariant={centerMeta.accent}
+            trailingSlot={
+              activeCenter === 'redact' && activeTool !== 'favorites-view' ? (
+                <span className="ml-0.5 mr-1 shrink-0 flex items-center">
+                  <FavoriteStar
+                    toolId={activeTool}
+                    onNotify={showNotify}
+                    className="flex items-center justify-center w-7 h-7 rounded-lg border-2 border-mem-ink/20 bg-white hover:bg-mem-yellow/40 hover:border-mem-ink transition-colors"
+                  />
+                </span>
+              ) : undefined
+            }
+          />
+          {/* 回首页：任何中心/工具下都可一键回到首页导航（首页自身除外） */}
+          {!(activeCenter === 'redact' && activeTool === 'home-nav') && (
+            <button
+              type="button"
+              onClick={openHomeNav}
+              className="ml-2 shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border-2 border-mem-ink/30 bg-white text-xs font-semibold text-mem-ink/60 hover:border-mem-ink hover:text-mem-ink transition-colors"
+              title={t('homeNav.title')}
+            >
+              <Home className="w-3.5 h-3.5" />
+              {t('mobileNav.home')}
+            </button>
+          )}
+        </div>
+      )}
 
       <main className="relative z-10 flex-1 w-full min-h-0 overflow-hidden flex">
-        {activeCenter === 'redact' && activeTool === 'favorites-view' ? (
+        <motion.div
+          key={`${activeCenter}:${activeTool}`}
+          variants={pageFadeSlide}
+          initial="initial"
+          animate="animate"
+          className="flex-1 min-h-0 flex flex-col"
+        >
+        {activeCenter === 'redact' && activeTool === 'home-nav' ? (
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+            <HomeNavView
+              onOpenCenter={handleCenterChange}
+              onOpenTool={openFavoriteTool}
+              onOpenFavorites={() => handleToolChange('favorites-view' as ToolId)}
+            />
+          </div>
+        ) : activeCenter === 'redact' && activeTool === 'favorites-view' ? (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
             <FavoritesView onOpenTool={openFavoriteTool} />
           </div>
@@ -210,6 +267,7 @@ export default function App() {
         )}
         </>
         )}
+        </motion.div>
       </main>
 
       <MobileBottomNav
@@ -220,8 +278,7 @@ export default function App() {
             if (activeCenter !== 'redact') handleCenterChange('redact');
             handleToolChange('favorites-view' as ToolId);
           } else if (tab === 'home') {
-            if (activeCenter !== 'redact') handleCenterChange('redact');
-            else handleToolChange('drawing');
+            openHomeNav();
           } else {
             openCenterFromMobile(tab as CenterId);
           }

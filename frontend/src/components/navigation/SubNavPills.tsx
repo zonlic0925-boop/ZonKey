@@ -16,6 +16,8 @@ interface SubNavPillsProps {
   activeId: string
   onChange: (id: string) => void
   colorVariant?: MemphisAccent
+  /** 追加在 pills 末尾的槽位（如当前工具收藏星标），不参与 pill 布局 */
+  trailingSlot?: React.ReactNode
 }
 
 const activePillColors: Record<MemphisAccent, string> = {
@@ -34,6 +36,7 @@ export const SubNavPills: React.FC<SubNavPillsProps> = ({
   activeId,
   onChange,
   colorVariant = 'yellow',
+  trailingSlot,
 }) => {
   return (
     <div className="zs-mobile-scroll-x flex items-center gap-1.5 p-1 bg-white border-2 border-mem-ink rounded-xl shadow-memphis-sm overflow-x-auto max-w-full">
@@ -79,6 +82,7 @@ export const SubNavPills: React.FC<SubNavPillsProps> = ({
           </React.Fragment>
         )
       })}
+      {trailingSlot}
     </div>
   )
 }

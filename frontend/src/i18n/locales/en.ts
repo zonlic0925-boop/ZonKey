@@ -534,6 +534,13 @@ export const en: MessageTree = {
       'pdf-repair': 'Repairs broken PDF structure (qpdf kernel); unrecoverable files error out instead of producing garbage.',
     },
   },
+  homeNav: {
+    title: 'Welcome to ZonScale',
+    subtitle: '{count} local offline tools · Pick a category to get started',
+    myFavorites: 'My favorites',
+    toolCount: '{ready} / {total} tools',
+    quickLinks: 'Quick links',
+  },
   mobileNav: {
     label: 'Bottom navigation',
     home: 'Home',
