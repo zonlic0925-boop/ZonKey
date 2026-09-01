@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 const SHOTS = 'C:/Users/Zonlic/Desktop/ZonScale/temp_ui_test/shots_homenav';
 fs.mkdirSync(SHOTS, { recursive: true });
-const URL = 'http://127.0.0.1:5199/';
+const URL = 'http://localhost:5199/';
 const browser = await chromium.launch();
 
 const results = [];
