@@ -2,11 +2,11 @@ import type { MessageTree } from '../types';
 
 export const zhCN: MessageTree = {
   meta: {
-    pageTitle: 'ZonScale | 工程图纸与文档脱敏 · by zonlic',
+    pageTitle: 'ZonScale | 日用百宝箱 · 本地离线 · by zonlic',
   },
   brand: {
-    workbenchBadge: '脱敏工作台',
-    subtitle: '图纸脱敏 · 公文 PDF · Word · 规则 · 审计 — 本地离线',
+    workbenchBadge: '日用百宝箱',
+    subtitle: '脱敏 · PDF · 图像 · 音视频 · 计算开发 — 本地离线，一箱搞定',
   },
   header: {
     navDrawing: '工程图纸脱敏',
@@ -614,11 +614,19 @@ export const zhCN: MessageTree = {
       dark: '深夜模式',
     },
     textureLabel: '背景纹理',
+    fontSizeLabel: '界面字号',
+    fontSize: {
+      sm: '小',
+      md: '标准',
+      lg: '大',
+      xl: '特大',
+    },
     texture: {
       none: '纯色',
       grid: '网格纸',
       dots: '波点',
       paper: '细纹纸',
+      fluid: '流动',
     },
   },
   app: {

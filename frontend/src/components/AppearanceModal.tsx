@@ -5,11 +5,13 @@
  * 入口：Header（桌面右上 + 手机顶栏）与首页导航页快捷入口。
  */
 import React from 'react';
-import { X, Palette, Check } from 'lucide-react';
+import { X, Palette, Check, Type } from 'lucide-react';
 import { useI18n } from '../i18n';
 import {
+  FONT_SIZE_IDS,
   THEME_IDS,
   TEXTURE_IDS,
+  type FontSizeId,
   type TextureId,
   type ThemeId,
 } from '../lib/theme/themeCore';
@@ -28,9 +30,12 @@ const themeThumb: Record<ThemeId, { page: string; card: string; ink: string }> =
   dark: { page: '#181826', card: '#232336', ink: '#E0E1EB' },
 };
 
+/** 字号档预览示意字重（A 字号随档位变化，直观展示缩放幅度） */
+const fontSizePx: Record<FontSizeId, string> = { sm: '12px', md: '14px', lg: '16px', xl: '18px' };
+
 export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose }) => {
   const { t } = useI18n();
-  const { theme, texture, setTheme, setTexture } = useTheme();
+  const { theme, texture, fontSize, setTheme, setTexture, setFontSize } = useTheme();
 
   if (!open) return null;
 
@@ -97,12 +102,18 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose 
           })}
         </div>
 
-        {/* 背景纹理（二级选项） */}
+        {/* 背景纹理（二级选项）：纯色/网格/波点/纸纹/流动 */}
         <div className="mt-5">
           <p className="text-xs font-bold text-mem-ink/70 mb-2">{t('appearance.textureLabel')}</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             {TEXTURE_IDS.map((id) => {
               const active = texture === id;
+              const previewClass =
+                id === 'none'
+                  ? ''
+                  : id === 'fluid'
+                    ? 'zs-texture zs-texture-fluid-preview'
+                    : `zs-texture ${id === 'grid' ? 'zs-texture-grid' : id === 'dots' ? 'zs-texture-dots' : 'zs-texture-paper'}`;
               return (
                 <button
                   key={id}
@@ -116,11 +127,48 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose 
                   aria-pressed={active}
                 >
                   <span
-                    className={`block h-8 rounded ${id === 'none' ? '' : `zs-texture ${id === 'grid' ? 'zs-texture-grid' : id === 'dots' ? 'zs-texture-dots' : 'zs-texture-paper'}`}`}
+                    className={`block h-8 rounded ${previewClass}`}
                     style={{ background: 'rgb(var(--mem-cream))' }}
                   />
                   <span className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-mem-ink">
                     {t(`appearance.texture.${id}`)}
+                    {active && <Check className="w-3 h-3" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 字号（二级选项）：根字号缩放，全站实时生效 */}
+        <div className="mt-5">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-mem-ink/70 mb-2">
+            <Type className="w-3.5 h-3.5" />
+            {t('appearance.fontSizeLabel')}
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {FONT_SIZE_IDS.map((id) => {
+              const active = fontSize === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFontSize(id)}
+                  className={`relative rounded-lg border-2 py-2 transition-all ${
+                    active
+                      ? 'border-mem-ink bg-mem-sky/20 shadow-memphis-sm'
+                      : 'border-mem-ink/25 bg-white hover:border-mem-ink/60'
+                  }`}
+                  aria-pressed={active}
+                >
+                  <span
+                    className="block text-mem-ink font-bold leading-none"
+                    style={{ fontSize: fontSizePx[id] }}
+                  >
+                    A
+                  </span>
+                  <span className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-mem-ink">
+                    {t(`appearance.fontSize.${id}`)}
                     {active && <Check className="w-3 h-3" />}
                   </span>
                 </button>

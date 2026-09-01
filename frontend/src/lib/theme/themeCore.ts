@@ -9,13 +9,24 @@
  */
 
 export type ThemeId = 'cream' | 'paper' | 'slate' | 'dark';
-export type TextureId = 'none' | 'grid' | 'dots' | 'paper';
+export type TextureId = 'none' | 'grid' | 'dots' | 'paper' | 'fluid';
+export type FontSizeId = 'sm' | 'md' | 'lg' | 'xl';
 
 export const THEME_IDS: ThemeId[] = ['cream', 'paper', 'slate', 'dark'];
-export const TEXTURE_IDS: TextureId[] = ['none', 'grid', 'dots', 'paper'];
+export const TEXTURE_IDS: TextureId[] = ['none', 'grid', 'dots', 'paper', 'fluid'];
+export const FONT_SIZE_IDS: FontSizeId[] = ['sm', 'md', 'lg', 'xl'];
 
 const THEME_KEY = 'zonscale-theme';
 const TEXTURE_KEY = 'zonscale-texture';
+const FONT_SIZE_KEY = 'zonscale-fontsize';
+
+/** 字号档 → 根字号 rem 缩放（index.css html[data-fontsize] 消费） */
+export const FONT_SCALE: Record<FontSizeId, string> = {
+  sm: '15px',
+  md: '16px',
+  lg: '17.5px',
+  xl: '19px',
+};
 
 /** 壳层启动闪屏底色（desktop_app.py 同表，改色必须两处同步） */
 export const THEME_SHELL_BG: Record<ThemeId, string> = {
@@ -45,6 +56,16 @@ export function loadTexture(): TextureId {
   return 'none';
 }
 
+export function loadFontSize(): FontSizeId {
+  try {
+    const v = localStorage.getItem(FONT_SIZE_KEY);
+    if (v && (FONT_SIZE_IDS as string[]).includes(v)) return v as FontSizeId;
+  } catch {
+    /* 同上 */
+  }
+  return 'md';
+}
+
 export function saveTheme(theme: ThemeId): void {
   try {
     localStorage.setItem(THEME_KEY, theme);
@@ -61,7 +82,21 @@ export function saveTexture(texture: TextureId): void {
   }
 }
 
+export function saveFontSize(size: FontSizeId): void {
+  try {
+    localStorage.setItem(FONT_SIZE_KEY, size);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** 把主题写入 <html> 属性（幂等；index.html 内联脚本在 React 挂载前已做一次防闪屏） */
 export function applyThemeToDom(theme: ThemeId): void {
   document.documentElement.setAttribute('data-theme', theme);
+}
+
+/** 字号档写 <html> 属性 + 直接设根字号（Tailwind rem 全局等比缩放） */
+export function applyFontSizeToDom(size: FontSizeId): void {
+  document.documentElement.setAttribute('data-fontsize', size);
+  document.documentElement.style.fontSize = FONT_SCALE[size];
 }

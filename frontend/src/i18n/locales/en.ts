@@ -2,11 +2,11 @@ import type { MessageTree } from '../types';
 
 export const en: MessageTree = {
   meta: {
-    pageTitle: 'ZonScale | Drawing & Document Redaction · by zonlic',
+    pageTitle: 'ZonScale | Daily Toolbox · Offline · by zonlic',
   },
   brand: {
-    workbenchBadge: 'Redaction Desk',
-    subtitle: 'Drawings · PDF · Word · Rules · Audit — fully offline',
+    workbenchBadge: 'Daily Toolbox',
+    subtitle: 'Redaction · PDF · Images · Media · Dev tools — all offline, all in one',
   },
   header: {
     navDrawing: 'Engineering Drawings',
@@ -611,11 +611,19 @@ export const en: MessageTree = {
       dark: 'Midnight',
     },
     textureLabel: 'Background texture',
+    fontSizeLabel: 'UI font size',
+    fontSize: {
+      sm: 'Small',
+      md: 'Default',
+      lg: 'Large',
+      xl: 'X-Large',
+    },
     texture: {
       none: 'Solid',
       grid: 'Grid paper',
       dots: 'Polka dots',
       paper: 'Fine grain',
+      fluid: 'Fluid',
     },
   },
   app: {
