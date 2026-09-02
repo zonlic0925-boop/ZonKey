@@ -66,6 +66,9 @@ release_assets/
 # CodeGraph 本地索引与 TS 增量构建缓存
 .codegraph/
 *.tsbuildinfo
+# 打包 spec 是源码（PyInstaller 配置），必须入库——全局 *.spec 只为挡构建产物
+!packaging/macos/config/*.spec
+!packaging/windows/config/*.spec
 
 # 测试脚本依赖与构建日志（不入库）
 temp_ui_test/node_modules/
