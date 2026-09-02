@@ -48,7 +48,7 @@ export const AppearanceModal: React.FC<AppearanceModalProps> = ({ open, onClose 
       aria-label={t('appearance.title')}
     >
       <div
-        className="memphis-card max-w-md w-full p-6 relative animate-in fade-in zoom-in-95 duration-200"
+        className="memphis-card max-w-md w-full max-h-[88dvh] overflow-y-auto p-6 relative animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <button

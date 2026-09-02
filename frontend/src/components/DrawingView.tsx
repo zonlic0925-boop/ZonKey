@@ -661,7 +661,6 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             <h3 className="text-xs font-bold text-mem-ink/70">{t('drawing.hitsTitle', { count: candidates.length })}</h3>
             <p className="text-xs text-mem-ink/40">{t('drawing.hitsHint')}</p>
           </div>
-          <div className="lg:contents max-h-[38vh] min-h-0 overflow-y-auto flex flex-col">
           <CandidateListPanel
             candidates={candidates}
             selectedCandidateId={selectedCandidateId}
@@ -674,8 +673,10 @@ export const DrawingView: React.FC<DrawingViewProps> = ({ onNotify, backendOnlin
             detecting={isScanning}
             emptyHint={pages.length > 0 && !isScanning && !isPagesLoading ? t('drawing.noDrawingHits') : t('drawing.waitingScan')}
           />
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-visible">
+          {/* 底部操作区：shrink-0 保操作按钮恒可达（此前 lg:overflow-visible+flex-1
+              使按钮被挤出视口且无滚动通道，多命中/矮窗必现——round-9 问题本体）。
+              极矮窗口自身开滚，候选列表 flex-1 承接剩余全部伸缩。 */}
+          <div className="shrink-0 max-lg:min-h-0 max-lg:overflow-y-auto">
           <div className="p-3 bg-white border-t-2 border-mem-ink/15 space-y-3">
             <RedactActionBar
               onExecuteRedact={handleExecuteRedact}

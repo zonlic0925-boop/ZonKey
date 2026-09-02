@@ -147,7 +147,7 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
   }
 
   return (
-    <div className="flex-1 w-full h-full p-3 md:p-6 overflow-hidden flex flex-col gap-4 min-h-0">
+    <div className="flex-1 w-full h-full p-3 md:p-6 overflow-y-auto xl:overflow-hidden flex flex-col gap-4 min-h-0">
       <div className="flex gap-4 text-xs flex-wrap">
         <span className="px-3 py-1 rounded-lg bg-mem-yellow/40 border-2 border-mem-ink/20">
           {t('rules.summaryDrawing')}: {t('rules.itemCount', { count: enterpriseTerms.length })}
@@ -164,8 +164,9 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col xl:flex-row gap-4 xl:gap-6">
-        {/* 工程图纸敏感词 */}
-        <div className="flex-1 h-full memphis-card p-6 flex flex-col overflow-hidden">
+        {/* 工程图纸敏感词。xl 以下两卡纵向堆叠且不再限高（外层根可滚），
+            xl 及以上恢复卡内 overflow-hidden + 列表内滚的桌面布局。 */}
+        <div className="flex-1 h-full memphis-card p-6 flex flex-col overflow-y-auto xl:overflow-hidden">
           <div className="flex items-center justify-between pb-4 border-b-2 border-mem-ink/10">
             <div className="flex items-center gap-2">
               <Building className="w-5 h-5 text-mem-sky" />
@@ -236,8 +237,8 @@ export const RuleCenter: React.FC<RuleCenterProps> = ({ onNotify, backendOnline 
           </div>
         </div>
 
-        {/* PII + Word + 印章 */}
-        <div className="flex-1 h-full memphis-card p-6 flex flex-col overflow-hidden">
+        {/* PII + Word + 印章。同上：xl 以下卡体自滚保 Pii 表单/按钮可达。 */}
+        <div className="flex-1 h-full memphis-card p-6 flex flex-col overflow-y-auto xl:overflow-hidden">
           <div className="flex items-center justify-between pb-4 border-b-2 border-mem-ink/10">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-mem-teal" />

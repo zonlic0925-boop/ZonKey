@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Coffee, ShieldCheck, Palette } from 'lucide-react';
 import { CenterId } from '../types';
 import { CENTERS } from '../lib/navigation';
@@ -50,6 +50,17 @@ export const Header: React.FC<HeaderProps> = ({
   const { t } = useI18n();
   const [supportOpen, setSupportOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  // 桌面中心导航：窄窗折叠出横向滚动时，竖向滚轮转横向滚动
+  // （Chromium 纯横向滚动区不消费竖向 delta，鼠标用户够不到右侧项）。
+  const centersNavRef = useRef<HTMLElement>(null);
+  const handleCentersWheel = (e: React.WheelEvent) => {
+    const el = centersNavRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  };
 
   const engineLabel =
     backendOnline === false
@@ -185,7 +196,11 @@ export const Header: React.FC<HeaderProps> = ({
             <LanguageSwitcher />
           </div>
 
-          <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink min-w-0 overflow-x-auto zs-hide-scrollbar no-drag">
+          <nav
+            ref={centersNavRef}
+            onWheel={handleCentersWheel}
+            className="flex items-center gap-1 p-1.5 rounded-2xl bg-mem-cream border-2 border-mem-ink shrink min-w-0 overflow-x-auto zs-wheel-x zs-hide-scrollbar no-drag"
+          >
             {CENTERS.map((center) => centerButton(center, true))}
           </nav>
 

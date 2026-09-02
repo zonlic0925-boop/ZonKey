@@ -285,6 +285,19 @@
   .zs-hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* 横向滚动容器接竖向滚轮（round-9）：Chromium 对纯横向滚动区
+     不转换竖向 delta，鼠标用户无法触达被折叠的右侧项。onWheel
+     处理器（Header.tsx）把竖向滚动转为 scrollLeft；触控板横滑走
+     原生通道不受影响。 */
+  .zs-wheel-x {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .zs-wheel-x::-webkit-scrollbar {
+    display: none;
+  }
   /* 孟菲斯卡片：白底 + 粗描边 + 偏移阴影 */
   .memphis-card {
     @apply bg-white border-[3px] border-mem-ink rounded-2xl shadow-memphis;

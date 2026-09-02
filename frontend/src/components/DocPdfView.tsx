@@ -307,7 +307,9 @@ export const DocPdfView: React.FC<DocPdfViewProps> = ({ onNotify, backendOnline 
           emptyHint={t('docPdf.noHits')}
         />
 
-        <div className="p-3 border-t-2 border-mem-ink/15 space-y-3">
+        {/* 底部操作区：shrink-0 保执行/下载按钮恒可达；候选列表 flex-1 伸缩。
+            此前无 shrink 保护，矮窗时按钮被列的 overflow-hidden 裁掉点不到（round-9）。 */}
+        <div className="shrink-0 p-3 border-t-2 border-mem-ink/15 space-y-3 max-lg:min-h-0 max-lg:overflow-y-auto">
           <RedactActionBar
             onExecuteRedact={handleExecuteRedact}
             isProcessing={isProcessing}
