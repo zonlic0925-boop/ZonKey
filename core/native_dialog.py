@@ -28,8 +28,12 @@ def pick_save_path(
                 filetypes = [("ZIP 压缩包", "*.zip"), ("所有文件", "*.*")]
             elif ext in {".docx", ".doc"}:
                 filetypes = [("Word 文档", "*.docx"), ("所有文件", "*.*")]
-            else:
+            elif ext in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".jpe", ".jfif", ".pjp", ".pjpeg"}:
+                filetypes = [("图片", f"*{ext}"), ("所有文件", "*.*")]
+            elif ext == ".pdf":
                 filetypes = [("PDF 文档", "*.pdf"), ("所有文件", "*.*")]
+            else:
+                filetypes = [("所有文件", "*.*")]
         return _pick_save_path_win(default_name, initial_dir, filetypes)
     if sys.platform == "darwin":
         return _pick_save_path_tk(default_name, initial_dir, filetypes)
@@ -148,10 +152,17 @@ def _pick_folder_win(initial_dir: str | None) -> str | None:
 
 def _pick_save_path_win(
     default_name: str,
-    initial_dir: str | None,
-    filetypes: list[tuple[str, str]],
+    initial_dir: str | None = None,
+    filetypes: list[tuple[str, str]] | None = None,
 ) -> str | None:
+    ole32 = ctypes.OleDLL("ole32")
+    user32 = ctypes.WinDLL("user32")
     comdlg32 = ctypes.WinDLL("comdlg32")
+    # Explorer 风格保存对话框依赖 shell COM：uvicorn 工作线程未初始化 COM 时
+    # GetSaveFileNameW 会「静默失败」——不建窗口、不报错、直接返回 NULL
+    # （round-16 实测：壳内裁剪/图片工具的另存对话框从未弹出即此根因，
+    # output/ 里 save-blob 产物齐全而用户拿不到文件）。与 _pick_folder_win 同口径。
+    ole32.CoInitialize(None)
     filter_str = "\0".join(f"{label}\0{pattern}" for label, pattern in filetypes) + "\0\0"
     file_buf = ctypes.create_unicode_buffer(260)
     file_buf.value = default_name
@@ -159,7 +170,11 @@ def _pick_save_path_win(
     ofn = _OPENFILENAMEW()
     ofn.lStructSize = ctypes.sizeof(_OPENFILENAMEW)
     ofn.lpstrFilter = filter_str
-    ofn.lpstrFile = file_buf
+    # lpstrFile 字段声明为 LPWSTR（c_wchar_p），直接赋 c_wchar_Array_260 会
+    # TypeError——即壳内另存对话框「从未弹出」的第一现场（round-16 实测：
+    # 端点 500、前端把异常吞成误导性错误文案）。GetSaveFileNameW 会把用户
+    # 最终选择的路径写回该缓冲区，cast 后同内存读写均可。
+    ofn.lpstrFile = ctypes.cast(file_buf, wintypes.LPWSTR)
     ofn.nMaxFile = 260
     ofn.lpstrTitle = "导出文件另存为"
     ofn.Flags = 0x00000002 | 0x00000800 | 0x00000008 | 0x00080000 | 0x00000004
@@ -173,9 +188,15 @@ def _pick_save_path_win(
         if p.is_dir():
             ofn.lpstrInitialDir = str(p.resolve())
 
-    if not comdlg32.GetSaveFileNameW(ctypes.byref(ofn)):
-        return None
-    return file_buf.value.strip() or None
+    # owner 挂前台主窗口：无 owner 的对话框由后台线程创建，可能不抢前台
+    # （被 pywebview 无边框窗口盖住 = 用户视角「点了下载没反应」）
+    ofn.hwndOwner = user32.GetForegroundWindow()
+    try:
+        if not comdlg32.GetSaveFileNameW(ctypes.byref(ofn)):
+            return None
+        return file_buf.value.strip() or None
+    finally:
+        ole32.CoUninitialize()
 
 
 class _BROWSEINFOW(ctypes.Structure):

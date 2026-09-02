@@ -279,6 +279,28 @@ def _watchdog_loop() -> None:
 
         while True:
             time.sleep(5.0)
+
+            # 窗口「创建了但从未显示」自愈（round-16 实测，间歇性复现）：
+            # 窗体存在、WebView2 进程树完整，但顶层窗口 IsWindowVisible=False
+            # ——用户视角即「双击启动后没有任何窗口」（WebView2 初始化完成
+            # 事件偶发不触发时 pywebview 不执行 Show，竞态根因，自愈兜底）。
+            # 必须放在 evaluate_js 之前：不能让心跳探测的任何阻塞饿死本检查。
+            # Win32 ShowWindow 投递到窗体线程执行，不触 WinForms 跨线程限制；
+            # pythonnet 的 .NET IntPtr 必须 ToInt64()，直接 int() 会 TypeError。
+            if sys.platform == "win32" and time.time() - started_at > 15:
+                try:
+                    import ctypes
+
+                    native = getattr(webview.windows[0], "native", None) if webview.windows else None
+                    handle = getattr(native, "Handle", None)
+                    hwnd = int(handle.ToInt64()) if handle is not None else 0
+                    if hwnd and not ctypes.windll.user32.IsWindowVisible(hwnd):
+                        ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                        ctypes.windll.user32.SetForegroundWindow(hwnd)
+                        _log("[*] 检测到窗口未显示，已强制显示")
+                except Exception:  # noqa: BLE001 — 自愈失败不挡主流程
+                    pass
+
             try:
                 if not (webview.windows and webview.windows[0]):
                     continue

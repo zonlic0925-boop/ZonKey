@@ -15,6 +15,7 @@ export const ImageCropView: React.FC = () => {
   const [canvas, setCanvas] = useState({ width: 0, height: 0 })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<{ type: 'success' | 'info'; msg: string } | null>(null)
 
   const stageRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
@@ -59,11 +60,22 @@ export const ImageCropView: React.FC = () => {
     }
     setBusy(true)
     setError(null)
+    setNotice(null)
     try {
       const output = await cropImage(file.file, r)
-      downloadBlob(output.blob, output.fileName)
+      const result = await downloadBlob(output.blob, output.fileName)
+      // 壳内 save-as 被取消时 downloadBlob 正常返回——必须给用户明确反馈，
+      // 否则「点了下载、什么都没发生」观感等同功能坏死（round-16 用户反馈②）
+      if (result.delivered === 'saved') {
+        setNotice({
+          type: 'success',
+          msg: result.savedPath ? t('export.savedTo', { path: result.savedPath }) : t('imagecenter.cropSavedFallback'),
+        })
+      } else if (result.delivered === 'cancelled') {
+        setNotice({ type: 'info', msg: t('imagecenter.cropSavedFallback') })
+      }
     } catch (err) {
-      setError(t('imagecenter.cropOutOfRange'))
+      setError(err instanceof Error ? err.message : t('imagecenter.cropOutOfRange'))
     } finally {
       setBusy(false)
     }
@@ -217,6 +229,11 @@ export const ImageCropView: React.FC = () => {
       <MemphisButton variant="yellow" onClick={run} disabled={busy || !file}>
         {t('imagecenter.cropNow')}
       </MemphisButton>
+      {notice && (
+        <p className={`text-xs font-bold ${notice.type === 'success' ? 'text-mem-teal' : 'text-mem-ink/70'}`}>
+          {notice.msg}
+        </p>
+      )}
       <ErrorLine message={error} />
     </div>
   )

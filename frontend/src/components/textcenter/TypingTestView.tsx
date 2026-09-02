@@ -303,16 +303,21 @@ export const TypingTestView: React.FC = () => {
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        value={lang === 'en' ? input : ''}
+        // zh 模式必须「非受控」：React 受控 value 会在每次 compositionupdate 时
+        // 重置 DOM，直接掐断微软拼音等 IME 的组合过程（round-16 「打字测试无法
+        // 开始」真根因——合成键盘事件绕过 IME，浏览器自动化测试测不出来）。
+        // 组合期间不碰输入框内容，组合结束（compositionend）才取词、清框。
+        defaultValue=""
         onChange={(e) => {
           if (lang === 'zh') {
-            // 中文 IME：从 composition 累积，输入框即输即清
+            // 仅处理「IME 关闭时的裸输入」；组合中（composing）内容归 IME 管
+            if (stateRef.current.composing) return
             const clean = normalizeTypingValue(e.target.value)
-            if (clean && !stateRef.current.composing) {
+            if (clean) {
               stateRef.current.zhBuffer += clean
               handleInput('')
             }
-            if (clean) e.target.value = ''
+            e.target.value = ''
             return
           }
           handleInput(e.target.value)
@@ -321,8 +326,9 @@ export const TypingTestView: React.FC = () => {
         onCompositionEnd={(e) => {
           stateRef.current.composing = false
           if (lang === 'zh') {
-            const data = normalizeTypingValue(e.data || (e.target as HTMLInputElement).value)
-            ;(e.target as HTMLInputElement).value = ''
+            const el = e.target as HTMLInputElement
+            const data = normalizeTypingValue(e.data || el.value)
+            el.value = ''
             if (data) {
               stateRef.current.zhBuffer += data
               handleInput('')

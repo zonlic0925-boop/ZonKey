@@ -54,7 +54,7 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
 }
 
 /** 桌面壳内：把前端内存产物上传到服务端 output/，随后弹原生另存为对话框 */
-async function saveBlobViaServer(blob: Blob, filename: string): Promise<void> {
+async function saveBlobViaServer(blob: Blob, filename: string): Promise<DeliveryResult> {
   const form = new FormData()
   form.append('file', blob, filename)
   const data = await apiFetch<{ filename: string }>(
@@ -62,19 +62,28 @@ async function saveBlobViaServer(blob: Blob, filename: string): Promise<void> {
     { method: 'POST', body: form },
     300000
   )
-  await saveOutputFileAs(undefined, data.filename)
+  const result = await saveOutputFileAs(undefined, data.filename)
+  return result.cancelled
+    ? { delivered: 'cancelled', keptIn: data.filename }
+    : { delivered: 'saved', savedPath: result.savedPath, keptIn: data.filename }
 }
+
+/** downloadBlob 的交付结果：浏览器直下 / 原生另存成功 / 用户取消（产物仍在 output/） */
+export type DeliveryResult =
+  | { delivered: 'browser-download'; filename: string }
+  | { delivered: 'saved'; savedPath?: string; keptIn?: string }
+  | { delivered: 'cancelled'; keptIn?: string }
 
 /**
  * 前端内存产物的统一下载出口（原 imageKit.downloadBlob 的跨环境升级版）。
  * 桌面壳走服务端中转 + 原生另存为；手机/桌面浏览器直接 a[download]。
  */
-export async function downloadBlob(blob: Blob, filename: string): Promise<void> {
+export async function downloadBlob(blob: Blob, filename: string): Promise<DeliveryResult> {
   if (await isShellModeAsync()) {
-    await saveBlobViaServer(blob, filename)
-    return
+    return saveBlobViaServer(blob, filename)
   }
   triggerBlobDownload(blob, filename)
+  return { delivered: 'browser-download', filename }
 }
 
 /** 浏览器模式下触发服务端产物的下载流（/api/download/{filename}） */
