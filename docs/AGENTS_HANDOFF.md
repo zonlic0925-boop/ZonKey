@@ -1,9 +1,21 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第九轮：用户实测矮窗可达性——DrawingView 底部操作区被裁切 + 同类排查修复 + Header 导航滚轮转横滚，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十轮：PDF 工坊「页面整理」编辑文字白屏卡死——React 事件对象失效 TypeError 整树卸载 + 壳层 WebView2 UDF 撞锁「打不开」，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇、2026-09-02 第九轮（矮窗可达性修复，本轮）
+## 〇、2026-09-02 第十轮（页面整理编辑文字白屏卡死 + 崩溃后打不开，本轮）
+
+- **现象**：用户实测 PDF 工坊「页面整理」：编辑文字就白屏卡死；之后软件无法再打开。智能脱敏功能全部正常。
+- **根因一（白屏卡死，前端）**：`PdfEditorCanvas.tsx` 文字元素 `onBlur={(e) => setElements(els => els.map(... e.currentTarget.innerText ...))}`。React 18 批处理在事件处理器**返回之后**才执行 setElements 的 updater，此时事件对象已被回收（`currentTarget=null`）→ 读它必抛 `TypeError: Cannot read properties of null (reading 'innerText')`，且发生在**渲染器 reducer 阶段** → React 把整棵树卸掉（实测 body.innerHTML 只剩 87 字节）= 白屏卡死，页面永远无法自恢复。Playwright 全栈复现（`temp_ui_test/round10_stack.mjs` 抓到了完整 stack）。
+- **根因二（次要，同组件）**：文字元素 fontSize 用了不存在的 `imageMetrics.scale`（imageLayout 只有 scaleX/scaleY）→ NaN 警告。
+- **根因三（崩溃后打不开，壳层）**：pywebview 6.x 的 WebView2 用户数据目录默认**全局共享** `%APPDATA%/pywebview`（`platforms/winforms.py::init_storage` 实证）。宿主崩溃/强杀后残留的僵尸 `msedgewebview2.exe` 持有该目录 Singleton Lock → 新实例开窗即白屏，且表现为「崩溃后无法重新打开软件」。实测本机当时就有 5 个残留进程。
+- **修复（前端）**：① onBlur 改经 `textRefs` ref 表读节点文本，节点丢失时保底保留原 `el.text`，**绝不抛异常**（事件对象不再进 updater）；② fontSize 改 `(imageMetrics.scaleY || 1)`；③ 新增 `ZsErrorBoundary`（common/，含「重试当前页面」出口），App.tsx 视图层包裹、`resetKey={center:tool}` 切工具自动恢复——任何渲染期异常不再整树卸载白屏；④ `PdfEditorCanvas` 拖动/缩放元素期间给 `<html data-canvas-gesture>`（与 CanvasViewport 同款纵深防御，防拖到标题栏被劫持成移窗口）。
+- **修复（壳层）**：`desktop_app.py` ① WebView2 UDF 改 ZonScale 专属目录（`%APPDATA%/ZonScale/webview_data`，经 `webview.start(storage_path=...)`——**注意 settings 表无此键，写 settings 会 KeyError**）；② 新增 `_cleanup_orphan_webview2()`：启动前用 CIM 查 msedgewebview2 的父子关系，**只杀父进程已死的孤儿**（taskkill /T），绝不碰其他应用/浏览器的 WebView2——本机 PanGPA/WhatsApp 的 WebView2 实测不被误伤。
+- **验证**：Playwright 修复前复现（pageerror 全栈 + 白屏 body 2 子节点）→ 修复后：`round10_diag.mjs` **16/16**（源码断言×12 + 运行时×4）；`round10_pdfcenter_smoke.mjs` **PDF 工坊 24 工具全功能最小冒烟 72/72 全绿、零 pageerror**（页面整理编辑文字闭环/编辑/合并/拆分/提取/旋转/裁剪/页码/转图片/图转PDF/水印/加密/解密/压缩/增强/在线填表/证书签名 + 转换8工具，后端产物真实落 output/：docx/pptx/压缩/修复/OCR txt）；pytest **133 passed**；release_acceptance 全过；npm build 成功。
+- **交付**：EXE `dist_release/ZonScale_Windows_x64_20260902.zip`（12:07）——zip 内 `_internal/dist_web` 43 文件与本地 md5 逐一一致、主 chunk `index-C_aZsxzU.js` 含 ErrorBoundary 文案/scaleY 兜底/ref 保底 blur 压缩特征；PYZ/CArchive 指纹：`desktop_app` code object co_names 含 `_cleanup_orphan_webview2`、`_open_pywebview` 常量含 `storage_path`/`APPDATA`/`ZonScale`/`webview_data`、清理函数常量含 `msedgewebview2.exe`/`ParentProcessId`/powershell。Pages 部署 38c1c3e5（branch=main），主域主 chunk md5 = 本地 = zip（2dcb6d12…）。
+- **接手注意**：① contentEditable/任何 DOM 事件的异步回写**禁止在 setState updater 里读 e.currentTarget**——事件对象生命周期只到处理器返回；用 ref 表 + 保底值；② 全应用任何新视图异常现在会被 ZsErrorBoundary 圈住，白屏只剩 ErrorBoundary 自己抛错这一条（改它时注意别引入异常路径）；③ 壳层「打不开」再报时：先看 `%APPDATA%/ZonScale/webview_data` 锁 + 残留 msedgewebview2（新 _cleanup 已自动清，若 UDF 撞其他 pywebview 应用已不可能）；④ smoke 脚本依赖后端 8765 + vite 5199，跑法见脚本头注释；⑤ 用户 EXE 实测闭环仍待确认（页面整理文字编辑 + 全部 24 工具）。
+
+## 〇-0-1、2026-09-02 第九轮（矮窗可达性修复，上轮）
 
 - **现象**：用户实测图纸脱敏左栏在多命中/矮窗口时底部「执行脱敏」按钮被挤出视口且无滚动通道，点不到。
 - **根因**：`DrawingView.tsx` 底部操作区 `flex-1 + lg:overflow-visible`——不可压缩也不滚动，与候选列表平分高度后溢出被列 `overflow-hidden` 裁切。

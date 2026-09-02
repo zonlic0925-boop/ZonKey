@@ -1,6 +1,21 @@
-# Project Status（项目状态）
+> 更新于：2026-09-02（第十轮：PDF 工坊「页面整理」编辑文字白屏卡死修复 + 壳层 WebView2 UDF 撞锁修复 + 24 工具全功能冒烟，EXE+Pages 已交付）。
 
-> 更新于：2026-09-02（第九轮：用户实测矮窗可达性——底部操作区被裁切修复 + 滚轮横滚，EXE+Pages 已交付）。
+## 2026-09-02 第十轮进度（页面整理白屏卡死 + 崩溃后打不开，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 页面整理编辑文字白屏卡死 | ✅ | 根因：onBlur 的 setElements updater 读 `e.currentTarget.innerText`——React 18 批处理在处理器返回后才跑 updater，事件对象已回收（currentTarget=null）→ 渲染器 reducer 阶段 TypeError → 整棵 React 树卸载（实测 body 只剩 87 字节）＝白屏卡死且无法自恢复。修复：textRefs ref 表读取 + 节点丢失保底原文本；顺带修 fontSize 用不存在的 imageMetrics.scale（NaN）→ scaleY |
+| 全应用白屏防线 | ✅ | 新增 `ZsErrorBoundary`（common/，重试出口），App.tsx 视图层包裹 + resetKey=center:tool 切工具自动恢复——任何渲染期异常不再整树卸载 |
+| 编辑器拖动防窗口劫持 | ✅ | PdfEditorCanvas 拖动/缩放期间标 `<html data-canvas-gesture>`（与 CanvasViewport 同款，Header 拖拽行手势期转 no-drag） |
+| 崩溃后无法重新打开软件 | ✅ | 根因：pywebview WebView2 UDF 默认全局共享 `%APPDATA%/pywebview`（winforms.py::init_storage 实证），宿主崩溃残留僵尸 msedgewebview2 持 Singleton Lock → 新实例白屏。修复：① UDF 改 `%APPDATA%/ZonScale/webview_data`（webview.start(storage_path=...)，settings 表无此键）② 启动前 `_cleanup_orphan_webview2()` 只杀父进程已死的孤儿（CIM 父子关系 + taskkill /T，本机 PanGPA/WhatsApp 的 WebView2 实测不误伤） |
+| PDF 工坊全功能冒烟 | ✅ | `round10_pdfcenter_smoke.mjs` **72/72 全绿、零 pageerror**：页面整理（编辑文字闭环）/编辑/合并/拆分/提取/旋转/裁剪/页码/转图片/图转PDF/水印/加密/解密/压缩/增强/在线填表/证书签名 + 转换 8 工具；后端产物真实落 output/（docx/pptx/压缩/修复/OCR txt） |
+| round10_diag | ✅ | **16/16**（源码断言×12 + 运行时×4：修复前后对照复现——修复前 pageerror 全栈 + 白屏，修复后 blur 存活） |
+| 后端回归 | ✅ | pytest **133 passed**；release_acceptance 全过（词表 9 条通用词零厂商泄漏） |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260902.zip`（12:07）：zip 内 `_internal/dist_web` 43 文件与本地 md5 逐一一致；主 chunk `index-C_aZsxzU.js` 含 ErrorBoundary/scaleY/ref 保底 blur 特征；CArchive desktop_app 指纹：`_cleanup_orphan_webview2`/`storage_path`/`msedgewebview2.exe`/`ParentProcessId` 全命中 |
+| Pages 部署 | ✅ | 38c1c3e5（branch=main）；主域主 chunk md5 = 本地 = zip（2dcb6d12…） |
+| 遗留 | ⏳ | 用户最新 EXE 实测闭环（页面整理文字编辑 + 24 工具）；31 样本回归；round-8 扫描件两样本 |
+
+# Project Status（项目状态）
 
 ## 2026-09-02 第九轮进度（矮窗可达性修复，本轮）
 
