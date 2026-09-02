@@ -32,6 +32,7 @@ import type { ToolMeta } from './lib/navigation';
 import { CheckCircle2, AlertCircle, Info, X, WifiOff, Home } from 'lucide-react';
 import { useBackendStatus } from './lib/api';
 import { useI18n } from './i18n';
+import { isShellMode } from './lib/deliver';
 import { APP_NAME, APP_TAGLINE } from './lib/brand';
 import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components/OfflinePrivacyNotice';
 
@@ -119,6 +120,8 @@ export default function App() {
     }
   };
 
+  const inShell = isShellMode();
+
   return (
     <div className="zs-theme-root relative w-full h-[100dvh] max-w-[100vw] overflow-hidden flex flex-col bg-mem-cream font-body text-mem-ink select-none">
       <MemphisDecor />
@@ -137,13 +140,23 @@ export default function App() {
       <WindowControls />
 
       {online === false && (
-        <div className="relative z-50 px-4 py-2.5 bg-mem-coral border-b-[3px] border-mem-ink flex items-center justify-center gap-2 text-sm font-medium text-white">
-          <WifiOff className="w-4 h-4 shrink-0" />
+        <div
+          className={
+            inShell
+              ? 'relative z-50 px-4 py-2.5 bg-mem-coral border-b-[3px] border-mem-ink flex items-center justify-center gap-2 text-sm font-medium text-white'
+              : 'relative z-50 px-4 py-2.5 bg-mem-teal/15 border-b-[3px] border-mem-ink flex items-center justify-center gap-2 text-sm font-medium text-mem-ink'
+          }
+        >
+          {inShell ? (
+            <WifiOff className="w-4 h-4 shrink-0" />
+          ) : (
+            <Info className="w-4 h-4 shrink-0" />
+          )}
           <span>
             <strong className="font-brand tracking-wider">{APP_NAME}</strong>
-            <span className="font-brand-script text-white/80 text-xs ml-1.5">{APP_TAGLINE}</span>
+            <span className="font-brand-script text-xs ml-1.5 opacity-70">{APP_TAGLINE}</span>
             {' '}
-            {t('app.backendOffline')}
+            {inShell ? t('app.backendOffline') : t('app.browserModeInfo')}
           </span>
         </div>
       )}
