@@ -1,7 +1,31 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十一轮：发布前全面更名 ZonKey + ToolKnit 残留清洗 + 手机端红条改信息条 + 仓库公开化，EXE+Pages 已交付）。
-> 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；工具整合明细见 [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十二轮：发布前全面更名 ZonKey + ToolKnit 残留清洗 + 手机端红条改信息条 + 仓库公开化，EXE+Pages 已交付）。
+> 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
+## 〇、2026-09-02 第十二轮（皇冠新图标 + 帮助入口 + README 架构重写 + Gitee 仓库上线，本轮）
+
+- **任务**：① 设计新皇冠图标（英皇娱乐式饱满三角冠形 + 中央钥匙剪影），全平台落地（EXE/ICO/PNG/icns/PWA）；② Header 新增「帮助」入口（桌面+手机双布局，HelpCircle 图标，跳转 Gitee 仓库）；③ README 重写系统架构图（Mermaid 三端一体图 + 目录树 + 下载链接）；④ Gitee 公开仓库上线 + v1.0.1 Release（含 EXE 分卷附件）。
+- **图标落地**：`frontend/public/zonkey-icon.svg`（64x64 设计稿，金色渐变皇冠 + 中央白色钥匙剪影 + 冠带锁孔，真源设计）；`scripts/generate_zonkey_icon.py` 重写：PIL 同几何栅格化（冠面渐变 mask + 钥匙剪影，<=32px 省略齿条描边），输出 ICO（7 尺寸）、PNG（256px）、icns（macOS 全套 PNG 通道 + is32/il32/s8mk/l8mk 掩码）、PWA 图标（180/192/512）。`packaging/macos/assets/zonkey.icns` 首次生成（32KB），macOS build 可用。
+- **帮助入口**：`Header.tsx` 新增 `HelpCircle`（lucide）按钮，桌面行文字「帮助」+ 手机顶栏纯图标，点击跳转 `PROJECT_REPO_URL`（Gitee）。i18n 三语 `header.help`/`header.helpTitle` 齐。
+- **仓库链接切换**：Gitee 为主仓库（`gitee.com/zonlic/ZonKey`），GitHub 为镜像（`github.com/zonlic0925-boop/ZonKey`）。`brand.ts` 新增 `PROJECT_GITHUB_URL` 常量；`SupportAuthorModal.tsx` 双仓库链接（Gitee 主 + GitHub 镜像）；SupportAuthorModal i18n 新增 `githubMirror`/`linksTitle` 更新。
+- **README 架构重写**：新增 Mermaid 系统架构图（三端一体：桌面壳 -> React 前端 -> FastAPI 桥 -> Python 后端引擎 -> Core 引擎层，含浏览器引擎降级虚线路径）；新增「三层递进理解」表格；新增完整目录树；下载链接改为 Gitee Releases + GitHub 镜像双源。
+- **Gitee 仓库上线**：API 创建公开仓库 `zonlic/ZonKey`（id=50039781），force push master（含 3 笔新提交）。Release v1.0.1（id=1119260）：EXE 分 3 卷（zsplit_aa/ab/ac，每卷 90MB，因 Gitee 附件限制 100MB），Release body 含合并命令。**注意**：分卷用 `split -b 90M` 生成，合并需 `cat` 或 `copy /b`。
+- **验证**：`npm run build` 成功；pytest **133 passed**；`release_acceptance.py` 全过。EXE 重打包 `dist_release/ZonKey_Windows_x64_20260902.zip`（17:27，281MB）：zip 内前端 = 本地 dist_web 完全一致（MD5 逐一比对），皇冠图标（zonkey-icon.svg + 180/192/512.png）已入包。Pages 部署 `5a2cce50`（branch=main），主 chunk `index-B1UosKb3.js` 哈希 = 本地 = zip（`6fd54079a427`）。
+- **接手注意**：① 图标设计真源是 `frontend/public/zonkey-icon.svg`（64x64），修改图标时 SVG 与 `generate_zonkey_icon.py` 的 PIL 几何必须同步更新；② macOS .icns 现已在 `packaging/macos/assets/zonkey.icns`，macOS 打包时 PyInstaller `icon=` 参数可指向它；③ Gitee 附件限制 100MB，后续 EXE 若超此值用分卷法；④ 两认证同一操作（Gitee PAT 需在下次操作前确认是否改密/过期）；⑤ `temp_ui_test/crown_preview_*.png` 为图标目检预览，未跟踪。
+
+## 〇、2026-09-02 第十二轮（皇冠新图标 + 帮助入口 + README 架构重写 + Gitee 仓库上线，本轮）
+
+- **任务**：① 设计新皇冠图标（英皇娱乐式饱满三角冠形 + 中央钥匙剪影），全平台落地（EXE/ICO/PNG/icns/PWA）；② Header 新增「帮助」入口（桌面+手机双布局，HelpCircle 图标，跳转 Gitee 仓库）；③ README 重写系统架构图（Mermaid 三端一体图 + 目录树 + 下载链接）；④ Gitee 公开仓库上线 + v1.0.1 Release（含 EXE 分卷附件）。
+- **图标落地**：（64×64 设计稿，金色渐变皇冠 + 中央白色钥匙剪影 + 冠带锁孔，真源设计）； 重写：PIL 同几何栅格化（冠面渐变 mask + 钥匙剪影，≤32px 省略齿条描边），输出 ICO（7 尺寸）、PNG（256px）、icns（macOS 全套 PNG 通道 + is32/il32/s8mk/l8mk 掩码）、PWA 图标（180/192/512）。 首次生成（32KB），macOS build 可用。
+- **帮助入口**： 新增 （lucide）按钮，桌面行文字「帮助」+ 手机顶栏纯图标，点击跳转 （Gitee）。i18n 三语 / 齐。
+- **仓库链接切换**：Gitee 为主仓库（），GitHub 为镜像（）。 新增  常量； 双仓库链接（Gitee 主 + GitHub 镜像）； i18n 新增 / 更新。
+- **README 架构重写**：新增 Mermaid 系统架构图（三端一体：桌面壳 → React 前端 → FastAPI 桥 → Python 后端引擎 → Core 引擎层，含浏览器引擎降级虚线路径）；新增「三层递进理解」表格；新增完整目录树；下载链接改为 Gitee Releases + GitHub 镜像双源。
+- **Gitee 仓库上线**：API 创建公开仓库 （id=50039781），force push master（含 3 笔新提交）。Release v1.0.1（id=1119260）：EXE 分 3 卷（zsplit_aa/ab/ac，每卷 90MB，因 Gitee 附件限制 100MB），Release body 含合并命令。**注意**：分卷用  生成，合并需  或 。
+- **验证**： 成功；pytest **133 passed**； 全过。EXE 重打包 （17:27，281MB）：zip 内前端 = 本地 dist_web 完全一致（MD5 逐一比对），皇冠图标（zonkey-icon.svg + 180/192/512.png）已入包。Pages 部署 （branch=main），主 chunk  哈希 = 本地 = zip（）。
+- **接手注意**：① 图标设计真源是 （64×64），修改图标时 SVG 与  的 PIL 几何必须同步更新；② macOS .icns 现已在 ，macOS 打包时 PyInstaller  参数可指向它；③ Gitee 附件限制 100MB，后续 EXE 若超此值用分卷法；④ 两认证同一操作（Gitee PAT  需在下次操作前确认是否改密/过期）；⑤  为图标目检预览，未跟踪。
+
+；工具整合明细见 [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
 ## 〇、2026-09-02 第十一轮（发布前全面更名 ZonKey + 公开化收尾，本轮）
 
