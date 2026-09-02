@@ -2,10 +2,10 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-title ZonScale Build
+title ZonKey Build
 
 echo ========================================================
-echo   ZonScale EXE Build
+echo   ZonKey EXE Build
 echo   by zonlic
 echo ========================================================
 echo.
@@ -35,8 +35,8 @@ if not exist "dist_web\index.html" (
     popd
 )
 
-if not exist "packaging\windows\config\ZonScale.spec" (
-    echo ERROR: Spec file not found: packaging\windows\config\ZonScale.spec
+if not exist "packaging\windows\config\ZonKey.spec" (
+    echo ERROR: Spec file not found: packaging\windows\config\ZonKey.spec
     pause
     exit /b 1
 )
@@ -49,8 +49,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Generating ZonScale application icon...
-python scripts\generate_zonscale_icon.py
+echo Generating ZonKey application icon...
+python scripts\generate_zonkey_icon.py
 if errorlevel 1 (
     echo ERROR: icon generation failed.
     pause
@@ -69,12 +69,12 @@ if not exist "build\.pyinstaller-cache" mkdir "build\.pyinstaller-cache"
 set "PYINSTALLER_CONFIG_DIR=%CD%\build\.pyinstaller-cache"
 
 echo.
-echo Cleaning previous dist\ZonScale ...
-if exist "dist\ZonScale" rmdir /s /q "dist\ZonScale"
+echo Cleaning previous dist\ZonKey ...
+if exist "dist\ZonKey" rmdir /s /q "dist\ZonKey"
 
 echo.
 echo Building EXE (about 3-8 minutes)...
-python -m PyInstaller --noconfirm "packaging\windows\config\ZonScale.spec"
+python -m PyInstaller --noconfirm "packaging\windows\config\ZonKey.spec"
 if errorlevel 1 (
     echo ERROR: PyInstaller build failed. See log above.
     pause
@@ -83,17 +83,17 @@ if errorlevel 1 (
 
 echo.
 echo Running release acceptance (generic rules, no vendor terms)...
-python scripts\release_acceptance.py --exe-dir dist\ZonScale
+python scripts\release_acceptance.py --exe-dir dist\ZonKey
 if errorlevel 1 (
     echo ERROR: release acceptance failed.
     pause
     exit /b 1
 )
 
-echo Copying ZonScale icon sidecars (icon embedded by PyInstaller, not rcedit)...
+echo Copying ZonKey icon sidecars (icon embedded by PyInstaller, not rcedit)...
 python scripts\apply_exe_icon.py
 if errorlevel 1 (
-    echo ERROR: EXE icon missing — ensure zonscale.ico exists and rebuild with PyInstaller.
+    echo ERROR: EXE icon missing — ensure zonkey.ico exists and rebuild with PyInstaller.
     pause
     exit /b 1
 )
@@ -109,9 +109,9 @@ if errorlevel 1 (
 
 echo.
 echo DONE.
-echo Output folder: %CD%\dist\ZonScale\
-echo Run EXE:       dist\ZonScale\ZonScale.exe
-echo Release ZIP:   dist_release\ZonScale_Windows_x64_*.zip
+echo Output folder: %CD%\dist\ZonKey\
+echo Run EXE:       dist\ZonKey\ZonKey.exe
+echo Release ZIP:   dist_release\ZonKey_Windows_x64_*.zip
 echo.
 pause
 endlocal

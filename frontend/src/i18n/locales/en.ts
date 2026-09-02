@@ -2,7 +2,7 @@ import type { MessageTree } from '../types';
 
 export const en: MessageTree = {
   meta: {
-    pageTitle: 'ZonScale | Daily Toolbox · Offline · by zonlic',
+    pageTitle: 'ZonKey | Daily Toolbox · Offline · by zonlic',
   },
   brand: {
     workbenchBadge: 'Daily Toolbox',
@@ -118,8 +118,8 @@ export const en: MessageTree = {
   },
   placeholder: {
     badge: 'In migration',
-    body: 'ToolKnit tools are being integrated into the unified ZonScale workbench phase by phase. This center hosts {count} tools, opening in upcoming releases. The Smart Redact center is fully available today.',
-    privacy: 'Every tool follows the ZonScale principle: processed locally and offline — your data never leaves your computer.',
+    body: 'The tools in this center are being integrated into the unified workbench phase by phase: {count} tools in total, opening in upcoming releases. The Smart Redact center is fully available today.',
+    privacy: 'Every tool follows the ZonKey principle: processed locally and offline — your data never leaves your computer.',
   },
   calcdev: {
     copy: 'Copy',
@@ -436,7 +436,7 @@ export const en: MessageTree = {
     toImageDone: 'Generated {count} slide images (ZIP)',
     outlineHint: 'Generate a structured outline offline from a topic (local template-driven, no network, no upload). Edit freely before download.',
     outlineTopic: 'Presentation topic',
-    outlineTopicPh: 'e.g. Introducing the ZonScale redaction workbench',
+    outlineTopicPh: 'e.g. Introducing the ZonKey redaction workbench',
     outlineDeckType: 'Deck type',
     outlineSlideCount: 'Target slides',
     outlineGenerate: 'Generate outline',
@@ -535,7 +535,7 @@ export const en: MessageTree = {
     },
   },
   homeNav: {
-    title: 'Welcome to ZonScale',
+    title: 'Welcome to ZonKey',
     subtitle: '{count} local offline tools · Pick a category to get started',
     myFavorites: 'My favorites',
     toolCount: '{ready} / {total} tools',
@@ -628,7 +628,9 @@ export const en: MessageTree = {
   },
   app: {
     backendOffline:
-      'Backend not running — launch **启动现代化脱敏工作台.bat** or **ZonScale.exe**, then refresh (http://127.0.0.1:8765)',
+      'Backend not running — launch **启动现代化脱敏工作台.bat** or **ZonKey.exe**, then refresh (http://127.0.0.1:8765)',
+    browserModeInfo:
+      'Web edition: files are processed entirely in your browser — nothing is uploaded. Tools that need the local engine require the desktop app.',
   },
   editor: {
     document: 'Document Info',
@@ -679,8 +681,8 @@ export const en: MessageTree = {
     thanks: 'Thanks to everyone who helps {appName} get better ✨',
     linksTitle: 'My GitHub & project page',
     githubProfile: 'Author GitHub profile',
-    projectRepo: 'ZonScale project repository',
-    starHint: 'If ZonScale helped you, a Star ⭐ on the project repo would mean a lot — totally optional!',
+    projectRepo: 'ZonKey project repository',
+    starHint: 'If ZonKey helped you, a Star ⭐ on the project repo would mean a lot — totally optional!',
   },
   drawing: {
     defaultText: 'Sensitive item',
@@ -909,7 +911,7 @@ export const en: MessageTree = {
   },
   privacy: {
     title: 'Privacy & Network Notice',
-    intro: 'ZonScale is a local offline redaction workbench: redaction, conversion and rendering all happen on your computer. Your files are never uploaded to any cloud.',
+    intro: 'ZonKey is a local offline redaction workbench: redaction, conversion and rendering all happen on your computer. Your files are never uploaded to any cloud.',
     currentMode: 'Current mode',
     modeDesktopTitle: 'Desktop app (offline)',
     modeDesktopBody: 'Runs fully offline. Files and rules stay on this computer only — no server is contacted.',

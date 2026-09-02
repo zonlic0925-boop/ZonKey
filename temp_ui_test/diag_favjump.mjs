@@ -11,14 +11,14 @@ await page.waitForTimeout(900);
 const favBtn = page.locator('button[aria-label="收藏此工具"]').first();
 await favBtn.click();
 await page.waitForTimeout(300);
-await page.locator('button[title="欢迎来到 ZonScale"]').first().click();
+await page.locator('button[title="欢迎来到 ZonKey"]').first().click();
 await page.waitForTimeout(800);
 const chip = page.locator('button:has-text("页面整理")').first();
 console.log('chip visible:', await chip.isVisible());
 await chip.click();
 await page.waitForTimeout(1200);
 console.log('url hash:', page.url());
-const welcome = await page.locator('text=欢迎来到 ZonScale').first().isVisible().catch(() => false);
+const welcome = await page.locator('text=欢迎来到 ZonKey').first().isVisible().catch(() => false);
 console.log('still on home?', welcome);
 const subnav = await page.evaluate(() => {
   const pills = [...document.querySelectorAll('.zs-mobile-scroll-x')];

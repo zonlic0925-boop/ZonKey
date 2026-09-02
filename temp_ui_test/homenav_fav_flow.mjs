@@ -1,7 +1,7 @@
 /* 首页导航 + 收藏闭环 + 视图切换 实机验证（桌面 1440×900 与手机 390×844） */
 import { chromium } from 'playwright';
 import fs from 'fs';
-const SHOTS = 'C:/Users/Zonlic/Desktop/ZonScale/temp_ui_test/shots_homenav';
+const SHOTS = 'C:/Users/Zonlic/Desktop/ZonKey/temp_ui_test/shots_homenav';
 fs.mkdirSync(SHOTS, { recursive: true });
 const URL = 'http://localhost:5199/';
 const browser = await chromium.launch();
@@ -19,7 +19,7 @@ async function runCase(name, viewport, isMobile) {
   await page.waitForTimeout(600);
 
   // 1) 落地页 = 首页导航（欢迎语 + 分类卡）
-  const welcomeVisible = await page.locator('text=欢迎来到 ZonScale').first().isVisible().catch(() => false);
+  const welcomeVisible = await page.locator('text=欢迎来到 ZonKey').first().isVisible().catch(() => false);
   results.push([`${name}:home-landing`, welcomeVisible]);
   await page.screenshot({ path: `${SHOTS}/${name}_01_home.png` });
 
@@ -44,7 +44,7 @@ async function runCase(name, viewport, isMobile) {
   if (await favBtn.isVisible().catch(() => false)) await favBtn.click();
   await page.waitForTimeout(400);
   // 底部导航「首页」或 SubNav 回首页按钮
-  const homeBtn = page.locator(`button[title="欢迎来到 ZonScale"]`).first();
+  const homeBtn = page.locator(`button[title="欢迎来到 ZonKey"]`).first();
   if (await homeBtn.isVisible().catch(() => false)) await homeBtn.click();
   else await page.locator('button:has-text("首页")').last().click();
   await page.waitForTimeout(700);
@@ -59,7 +59,7 @@ async function runCase(name, viewport, isMobile) {
   if (favChip) {
     await page.locator(`button:has-text("${favTargetName}")`).first().click();
     await page.waitForTimeout(900);
-    const leftHome = !(await page.locator('text=欢迎来到 ZonScale').first().isVisible().catch(() => false));
+    const leftHome = !(await page.locator('text=欢迎来到 ZonKey').first().isVisible().catch(() => false));
     results.push([`${name}:fav-jump`, leftHome]);
     await page.screenshot({ path: `${SHOTS}/${name}_04_after_favjump.png` });
   }

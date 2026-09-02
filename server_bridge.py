@@ -1,4 +1,4 @@
-"""ZonScale 图纸脱敏系统 - FastAPI Native Bridge
+"""ZonKey 图纸脱敏系统 - FastAPI Native Bridge
 提供全功能 5 大模块 RESTful API 服务 (PDF图纸、通用公文、Word文档、规则管理、审计追踪)
 """
 

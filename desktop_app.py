@@ -1,4 +1,4 @@
-"""ZonScale 脱敏工作台 — 桌面入口（Windows / macOS · PyInstaller / 开发模式通用）。"""
+"""ZonKey 脱敏工作台 — 桌面入口（Windows / macOS · PyInstaller / 开发模式通用）。"""
 
 from __future__ import annotations
 
@@ -180,10 +180,10 @@ def _open_pywebview(title: str) -> None:
     # WebView2 用户数据目录（round-10）：pywebview 默认把所有应用共用
     # %APPDATA%/pywebview 作 UDF，宿主崩溃后残留的 msedgewebview2 持有该
     # 目录的 Singleton Lock——新实例撞锁开窗即白屏，且与其他 pywebview
-    # 应用互相干扰。改用 ZonScale 专属目录（webview.start 的 storage_path，
+    # 应用互相干扰。改用 ZonKey 专属目录（webview.start 的 storage_path，
     # 注意 settings 表里没有这个键），配合 _cleanup_orphan_webview2 启动清理。
     storage_path = str(
-        Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonScale' / 'webview_data'
+        Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonKey' / 'webview_data'
     )
 
     # 无边框窗口：去掉系统标题栏，由前端自绘窗口控制；拖拽/缩放/Snap

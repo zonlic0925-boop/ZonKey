@@ -4,7 +4,7 @@ import JSZip from 'jszip'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { TabsRow } from '../calcdev/kit'
-import { parsePdfPageRanges, splitPdfByRanges, splitPdfPages, type PdfSourceDocument } from '../../lib/toolknit/pdfCore'
+import { parsePdfPageRanges, splitPdfByRanges, splitPdfPages, type PdfSourceDocument } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, downloadFilesZip, PdfFilePicker, type PickedFile } from './pdfKit'
 import { ErrorLine } from '../calcdev/kit'
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Pilcrow } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { executeTextFormat, type TextFormatAction } from '../../lib/toolknit/textFormatCore'
+import { executeTextFormat, type TextFormatAction } from '../../lib/zonkey/textFormatCore'
 import { AreaInput, CopyButton, ErrorLine } from '../calcdev/kit'
 
 const ACTIONS: { id: TextFormatAction; labelKey: string }[] = [

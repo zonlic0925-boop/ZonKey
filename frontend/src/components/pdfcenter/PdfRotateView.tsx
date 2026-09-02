@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { RotateCw } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { createPdfRotateFileName, rotatePdfPages } from '../../lib/toolknit/pdfCore'
+import { createPdfRotateFileName, rotatePdfPages } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 

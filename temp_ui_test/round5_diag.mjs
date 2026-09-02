@@ -111,7 +111,7 @@ ok('Q3 纹理预览块 background-image 非 none', imagedPreviews === 4, JSON.st
 await page.locator('[role="dialog"] button:has-text("网格纸")').first().click();
 await page.waitForTimeout(300);
 const rGrid = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-texture'),
+  saved: localStorage.getItem('zonkey-texture'),
   layer: Boolean(document.querySelector('.zs-texture-grid')),
 }));
 ok('Q3 切 grid → 层渲染', rGrid.saved === 'grid' && rGrid.layer, JSON.stringify(rGrid));
@@ -119,7 +119,7 @@ ok('Q3 切 grid → 层渲染', rGrid.saved === 'grid' && rGrid.layer, JSON.stri
 await page.locator('[role="dialog"] button:has-text("流动")').first().click();
 await page.waitForTimeout(300);
 const rFluid = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-texture'),
+  saved: localStorage.getItem('zonkey-texture'),
   blobs: document.querySelectorAll('.zs-fluid-blob').length,
   anim: (() => {
     const el = document.querySelector('.zs-fluid-a');

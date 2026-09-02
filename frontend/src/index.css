@@ -360,7 +360,7 @@
            bg-white border-[3px] border-mem-ink shadow-memphis-lg;
   }
 
-  /* ZonScale 品牌字标 */
+  /* ZonKey 品牌字标 */
   .brand-wordmark {
     @apply font-brand uppercase tracking-[0.14em];
     background: linear-gradient(120deg, #1a1a2e 0%, #0f766e 42%, #ff6b6b 100%);

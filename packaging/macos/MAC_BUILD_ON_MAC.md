@@ -1,4 +1,4 @@
-# ZonScale — 在 Mac 上封装 .app（构建包说明）
+# ZonKey — 在 Mac 上封装 .app（构建包说明）
 
 > 本文件随 **Mac 构建包** 一起分发。在 Mac 上解压后，按下列步骤操作即可。
 
@@ -14,9 +14,9 @@
 ## 二、解压后目录应包含
 
 ```
-ZonScale-mac-build-kit/
+ZonKey-mac-build-kit/
 ├── MAC_BUILD_ON_MAC.md      ← 本说明（根目录副本）
-├── build_zonscale_mac.sh    ← 一键构建入口
+├── build_zonkey_mac.sh    ← 一键构建入口
 ├── requirements.txt
 ├── desktop_app.py
 ├── server_bridge.py
@@ -35,7 +35,7 @@ ZonScale-mac-build-kit/
 
 ```bash
 # 1. 进入解压后的目录
-cd ~/Downloads/ZonScale-mac-build-kit    # 按实际路径修改
+cd ~/Downloads/ZonKey-mac-build-kit    # 按实际路径修改
 
 # 2. 创建虚拟环境（推荐）
 python3.11 -m venv .venv
@@ -46,8 +46,8 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 
 # 4. 一键构建 .app + ZIP
-chmod +x build_zonscale_mac.sh
-./build_zonscale_mac.sh
+chmod +x build_zonkey_mac.sh
+./build_zonkey_mac.sh
 ```
 
 构建约 **5～15 分钟**（取决于 Mac 性能）。
@@ -56,15 +56,15 @@ chmod +x build_zonscale_mac.sh
 
 | 路径 | 说明 |
 |---|---|
-| `dist/ZonScale.app` | 双击运行 |
-| `dist_release/ZonScale_macOS_<arch>_<日期>.zip` | 可分发给其他 Mac 用户 |
+| `dist/ZonKey.app` | 双击运行 |
+| `dist_release/ZonKey_macOS_<arch>_<日期>.zip` | 可分发给其他 Mac 用户 |
 | `dist_release/*.dmg` | 若 `hdiutil` 成功则额外生成 |
 
-用户数据目录：`~/Library/Application Support/ZonScale/`
+用户数据目录：`~/Library/Application Support/ZonKey/`
 
 ## 五、首次打开（给其他用户）
 
-右键 **ZonScale.app → 打开 → 打开**（未 Apple 公证时系统会拦截）
+右键 **ZonKey.app → 打开 → 打开**（未 Apple 公证时系统会拦截）
 
 ## 六、故障排查
 
@@ -73,15 +73,15 @@ chmod +x build_zonscale_mac.sh
 ```bash
 pip install -r requirements.txt
 pip install pyinstaller pyobjc-core pyobjc-framework-Cocoa pyobjc-framework-WebKit
-./build_zonscale_mac.sh
+./build_zonkey_mac.sh
 ```
 
 **双击 .app 无窗口**
 
 ```bash
-dist/ZonScale.app/Contents/MacOS/ZonScale
+dist/ZonKey.app/Contents/MacOS/ZonKey
 # 或浏览器打开 http://127.0.0.1:8765
-cat ~/Library/Application\ Support/ZonScale/startup_error.log
+cat ~/Library/Application\ Support/ZonKey/startup_error.log
 ```
 
 **缺少 dist_web**
@@ -89,7 +89,7 @@ cat ~/Library/Application\ Support/ZonScale/startup_error.log
 ```bash
 # 仅当包内没有 dist_web/index.html 时需要 Node.js 18+
 cd frontend && npm ci && npm run build && cd ..
-./build_zonscale_mac.sh
+./build_zonkey_mac.sh
 ```
 
 ## 七、可选：重新编译前端
@@ -101,9 +101,9 @@ cd frontend
 npm ci
 npm run build
 cd ..
-./build_zonscale_mac.sh
+./build_zonkey_mac.sh
 ```
 
 ---
 
-by zonlic · ZonScale
+by zonlic · ZonKey

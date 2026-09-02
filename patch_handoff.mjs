@@ -1,5 +1,5 @@
 import fs from 'fs';
-const file = 'C:/Users/Zonlic/Desktop/ZonScale/docs/AGENTS_HANDOFF.md';
+const file = 'C:/Users/Zonlic/Desktop/ZonKey/docs/AGENTS_HANDOFF.md';
 let t = fs.readFileSync(file, 'utf-8');
 t = t.replace(
   "→ P3（编辑/表单/签名）→ P4 收尾",
@@ -7,7 +7,7 @@ t = t.replace(
 );
 fs.writeFileSync(file, t);
 
-const statusFile = 'C:/Users/Zonlic/Desktop/ZonScale/docs/PROJECT_STATUS.md';
+const statusFile = 'C:/Users/Zonlic/Desktop/ZonKey/docs/PROJECT_STATUS.md';
 let s = fs.readFileSync(statusFile, 'utf-8');
 s = s.replace(
   "## 2026-08-30 进度",

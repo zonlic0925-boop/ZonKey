@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { HeartPulse } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { calculateBmi, calculateBmr, calculateBodyFat } from '../../lib/toolknit/calcCore'
+import { calculateBmi, calculateBmr, calculateBodyFat } from '../../lib/zonkey/calcCore'
 import { ErrorLine, Field, NumInput, ResultTile } from './kit'
 
 export const BmiCalcView: React.FC = () => {

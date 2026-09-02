@@ -1,5 +1,5 @@
 /**
- * Markdown 编辑器核心 — 移植自 ToolKnit markdown-editor-core.js。
+ * Markdown 编辑器核心 — 词法解析 + 实时渲染 + 大纲导航。
  * 当前版本：markdown-it (GFM 风格) + 任务列表 + 工具栏动作 + 大纲提取 + 独立 HTML 导出。
  * 数学公式 (KaTeX) 与 Mermaid 图表留待后续版本接入。
  */
@@ -8,9 +8,9 @@ import taskLists from 'markdown-it-task-lists';
 
 type MarkdownItInstance = InstanceType<typeof MarkdownIt>;
 
-export const MARKDOWN_DRAFT_KEY = 'zonscale.markdown.draft.v1';
+export const MARKDOWN_DRAFT_KEY = 'zonkey.markdown.draft.v1';
 
-export const DEFAULT_MARKDOWN = `# ZonScale Markdown 文档
+export const DEFAULT_MARKDOWN = `# ZonKey Markdown 文档
 
 > 一份留在本机、可以随时继续编辑的文档。
 
@@ -128,7 +128,7 @@ export function applyMarkdownAction(text: string, start: number, end: number, ac
   return { text: next, start: selectionStart, end: selectionStart + body.length };
 }
 
-export function sanitizeExportBaseName(value: string, fallback = 'zonscale-document'): string {
+export function sanitizeExportBaseName(value: string, fallback = 'zonkey-document'): string {
   const name = String(value || fallback)
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
     .replace(/[. ]+$/g, '')
@@ -138,7 +138,7 @@ export function sanitizeExportBaseName(value: string, fallback = 'zonscale-docum
 }
 
 export function buildStandaloneMarkdownHtml({ title, renderedHtml }: { title: string; renderedHtml: string }): string {
-  const safeTitle = String(title || 'ZonScale Markdown').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] as string);
+  const safeTitle = String(title || 'ZonKey Markdown').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] as string);
   return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${safeTitle}</title><style>

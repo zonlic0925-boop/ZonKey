@@ -6,7 +6,7 @@ import {
   convertImage,
   type CompressionQuality,
   type TargetFormat,
-} from '../../lib/toolknit/imageCore'
+} from '../../lib/zonkey/imageCore'
 import { downloadBlob, ImagePicker, SaveRow, type PickedImage } from './imageKit'
 import { ErrorLine } from '../calcdev/kit'
 

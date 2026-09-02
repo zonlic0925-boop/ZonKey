@@ -7,7 +7,7 @@ import {
   detectBpm,
   extractAudioFromVideo,
   type BpmResult,
-} from '../../lib/toolknit/mediaCore'
+} from '../../lib/zonkey/mediaCore'
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine, Field, inputClass, ResultTile } from '../calcdev/kit'
 

@@ -1,4 +1,4 @@
-## ZonScale v1.0.1
+## ZonKey v1.0.1
 
 **工程图纸与文档 · 本地离线智能脱敏工作台** · by zonlic
 
@@ -10,9 +10,9 @@
 
 ### 安装（Windows）
 
-1. 下载 **ZonScale_Windows_x64_1.0.1.zip**
+1. 下载 **ZonKey_Windows_x64_1.0.1.zip**
 2. 解压到任意目录
-3. 双击 `ZonScale.exe` 或 `启动现代化脱敏工作台.bat`
+3. 双击 `ZonKey.exe` 或 `启动现代化脱敏工作台.bat`
 4. 内嵌窗口 / 浏览器访问 `http://127.0.0.1:8765`
 
 ### 系统要求

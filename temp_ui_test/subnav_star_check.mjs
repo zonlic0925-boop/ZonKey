@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 await ctx.addInitScript(() => {
-  localStorage.setItem('zonscale.privacyNotice.ack.v1', '1');
+  localStorage.setItem('zonkey.privacyNotice.ack.v1', '1');
   Object.defineProperty(window, 'pywebview', {
     value: { api: { minimize: async () => {}, toggle_maximize: async () => {}, restore: async () => {}, is_maximized: async () => false, close: async () => {} } },
     configurable: true,
@@ -29,10 +29,10 @@ if (starVisible) {
   await star.click();
   await page.waitForTimeout(400);
   // localStorage 已写入
-  const favs = await page.evaluate(() => JSON.parse(localStorage.getItem('zonscale.favoriteTools.v1') || '[]'));
+  const favs = await page.evaluate(() => JSON.parse(localStorage.getItem('zonkey.favoriteTools.v1') || '[]'));
   console.log('favorites after toggle:', favs);
   // 回首页看 chip
-  await page.locator('button[title="欢迎来到 ZonScale"]').first().click();
+  await page.locator('button[title="欢迎来到 ZonKey"]').first().click();
   await page.waitForTimeout(700);
   const chipVisible = await page.locator('button:has-text("规则策略中心")').first().isVisible().catch(() => false);
   console.log('home shows chip 规则策略中心:', chipVisible);

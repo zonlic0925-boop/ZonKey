@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 await ctx.addInitScript(() => {
-  localStorage.setItem('zonscale.privacyNotice.v1', 'ack');
+  localStorage.setItem('zonkey.privacyNotice.v1', 'ack');
   Object.defineProperty(window, 'pywebview', {
     value: { api: { minimize: async () => {}, toggle_maximize: async () => {}, restore: async () => {}, is_maximized: async () => false, close: async () => {} } },
     configurable: true,
@@ -31,9 +31,9 @@ console.log('star visible in subnav:', starVisible);
 if (starVisible) {
   await star.click(); // 星标在 drag 条覆盖范围之外（SubNav 行 ~91px+）
   await page.waitForTimeout(400);
-  const favs = await page.evaluate(() => JSON.parse(localStorage.getItem('zonscale.favoriteTools.v1') || '[]'));
+  const favs = await page.evaluate(() => JSON.parse(localStorage.getItem('zonkey.favoriteTools.v1') || '[]'));
   console.log('favorites after toggle:', favs);
-  const homeBtn = page.locator('button[title="欢迎来到 ZonScale"]').first();
+  const homeBtn = page.locator('button[title="欢迎来到 ZonKey"]').first();
   await homeBtn.dispatchEvent('click'); // 回首页按钮也在 header 区
   await page.waitForTimeout(700);
   const chipVisible = await page.locator('main button:has-text("规则策略中心")').first().isVisible().catch(() => false);

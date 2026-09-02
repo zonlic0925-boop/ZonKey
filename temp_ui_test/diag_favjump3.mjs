@@ -10,7 +10,7 @@ await page.locator('button:has-text("PDF 工坊")').first().click();
 await page.waitForTimeout(900);
 await page.locator('button[aria-label="收藏此工具"]').first().click();
 await page.waitForTimeout(300);
-await page.locator('button[title="欢迎来到 ZonScale"]').first().click();
+await page.locator('button[title="欢迎来到 ZonKey"]').first().click();
 await page.waitForTimeout(800);
 // 首页上「页面整理」chip 与「页面整理」pill 同名：first() 可能点中隐藏/别的元素
 const chips = page.locator('button:has-text("页面整理")');

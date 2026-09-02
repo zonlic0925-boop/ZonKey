@@ -1,5 +1,5 @@
 import fs from 'fs';
-const f = 'C:/Users/Zonlic/Desktop/ZonScale/backend_p3_tools.py';
+const f = 'C:/Users/Zonlic/Desktop/ZonKey/backend_p3_tools.py';
 let code = fs.readFileSync(f, 'utf-8');
 code += `
 import os

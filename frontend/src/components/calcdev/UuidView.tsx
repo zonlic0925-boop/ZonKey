@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Fingerprint } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { generateUuidV4 } from '../../lib/toolknit/developerCore'
+import { generateUuidV4 } from '../../lib/zonkey/developerCore'
 import { CopyButton, Field, NumInput } from './kit'
 
 export const UuidView: React.FC = () => {

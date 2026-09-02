@@ -6,7 +6,7 @@ import {
   describeDeveloperToolError,
   decodeUrlComponent,
   encodeUrlComponent,
-} from '../../lib/toolknit/developerCore'
+} from '../../lib/zonkey/developerCore'
 import { AreaInput, CopyButton, ErrorLine } from './kit'
 
 function encodeFull(value: string): string {
@@ -49,7 +49,7 @@ export const UrlCodecView: React.FC = () => {
         <h3 className="font-display font-black text-mem-ink">{t('tools.urlCodec')}</h3>
       </div>
 
-      <AreaInput value={input} onChange={setInput} rows={4} placeholder="https://example.com/search?q=ZonScale 脱敏" />
+      <AreaInput value={input} onChange={setInput} rows={4} placeholder="https://example.com/search?q=ZonKey 脱敏" />
 
       <div className="flex gap-2 flex-wrap">
         <MemphisButton variant="pink" onClick={() => run('encodeComponent')}>

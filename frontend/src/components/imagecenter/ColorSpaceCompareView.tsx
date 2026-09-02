@@ -16,13 +16,13 @@ import {
   oklabInAdobeRgb,
   oklabInRec2020,
   type SpaceId,
-} from '../../lib/toolknit/colorSpaceCore'
+} from '../../lib/zonkey/colorSpaceCore'
 
 const SPACE_ORDER: SpaceId[] = ['oklch', 'oklab', 'lab', 'lch', 'rgb', 'hsl', 'hsv', 'cmyk']
 
 const DEFAULT_OKLCH = { L: 0.64, C: 0.16, H: 30 }
 
-/** 色域对比：八种颜色空间实时联动 + 色域检查（移植自 ToolKnit color-space-compare） */
+/** 色域对比：八种颜色空间实时联动 + 色域检查 */
 export const ColorSpaceCompareView: React.FC = () => {
   const { t } = useI18n()
   const [space, setSpace] = useState<SpaceId>('oklch')

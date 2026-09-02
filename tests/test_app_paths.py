@@ -22,21 +22,21 @@ def test_frozen_macos_uses_application_support(monkeypatch: pytest.MonkeyPatch, 
     monkeypatch.setattr(
         sys,
         "executable",
-        "/Applications/ZonScale.app/Contents/MacOS/ZonScale",
+        "/Applications/ZonKey.app/Contents/MacOS/ZonKey",
     )
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(app_paths.Path, "home", staticmethod(lambda: fake_home))
 
     root = app_paths.get_app_root()
-    assert root == fake_home / "Library" / "Application Support" / "ZonScale"
+    assert root == fake_home / "Library" / "Application Support" / "ZonKey"
     assert root.is_dir()
 
 
 def test_frozen_windows_uses_exe_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "platform", "win32")
-    exe = tmp_path / "ZonScale.exe"
+    exe = tmp_path / "ZonKey.exe"
     exe.write_text("", encoding="utf-8")
     monkeypatch.setattr(sys, "executable", str(exe))
 

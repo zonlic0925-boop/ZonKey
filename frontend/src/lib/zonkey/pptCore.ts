@@ -1,7 +1,6 @@
 /**
- * PPT 工坊核心 — 校验层语义对齐 ToolKnit ppt-image-extract-core.js 等核心；
- * 基于 JSZip 实现：媒体提取、按幻灯片文本提取（a:t 文本流 + 备注）、瘦身重压缩。
- * PPT 转 PDF/长图（渲染引擎）与 AI 大纲/草稿属后续批次。
+ * PPT 工坊核心 — 基于 JSZip 实现：媒体提取、按幻灯片文本提取（a:t 文本流 + 备注）、瘦身重压缩。
+ * PPT 转 PDF/长图（渲染引擎）与大纲/草稿属后续批次。
  */
 import JSZip from 'jszip';
 

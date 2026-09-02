@@ -10,8 +10,8 @@ import {
   parsePptOutlineMarkdown,
   type PptOutline,
   type PptOutlineDeckType,
-} from '../../lib/toolknit/pptOutlineCore'
-import { buildPptDraftPptx, PPT_DRAFT_THEMES } from '../../lib/toolknit/pptDraftCore'
+} from '../../lib/zonkey/pptOutlineCore'
+import { buildPptDraftPptx, PPT_DRAFT_THEMES } from '../../lib/zonkey/pptDraftCore'
 import { downloadBytes } from '../pdfcenter/pdfKit'
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine } from '../calcdev/kit'

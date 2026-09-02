@@ -7,7 +7,7 @@ import {
   calculateMortgage,
   type MortgageMethod,
   type MortgageScheduleRow,
-} from '../../lib/toolknit/calcCore'
+} from '../../lib/zonkey/calcCore'
 import { ErrorLine, Field, NumInput, ResultTile, TabsRow } from './kit'
 
 export const MortgageCalcView: React.FC = () => {

@@ -1,4 +1,4 @@
-"""ZonScale launcher: free port 8765 if occupied, then start uvicorn + open browser."""
+"""ZonKey launcher: free port 8765 if occupied, then start uvicorn + open browser."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def free_port(port: int) -> None:
 def main() -> None:
     global HOST
 
-    parser = argparse.ArgumentParser(description="ZonScale launcher")
+    parser = argparse.ArgumentParser(description="ZonKey launcher")
     parser.add_argument(
         "--lan",
         action="store_true",

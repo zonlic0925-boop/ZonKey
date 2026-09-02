@@ -15,7 +15,7 @@ import {
   type CipherPadding,
   type KeyFormat,
   type OutputFormat,
-} from '../../lib/toolknit/cryptoCore'
+} from '../../lib/zonkey/cryptoCore'
 import { AreaInput, CopyButton, ErrorLine, Field, TabsRow, inputClass } from './kit'
 
 type Section = 'hash' | 'hmac' | 'cipher' | 'rsa'

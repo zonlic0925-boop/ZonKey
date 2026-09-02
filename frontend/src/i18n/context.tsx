@@ -5,7 +5,7 @@ import { zhCN } from './locales/zh-CN';
 import { zhTW } from './locales/zh-TW';
 import type { Locale, MessageTree } from './types';
 
-const STORAGE_KEY = 'zonscale-locale';
+const STORAGE_KEY = 'zonkey-locale';
 
 const MESSAGES: Record<Locale, MessageTree> = {
   'zh-CN': zhCN,

@@ -48,7 +48,7 @@ pp = os.path.join(HERE, "sample.pptx")
 prs = Presentation()
 layout = prs.slide_layouts[0]
 s1 = prs.slides.add_slide(layout)
-s1.shapes.title.text = "ZonScale PPT Test"
+s1.shapes.title.text = "ZonKey PPT Test"
 s1.placeholders[1].text = "Automated UI test deck"
 layout2 = prs.slide_layouts[1]
 for i in range(2, 4):

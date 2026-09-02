@@ -1,5 +1,5 @@
 /**
- * 色彩空间对比核心算法 —— 移植自 ToolKnit 2.1.1 color-space-compare-core.js。
+ * 色彩空间对比核心算法 —— sRGB / Display-P3 / AdobeRGB 三维色彩转换。
  * XYZ 为相对值（参考白 Y=1），RGB 通道为 0..255 编码 sRGB。
  *
  * 兼容性说明：CIELAB/CIELCH 直接对 D65 白点计算（保留源页行为，

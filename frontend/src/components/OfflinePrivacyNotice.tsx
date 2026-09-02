@@ -10,7 +10,7 @@ import { useI18n } from '../i18n'
  * - 手机/浏览器 · 公网隧道模式：经加密隧道连回电脑，传输加密、云端不存储，处理仍在本机。
  * 用户确认后写入 localStorage，之后可在页眉盾牌图标重新查看。
  */
-export const PRIVACY_NOTICE_KEY = 'zonscale.privacyNotice.v1'
+export const PRIVACY_NOTICE_KEY = 'zonkey.privacyNotice.v1'
 
 export function hasAcknowledgedPrivacyNotice(): boolean {
   try {

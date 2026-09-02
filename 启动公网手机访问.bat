@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title ZonScale Public Web Mode
+title ZonKey Public Web Mode
 
 echo ========================================================
-echo   ZonScale - Public Web Mode (Cloudflare Tunnel)
+echo   ZonKey - Public Web Mode (Cloudflare Tunnel)
 echo   Phone / computer on ANY network can access all features.
 echo   Processing still happens on THIS machine (offline engine).
 echo ========================================================
@@ -35,7 +35,7 @@ rem Free port 8765 (kill stale server instance)
 python -c "from core.port_util import free_port; free_port(8765, log=lambda m: None)" >nul 2>&1
 
 echo [*] Starting local server (minimized window)...
-start "ZonScale Server" /min cmd /c "python -m uvicorn server_bridge:app --host 127.0.0.1 --port 8765 --log-level warning"
+start "ZonKey Server" /min cmd /c "python -m uvicorn server_bridge:app --host 127.0.0.1 --port 8765 --log-level warning"
 
 timeout /t 4 /nobreak >nul
 

@@ -2,10 +2,10 @@
 import {
   rgbToOklab, oklabToRgb, rgbToHex, rgbToAllSpaces, oklabInSrgbGamut,
   oklabInRec2020, spaceToDisplayRgb, normalizeSpaceValues,
-} from '../frontend/src/lib/toolknit/colorSpaceCore';
+} from '../frontend/src/lib/zonkey/colorSpaceCore';
 import {
   generateTypingText, computeTypingStats, getTypingRating, normalizeTypingValue,
-} from '../frontend/src/lib/toolknit/typingCore';
+} from '../frontend/src/lib/zonkey/typingCore';
 
 let failed = 0;
 function check(name, cond, extra = '') {

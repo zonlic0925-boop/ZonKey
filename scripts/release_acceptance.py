@@ -9,7 +9,7 @@
 
 用法:
   python scripts/release_acceptance.py
-  python scripts/release_acceptance.py --exe-dir dist/ZonScale
+  python scripts/release_acceptance.py --exe-dir dist/ZonKey
 """
 
 from __future__ import annotations
@@ -231,8 +231,8 @@ def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> 
             bundled_rules = exe_dir / "rules"
         report["checks"]["exe_bundled_rules"] = _check_rules_clean(bundled_rules)
         report["checks"]["exe_exists"] = {
-            "path": str(exe_dir / "ZonScale.exe"),
-            "pass": (exe_dir / "ZonScale.exe").is_file(),
+            "path": str(exe_dir / "ZonKey.exe"),
+            "pass": (exe_dir / "ZonKey.exe").is_file(),
         }
 
     if app_dir:
@@ -242,7 +242,7 @@ def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> 
             bundled_rules = app_dir / "Contents" / "Resources" / "rules"
         if bundled_rules.is_dir():
             report["checks"]["app_bundled_rules"] = _check_rules_clean(bundled_rules)
-        mac_bin = macos_root / "ZonScale"
+        mac_bin = macos_root / "ZonKey"
         report["checks"]["app_exists"] = {
             "path": str(mac_bin),
             "pass": mac_bin.is_file(),
@@ -276,14 +276,14 @@ def run_acceptance(exe_dir: Path | None = None, app_dir: Path | None = None) -> 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="发布版通用规则验收")
-    parser.add_argument("--exe-dir", type=Path, default=None, help="Windows 构建目录 dist/ZonScale")
-    parser.add_argument("--app-dir", type=Path, default=None, help="macOS 构建产物 dist/ZonScale.app")
+    parser.add_argument("--exe-dir", type=Path, default=None, help="Windows 构建目录 dist/ZonKey")
+    parser.add_argument("--app-dir", type=Path, default=None, help="macOS 构建产物 dist/ZonKey.app")
     args = parser.parse_args()
 
     exe_dir = args.exe_dir if args.exe_dir and args.exe_dir.is_dir() else None
     app_dir = args.app_dir if args.app_dir and args.app_dir.is_dir() else None
     if exe_dir is None and app_dir is None:
-        default_exe = ROOT / "dist" / "ZonScale"
+        default_exe = ROOT / "dist" / "ZonKey"
         exe_dir = default_exe if default_exe.is_dir() else None
     report = run_acceptance(exe_dir, app_dir)
 

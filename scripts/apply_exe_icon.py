@@ -1,9 +1,9 @@
-"""Post-build: copy ZonScale icon sidecars for pywebview / shortcuts.
+"""Post-build: copy ZonKey icon sidecars for pywebview / shortcuts.
 
 IMPORTANT: Do NOT use rcedit or other PE resource editors on PyInstaller EXEs —
 they strip the appended PKG overlay and break startup with:
   "Could not load PyInstaller's embedded PKG archive"
-Explorer/taskbar icons must come from PyInstaller `icon=` in ZonScale.spec.
+Explorer/taskbar icons must come from PyInstaller `icon=` in ZonKey.spec.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXE = ROOT / "dist" / "ZonScale" / "ZonScale.exe"
-ICO = ROOT / "packaging" / "windows" / "assets" / "zonscale.ico"
+EXE = ROOT / "dist" / "ZonKey" / "ZonKey.exe"
+ICO = ROOT / "packaging" / "windows" / "assets" / "zonkey.ico"
 
 
 def _pe_has_icon_resource(exe_path: Path) -> bool:
@@ -79,13 +79,13 @@ def _pe_has_icon_resource(exe_path: Path) -> bool:
 def _copy_sidecars() -> None:
     if not ICO.exists() or not EXE.parent.exists():
         return
-    dest = EXE.parent / "zonscale.ico"
+    dest = EXE.parent / "zonkey.ico"
     shutil.copy2(ICO, dest)
     print(f"[OK] Copied icon sidecar: {dest}")
 
     assets_dir = EXE.parent / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
-    assets_dest = assets_dir / "zonscale.ico"
+    assets_dest = assets_dir / "zonkey.ico"
     shutil.copy2(ICO, assets_dest)
     print(f"[OK] Copied icon sidecar: {assets_dest}")
 
@@ -98,7 +98,7 @@ def main() -> int:
         print(f"[ERROR] EXE not found: {EXE}")
         return 1
     if not ICO.exists():
-        print(f"[ERROR] ICO not found: {ICO} — run scripts/generate_zonscale_icon.py")
+        print(f"[ERROR] ICO not found: {ICO} — run scripts/generate_zonkey_icon.py")
         return 1
 
     _copy_sidecars()
@@ -106,7 +106,7 @@ def main() -> int:
         print(f"[OK] PyInstaller embedded icon verified in {EXE.name}")
     else:
         print(
-            "[WARN] EXE has no embedded icon resource — regenerate icon and rebuild with ZonScale.spec icon="
+            "[WARN] EXE has no embedded icon resource — regenerate icon and rebuild with ZonKey.spec icon="
         )
         return 1
     return 0

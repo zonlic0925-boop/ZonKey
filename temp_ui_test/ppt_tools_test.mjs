@@ -33,7 +33,7 @@ async function run() {
   try {
     await page.getByRole('button', { name: '大纲生成' }).first().click();
     await waitMs(400);
-    await page.getByPlaceholder('例如：ZonScale 智能脱敏工作台介绍').fill('ZonScale 智能脱敏工作台介绍');
+    await page.getByPlaceholder('例如：ZonKey 智能脱敏工作台介绍').fill('ZonKey 智能脱敏工作台介绍');
     await page.getByRole('button', { name: '生成大纲' }).first().click();
     await page.getByText(/已生成 \d+ 页大纲/).first().waitFor({ timeout: 8000 });
     const downloadPromise = page.waitForEvent('download', { timeout: 15000 });

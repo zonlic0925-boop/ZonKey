@@ -7,19 +7,19 @@ import { dirname, join } from 'node:path';
 import {
   mergePdfFiles, splitPdfPages, rotatePdfPages, compressPdfFile,
   encryptPdfFile, decryptPdfFile,
-} from '../frontend/src/lib/toolknit/pdfCore';
-import { extractPptImages, extractPptText, compressPptx } from '../frontend/src/lib/toolknit/pptCore';
-import { generatePptOutline, createPptOutlineMarkdown, parsePptOutlineMarkdown } from '../frontend/src/lib/toolknit/pptOutlineCore';
-import { buildPptDraftPptx } from '../frontend/src/lib/toolknit/pptDraftCore';
-import { calculateBmi, calculateMortgage, calculateLumpSumCompound } from '../frontend/src/lib/toolknit/calcCore';
-import { formatJsonText, encodeBase64Utf8, decodeBase64Utf8, encodeUrlComponent, generateUuidV4, decodeJwt } from '../frontend/src/lib/toolknit/developerCore';
-import { hashText, hmacText, runSymmetricCipher } from '../frontend/src/lib/toolknit/cryptoCore';
-import { generatePassword } from '../frontend/src/lib/toolknit/passwordCore';
-import { calculateTextStats } from '../frontend/src/lib/toolknit/textStatsCore';
-import { executeTextFormat } from '../frontend/src/lib/toolknit/textFormatCore';
-import { extractMarkdownHeadings, applyMarkdownAction } from '../frontend/src/lib/toolknit/markdownCore';
-import { audioBufferToWav, analyzeBpmPcm } from '../frontend/src/lib/toolknit/mediaCore';
-import { isSupportedImageFileName } from '../frontend/src/lib/toolknit/imageCore';
+} from '../frontend/src/lib/zonkey/pdfCore';
+import { extractPptImages, extractPptText, compressPptx } from '../frontend/src/lib/zonkey/pptCore';
+import { generatePptOutline, createPptOutlineMarkdown, parsePptOutlineMarkdown } from '../frontend/src/lib/zonkey/pptOutlineCore';
+import { buildPptDraftPptx } from '../frontend/src/lib/zonkey/pptDraftCore';
+import { calculateBmi, calculateMortgage, calculateLumpSumCompound } from '../frontend/src/lib/zonkey/calcCore';
+import { formatJsonText, encodeBase64Utf8, decodeBase64Utf8, encodeUrlComponent, generateUuidV4, decodeJwt } from '../frontend/src/lib/zonkey/developerCore';
+import { hashText, hmacText, runSymmetricCipher } from '../frontend/src/lib/zonkey/cryptoCore';
+import { generatePassword } from '../frontend/src/lib/zonkey/passwordCore';
+import { calculateTextStats } from '../frontend/src/lib/zonkey/textStatsCore';
+import { executeTextFormat } from '../frontend/src/lib/zonkey/textFormatCore';
+import { extractMarkdownHeadings, applyMarkdownAction } from '../frontend/src/lib/zonkey/markdownCore';
+import { audioBufferToWav, analyzeBpmPcm } from '../frontend/src/lib/zonkey/mediaCore';
+import { isSupportedImageFileName } from '../frontend/src/lib/zonkey/imageCore';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIX = join(HERE, 'fixtures');
@@ -57,7 +57,7 @@ const dec = await decryptPdfFile(enc, 'secret123');
 check('pdf decrypt roundtrip', dec.length > 1000);
 
 // --- PPT 工坊 ---
-const outline = generatePptOutline({ topic: 'ZonScale 测试', deckType: 'auto', slideCount: 4, locale: 'zh' });
+const outline = generatePptOutline({ topic: 'ZonKey 测试', deckType: 'auto', slideCount: 4, locale: 'zh' });
 check('ppt outline slides', outline.slides.length >= 4, `got ${outline.slides.length}`);
 const md = createPptOutlineMarkdown(outline);
 const parsed = parsePptOutlineMarkdown(md);

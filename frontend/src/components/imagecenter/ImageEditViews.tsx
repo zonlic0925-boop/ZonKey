@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { cropImage, replaceColor } from '../../lib/toolknit/imageCore'
+import { cropImage, replaceColor } from '../../lib/zonkey/imageCore'
 import { downloadBlob, ImagePicker, type PickedImage } from './imageKit'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { FileOutput } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { extractPdfPages, createPdfExtractedFileName, parsePdfPageRanges } from '../../lib/toolknit/pdfCore'
+import { extractPdfPages, createPdfExtractedFileName, parsePdfPageRanges } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
 import { ErrorLine } from '../calcdev/kit'
 

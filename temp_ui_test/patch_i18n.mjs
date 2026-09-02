@@ -1,5 +1,5 @@
 import fs from 'fs';
-const f = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/i18n/locales/zh-CN.ts';
+const f = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/i18n/locales/zh-CN.ts';
 let t = fs.readFileSync(f, 'utf-8');
 t = t.replace(
   /pdfEditor:\s*'页面编辑',/,

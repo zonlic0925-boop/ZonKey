@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { ScanLine } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { createPdfEnhancedFileName, enhancePdfScan, type PdfEnhanceMode } from '../../lib/toolknit/pdfCore'
+import { createPdfEnhancedFileName, enhancePdfScan, type PdfEnhanceMode } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
 import { ErrorLine } from '../calcdev/kit'
 

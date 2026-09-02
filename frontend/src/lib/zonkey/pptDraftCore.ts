@@ -1,7 +1,6 @@
 /**
  * PPT 草稿构建核心 — 大纲 → 合法 .pptx（纯 JSZip，离线）。
- * OOXML 骨架对齐 ToolKnit ppt-draft-core.js 的已验证实现：
- * 16:9 版式、单 slideMaster/blank slideLayout/simple theme、逐页独立 slide XML。
+ * OOXML 骨架：16:9 版式、单 slideMaster/blank slideLayout/simple theme、逐页独立 slide XML。
  */
 
 import JSZip from 'jszip';
@@ -179,8 +178,8 @@ function docPropsCore(title: string): string {
   return `${XML_HEADER}
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>${xmlEscape(title)}</dc:title>
-  <dc:creator>ZonScale</dc:creator>
-  <cp:lastModifiedBy>ZonScale</cp:lastModifiedBy>
+  <dc:creator>ZonKey</dc:creator>
+  <cp:lastModifiedBy>ZonKey</cp:lastModifiedBy>
   <dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified>
 </cp:coreProperties>`;
@@ -189,14 +188,14 @@ function docPropsCore(title: string): string {
 function docPropsApp(slideCount: number): string {
   return `${XML_HEADER}
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-  <Application>ZonScale</Application>
+  <Application>ZonKey</Application>
   <PresentationFormat>On-screen Show (16:9)</PresentationFormat>
   <Slides>${slideCount}</Slides>
   <Notes>0</Notes>
   <HiddenSlides>0</HiddenSlides>
   <MMClips>0</MMClips>
   <ScaleCrop>false</ScaleCrop>
-  <Company>ZonScale</Company>
+  <Company>ZonKey</Company>
   <AppVersion>2.0</AppVersion>
 </Properties>`;
 }

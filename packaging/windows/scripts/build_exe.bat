@@ -6,11 +6,11 @@ set "PROJECT_DIR=%SCRIPT_DIR%..\..\.."
 cd /d "%PROJECT_DIR%"
 if errorlevel 1 goto :fail_cd
 
-set "SPEC_FILE=%SCRIPT_DIR%..\config\ZonScale.spec"
+set "SPEC_FILE=%SCRIPT_DIR%..\config\ZonKey.spec"
 set "PYINSTALLER_CONFIG_DIR=%PROJECT_DIR%\build\.pyinstaller-cache"
 
 echo ========================================================
-echo   ZonScale EXE Build
+echo   ZonKey EXE Build
 echo ========================================================
 
 where python >nul 2>&1
@@ -28,7 +28,7 @@ python -m PyInstaller --noconfirm "%SPEC_FILE%"
 if errorlevel 1 goto :fail_pyinstaller
 
 echo.
-echo DONE: %PROJECT_DIR%\dist\ZonScale\ZonScale.exe
+echo DONE: %PROJECT_DIR%\dist\ZonKey\ZonKey.exe
 pause
 endlocal
 exit /b 0

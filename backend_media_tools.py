@@ -1,7 +1,7 @@
 """音视频工具桥（音视讯中心：视频格式转换 / 视频截取 GIF / 语音转写）。
 
-视频与 GIF 依赖本机 ffmpeg（PATH 或项目 tools/ffmpeg/ 目录），编码参数与
-ToolKnit 2.1.1 对齐（libx264+aac / mpeg4+mp3 / vp9+opus / wmv2+wmav2，
+视频与 GIF 依赖本机 ffmpeg（PATH 或项目 tools/ffmpeg/ 目录），编码 profile
+采用成熟通用参数（libx264+aac / mpeg4+mp3 / vp9+opus / wmv2+wmav2，
 GIF 两遍调色板 palettegen/paletteuse）。语音转写优先 faster-whisper
 （纯离线，模型缓存于用户目录），未安装时端点返回 503 引导安装。
 
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/media", tags=["media-tools"])
 PROJECT_ROOT = ensure_runtime_layout()
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
-MAX_INPUT_BYTES = 2 * 1024 * 1024 * 1024  # 与 ToolKnit 一致：单文件 ≤10GB，留 2GB 保守上限
+MAX_INPUT_BYTES = 2 * 1024 * 1024 * 1024  # 单文件 ≤10GB，留 2GB 保守上限
 GIF_MAX_CLIP_SECONDS = 30
 GIF_FPS_RANGE = (1, 20)
 GIF_WIDTH_RANGE = (160, 1920)
@@ -49,7 +49,7 @@ AUDIO_INPUT_EXTS = {
 }
 TRANSCRIBE_INPUT_EXTS = VIDEO_INPUT_EXTS | AUDIO_INPUT_EXTS
 
-# 编码 profile 表（与 ToolKnit cli/lib/video-runtime.mjs 一致）
+# 编码 profile 表
 VIDEO_PROFILES: dict[str, list[str]] = {
     "mp4": ["-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-crf", "23"],
     "mkv": ["-c:v", "libx264", "-c:a", "aac", "-preset", "fast", "-crf", "23"],
@@ -61,7 +61,7 @@ VIDEO_PROFILES: dict[str, list[str]] = {
     "wmv": ["-c:v", "wmv2", "-c:a", "wmav2", "-q:v", "4"],
 }
 
-# GIF 质量档位 → (max_colors, dither)（与 ToolKnit cli/lib/video-gif-runtime.mjs 一致）
+# GIF 质量档位 → (max_colors, dither)
 GIF_QUALITY_PROFILES: dict[str, tuple[int, str]] = {
     "high": (256, "sierra2_4a"),
     "balanced": (192, "bayer:bayer_scale=3"),

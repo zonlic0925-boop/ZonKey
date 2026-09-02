@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="frontend/public/zonscale-icon.svg" width="88" alt="ZonScale" />
+  <img src="frontend/public/zonkey-icon.svg" width="88" alt="ZonKey" />
 </p>
 
-<h1 align="center">ZonScale</h1>
+<h1 align="center">ZonKey</h1>
 
 <p align="center">
   <strong>本地离线 · 日用百宝箱</strong><br/>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Private%20Repository-64748b?style=flat-square" alt="Private Repository" />
+  <img src="https://img.shields.io/badge/Status-Public%20Repository-059669?style=flat-square" alt="Public Repository" />
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11" />
   <img src="https://img.shields.io/badge/UI-React%20%2B%20FastAPI-0D9488?style=flat-square" alt="React + FastAPI" />
   <img src="https://img.shields.io/badge/Desktop-PyWebView-2563EB?style=flat-square" alt="PyWebView" />
@@ -42,9 +42,9 @@
 
 ---
 
-## 为什么选 ZonScale
+## 为什么选 ZonKey
 
-| 维度 | ZonScale |
+| 维度 | ZonKey |
 | --- | --- |
 | **数据安全** | 零云端、零外网请求，图纸与文档不出本机 |
 | **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位后抹除，不污染尺寸与公差 |
@@ -77,7 +77,7 @@ flowchart LR
     C[Word 文档]
   end
 
-  subgraph Core["ZonScale Core · 本地离线"]
+  subgraph Core["ZonKey Core · 本地离线"]
     D[规则引擎]
     E[三通道检测]
     F[框线归位 BoxFinder]
@@ -105,7 +105,7 @@ flowchart LR
 
 ### 方式一 · Windows 可执行文件（推荐）
 
-1. 从 GitHub Releases 下载最新 EXE 压缩包，或本机运行 `build_zonscale_exe.bat` 构建
+1. 从 GitHub Releases 下载最新 EXE 压缩包，或本机运行 `build_zonkey_exe.bat` 构建
 2. 双击 **启动现代化脱敏工作台.bat** 或直接运行 exe
 3. 浏览器 / 内嵌窗口访问 `http://127.0.0.1:8765`
 
@@ -118,8 +118,8 @@ flowchart LR
 
 ```powershell
 # 克隆（需仓库访问权限）
-git clone https://github.com/zonlic0925-boop/Zonscale.git
-cd Zonscale
+git clone https://github.com/zonlic0925-boop/ZonKey.git
+cd ZonKey
 
 # Python 依赖
 pip install -r requirements.txt
@@ -156,7 +156,7 @@ python run_modern_app.py
 ## 目录结构（节选）
 
 ```
-Zonscale/
+ZonKey/
 ├── core/                 # 脱敏核心：检测 · 归位 · 执行 · 管道
 ├── frontend/             # React 现代化 UI（8 大中心）
 ├── server_bridge.py      # FastAPI 本地桥接
@@ -175,7 +175,7 @@ Zonscale/
 - **不联网**：运行时无外部 API、无云 OCR、无模型上传
 - **不改原文件**：只在用户指定目录写入 `_desensitized` 副本
 - **样本隔离**：客户图纸目录 `Testing Drawings/` 已加入 `.gitignore`，不会进入版本库
-- **私有仓库**：本仓库为 Private，仅供授权协作者访问
+- **开源公开**：本仓库已公开（MIT），面向公开发布与通用客户场景
 
 ---
 
@@ -192,5 +192,5 @@ Zonscale/
 **zonlic** — 一個在香港生存的普通人
 
 <p align="center">
-  <sub>Private repository · ZonScale © zonlic</sub>
+  <sub>Public repository · ZonKey © zonlic</sub>
 </p>

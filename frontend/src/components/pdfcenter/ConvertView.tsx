@@ -15,7 +15,7 @@ import {
   type ConvertOp,
 } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
-import { WEB_SUPPORTED_OPS, runWebConversion, type WebConvertResult } from '../../lib/toolknit/convertWebCore'
+import { WEB_SUPPORTED_OPS, runWebConversion, type WebConvertResult } from '../../lib/zonkey/convertWebCore'
 
 const OPS: ConvertOp[] = [
   'pdf-to-word',

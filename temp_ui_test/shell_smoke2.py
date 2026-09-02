@@ -93,7 +93,7 @@ def main():
 
     api = desktop_app.WindowApi()
 
-    webview.create_window("ZonScale Shell Smoke", url, width=1200, height=800, frameless=True)
+    webview.create_window("ZonKey Shell Smoke", url, width=1200, height=800, frameless=True)
     from core.frameless_window import attach_frameless_behaviour
 
     attach_frameless_behaviour(webview.windows[0])

@@ -1,9 +1,8 @@
 /**
  * 音视频中心核心。
  * - WAV 编码/音频解码/裁剪/格式转换/视频音轨提取：Web Audio 标准管线
- * - BPM 检测：移植 ToolKnit bpm-detect-core.js 的 analyzeBpmPcm 主算法
- *   （能量包络 → onset 包络 → 自相关峰值 + 峰值间隔直方图 → 调性融合评分）。
- *   Beatroot/实时引擎与调性检测依赖其外部库，属后续批次。
+ * - BPM 检测：能量包络 → onset 包络 → 自相关峰值 + 峰值间隔直方图。
+ *   Beatroot/实时引擎与调性检测属后续批次。
  * - 视频抽帧：<video> 精确 seek + Canvas 抓帧
  */
 
@@ -117,7 +116,7 @@ export async function extractAudioFromVideo(file: File): Promise<{ blob: Blob; f
   return { blob: audioBufferToWav(buffer), fileName: `${baseName}_audio.wav`, duration: buffer.duration };
 }
 
-// ===== BPM 检测（移植自 ToolKnit analyzeBpmPcm） =====
+// ===== BPM 检测（能量包络 + 自相关峰值） =====
 
 const BPM_DISPLAY_MIN = 30;
 const BPM_DISPLAY_MAX = 300;

@@ -6,7 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 
-_APP_SUPPORT_NAME = "ZonScale"
+_APP_SUPPORT_NAME = "ZonKey"
 
 
 def is_frozen() -> bool:

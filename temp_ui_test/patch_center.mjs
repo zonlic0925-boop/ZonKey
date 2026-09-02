@@ -1,5 +1,5 @@
 import fs from 'fs';
-const f = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/components/pdfcenter/PdfCenter.tsx';
+const f = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/components/pdfcenter/PdfCenter.tsx';
 let t = fs.readFileSync(f, 'utf-8');
 t = t.replace(
   "import { PdfEditorView }\nimport { PdfFormsView } from './PdfFormsView'\nimport { PdfCertSignView } from './PdfCertSignView' from './PdfEditorView'",

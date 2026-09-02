@@ -28,7 +28,7 @@ import type { CenterId, ToolId } from '../../types';
 import {
   getFavorites,
   subscribeFavorites,
-} from '../../lib/toolknit/favoritesCore';
+} from '../../lib/zonkey/favoritesCore';
 import { staggerContainer, staggerItem, snappySpring } from '../../motion/springs';
 
 /** 卡片悬停/按压：与 Memphis 卡片语言一致的位移微动（transform/opacity only） */

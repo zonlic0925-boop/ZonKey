@@ -1,4 +1,4 @@
-// ===== 导航结构：8 大中心 + 二级子工具（ToolKnit 合并架构） =====
+// ===== 导航结构：8 大中心 + 二级子工具 =====
 
 /** 一级：功能中心 */
 export type CenterId =
@@ -11,7 +11,7 @@ export type CenterId =
   | 'calc_dev'
   | 'system_tools';
 
-/** 智能脱敏中心（ZonScale 原生功能） */
+/** 智能脱敏中心（ZonKey 原生功能） */
 export type RedactToolId = 'drawing' | 'pdf_doc' | 'word_doc' | 'rules' | 'audit' | 'favorites-view' | 'home-nav';
 
 /** PDF 工坊 */

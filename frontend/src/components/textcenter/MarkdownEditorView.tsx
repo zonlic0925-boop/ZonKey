@@ -13,7 +13,7 @@ import {
   MARKDOWN_DRAFT_KEY,
   sanitizeExportBaseName,
   type MarkdownAction,
-} from '../../lib/toolknit/markdownCore'
+} from '../../lib/zonkey/markdownCore'
 
 const TOOLBAR_ACTIONS: { id: MarkdownAction; label: string }[] = [
   { id: 'bold', label: 'B' },
@@ -57,7 +57,7 @@ export const MarkdownEditorView: React.FC = () => {
     })
   }
 
-  const baseName = sanitizeExportBaseName(headings[0]?.text ?? 'zonscale-document')
+  const baseName = sanitizeExportBaseName(headings[0]?.text ?? 'zonkey-document')
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col h-full min-h-0 gap-3">
@@ -79,7 +79,7 @@ export const MarkdownEditorView: React.FC = () => {
             variant="pink"
             onClick={() =>
               downloadBlob(
-                new Blob([buildStandaloneMarkdownHtml({ title: headings[0]?.text ?? 'ZonScale', renderedHtml: html })], { type: 'text/html' }),
+                new Blob([buildStandaloneMarkdownHtml({ title: headings[0]?.text ?? 'ZonKey', renderedHtml: html })], { type: 'text/html' }),
                 `${baseName}.html`,
               )
             }

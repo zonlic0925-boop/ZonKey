@@ -322,7 +322,7 @@ def attach_frameless_behaviour(window) -> None:
     import threading
     import time
 
-    logger = logging.getLogger("zonscale.frameless")
+    logger = logging.getLogger("zonkey.frameless")
 
     def _wait_and_install() -> None:
         deadline = time.time() + 30.0

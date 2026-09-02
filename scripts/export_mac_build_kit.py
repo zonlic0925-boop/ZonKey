@@ -1,4 +1,4 @@
-"""导出 Mac 构建专用压缩包（在 Windows 上运行，拷到 Mac 上执行 ./build_zonscale_mac.sh）。
+"""导出 Mac 构建专用压缩包（在 Windows 上运行，拷到 Mac 上执行 ./build_zonkey_mac.sh）。
 
 用法:
   python scripts/export_mac_build_kit.py
@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "dist_release"
-KIT_NAME = "ZonScale-mac-build-kit"
+KIT_NAME = "ZonKey-mac-build-kit"
 
 # 必需：Mac 打包最小文件集
 DIRS = [
@@ -30,7 +30,7 @@ DIRS = [
 FILES = [
     "desktop_app.py",
     "server_bridge.py",
-    "build_zonscale_mac.sh",
+    "build_zonkey_mac.sh",
     "requirements.txt",
     "packaging/macos/MAC_BUILD_ON_MAC.md",
 ]
@@ -38,7 +38,7 @@ FILES = [
 OPTIONAL_FRONTEND_DIRS = ["frontend"]
 FRONTEND_IGNORE = shutil.ignore_patterns("node_modules", "dist", ".vite")
 
-README_ROOT = """ZonScale Mac 构建包
+README_ROOT = """ZonKey Mac 构建包
 ==================
 
 请打开 MAC_BUILD_ON_MAC.md 查看完整步骤。
@@ -47,9 +47,9 @@ README_ROOT = """ZonScale Mac 构建包
 
   python3.11 -m venv .venv && source .venv/bin/activate
   pip install -r requirements.txt
-  chmod +x build_zonscale_mac.sh && ./build_zonscale_mac.sh
+  chmod +x build_zonkey_mac.sh && ./build_zonkey_mac.sh
 
-产物: dist/ZonScale.app 与 dist_release/ZonScale_macOS_*.zip
+产物: dist/ZonKey.app 与 dist_release/ZonKey_macOS_*.zip
 """
 
 
@@ -107,7 +107,7 @@ def export_kit(include_frontend: bool = False) -> Path:
                 _copy_tree(src, kit_root / rel, ignore=FRONTEND_IGNORE)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    archive_base = OUT_DIR / f"ZonScale_mac_build_kit_{stamp}"
+    archive_base = OUT_DIR / f"ZonKey_mac_build_kit_{stamp}"
     zip_path = Path(shutil.make_archive(str(archive_base), "zip", root_dir=stage))
     shutil.rmtree(stage)
 
@@ -117,7 +117,7 @@ def export_kit(include_frontend: bool = False) -> Path:
     print("拷到 Mac 后:")
     print(f"  unzip {zip_path.name}")
     print(f"  cd {KIT_NAME}")
-    print("  阅读 MAC_BUILD_ON_MAC.md，执行 ./build_zonscale_mac.sh")
+    print("  阅读 MAC_BUILD_ON_MAC.md，执行 ./build_zonkey_mac.sh")
     return zip_path
 
 

@@ -1,7 +1,7 @@
 /**
  * 主题真源与持久化（前端侧）。
  *
- * - localStorage `zonscale-theme` / `zonscale-texture` 是运行时真源；
+ * - localStorage `zonkey-theme` / `zonkey-texture` 是运行时真源；
  * - 桌面壳内额外镜像一份 `ui_prefs.json`（经 pywebview api），供
  *   desktop_app.py 在 create_window 前读取设置启动闪屏底色——
  *   Python 读不到 localStorage，只能走文件桥；
@@ -16,9 +16,9 @@ export const THEME_IDS: ThemeId[] = ['cream', 'paper', 'slate', 'dark'];
 export const TEXTURE_IDS: TextureId[] = ['none', 'grid', 'dots', 'paper', 'fluid'];
 export const FONT_SIZE_IDS: FontSizeId[] = ['sm', 'md', 'lg', 'xl'];
 
-const THEME_KEY = 'zonscale-theme';
-const TEXTURE_KEY = 'zonscale-texture';
-const FONT_SIZE_KEY = 'zonscale-fontsize';
+const THEME_KEY = 'zonkey-theme';
+const TEXTURE_KEY = 'zonkey-texture';
+const FONT_SIZE_KEY = 'zonkey-fontsize';
 
 /** 字号档 → 根字号 rem 缩放（index.css html[data-fontsize] 消费） */
 export const FONT_SCALE: Record<FontSizeId, string> = {

@@ -6,9 +6,9 @@
  */
 import type { ToolId } from '../../types';
 
-const STORAGE_KEY = 'zonscale.favoriteTools.v1';
+const STORAGE_KEY = 'zonkey.favoriteTools.v1';
 const MAX_FAVORITES = 12;
-const CHANGE_EVENT = 'zonscale:favorites-changed';
+const CHANGE_EVENT = 'zonkey:favorites-changed';
 
 let cache: ToolId[] | null = null;
 

@@ -21,7 +21,7 @@ URL_RE = re.compile(r"https://[a-z0-9][a-z0-9-]*\.trycloudflare\.com", re.IGNORE
 
 def write_address_file(url: str) -> None:
     content = (
-        "ZonScale 手机端访问地址（公网）\n"
+        "ZonKey 手机端访问地址（公网）\n"
         f"地址: {url}\n"
         f"更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         "\n"

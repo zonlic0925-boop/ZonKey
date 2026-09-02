@@ -70,3 +70,6 @@ release_assets/
 # 测试脚本依赖与构建日志（不入库）
 temp_ui_test/node_modules/
 build_exe_log.txt
+# 测试自签证书与运行时地址文件（本地生成，不入库）
+temp_ui_test/selfsign_demo/
+手机端访问地址.txt

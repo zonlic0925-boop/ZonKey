@@ -1,5 +1,5 @@
 import fs from 'fs';
-const navFile = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/lib/navigation.tsx';
+const navFile = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/lib/navigation.tsx';
 let navContent = fs.readFileSync(navFile, 'utf-8');
 if (!navContent.includes('pdf-forms')) {
     navContent = navContent.replace(
@@ -9,7 +9,7 @@ if (!navContent.includes('pdf-forms')) {
     fs.writeFileSync(navFile, navContent);
 }
 
-const langFile = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/i18n/locales/zh-CN.ts';
+const langFile = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/i18n/locales/zh-CN.ts';
 let langContent = fs.readFileSync(langFile, 'utf-8');
 if (!langContent.includes('pdfForms:')) {
     langContent = langContent.replace(

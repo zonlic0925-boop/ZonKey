@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-const BASE = 'https://zonscale.pages.dev';
+const BASE = 'https://zonkey.pages.dev';
 const waitMs = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 const page = await browser.newPage();
@@ -19,7 +19,7 @@ await page.getByRole('button', { name: 'PPT 工坊' }).first().click();
 await waitMs(500);
 await page.getByRole('button', { name: '大纲生成' }).first().click();
 await waitMs(400);
-await page.getByPlaceholder('例如：ZonScale 智能脱敏工作台介绍').fill('公网部署验证');
+await page.getByPlaceholder('例如：ZonKey 智能脱敏工作台介绍').fill('公网部署验证');
 await page.getByRole('button', { name: '生成大纲' }).first().click();
 await page.getByText(/已生成 \d+ 页大纲/).first().waitFor({ timeout: 10000 });
 console.log(JSON.stringify({ title, pdfMergeViewOk: addBtn, pptOutlineOk: true, pageErrors: errors }));

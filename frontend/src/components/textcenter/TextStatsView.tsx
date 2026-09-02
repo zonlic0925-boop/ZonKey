@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { useI18n } from '../../i18n'
-import { calculateTextStats } from '../../lib/toolknit/textStatsCore'
+import { calculateTextStats } from '../../lib/zonkey/textStatsCore'
 import { AreaInput, ResultTile } from '../calcdev/kit'
 
 export const TextStatsView: React.FC = () => {

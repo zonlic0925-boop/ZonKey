@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { captureVideoFrame } from '../../lib/toolknit/mediaCore'
+import { captureVideoFrame } from '../../lib/zonkey/mediaCore'
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 

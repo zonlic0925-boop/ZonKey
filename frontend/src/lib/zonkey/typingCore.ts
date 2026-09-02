@@ -1,5 +1,5 @@
 /**
- * 打字测试核心逻辑 —— 移植自 ToolKnit 2.1.1 main.js 打字测试段。
+ * 打字测试核心逻辑 —— 实时 WPM/准确率/击键节奏引擎。
  * 纯函数部分（词库、出题、评分、评级）与 UI 解耦，便于测试。
  */
 
@@ -13,7 +13,7 @@ interface WordPools {
   zh: Record<TypingDifficulty, string[]>;
 }
 
-/** 代码内补充词库（与 ToolKnit TYPING_TEST_EXTRA_WORDS 一致） */
+/** 代码内补充词库 */
 const EXTRA_WORDS: WordPools = {
   en: {
     easy: ['apple', 'cloud', 'smile', 'green', 'light', 'music', 'paper', 'chair', 'phone', 'fresh', 'clean', 'dream'],

@@ -5,7 +5,7 @@ import { MemphisButton } from '../common/MemphisButton'
 import {
   calculateLumpSumCompound,
   calculateRecurringCompound,
-} from '../../lib/toolknit/calcCore'
+} from '../../lib/zonkey/calcCore'
 import { ErrorLine, Field, NumInput, ResultTile, TabsRow } from './kit'
 
 type Mode = 'lump_sum' | 'recurring'

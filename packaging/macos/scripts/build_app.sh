@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# ZonScale macOS .app 构建脚本（须在 macOS 上运行）
+# ZonKey macOS .app 构建脚本（须在 macOS 上运行）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-SPEC_FILE="${SCRIPT_DIR}/../config/ZonScale.spec"
+SPEC_FILE="${SCRIPT_DIR}/../config/ZonKey.spec"
 export PYINSTALLER_CONFIG_DIR="${PROJECT_DIR}/build/.pyinstaller-cache"
 
 cd "${PROJECT_DIR}"
 
 echo "========================================================"
-echo "  ZonScale macOS .app Build"
+echo "  ZonKey macOS .app Build"
 echo "  by zonlic"
 echo "========================================================"
 
@@ -56,14 +56,14 @@ python3 -m pip install -q pyinstaller pywebview pyobjc-core pyobjc-framework-Coc
 
 mkdir -p "${PYINSTALLER_CONFIG_DIR}"
 
-echo "Cleaning previous dist/ZonScale.app ..."
-rm -rf dist/ZonScale dist/ZonScale.app
+echo "Cleaning previous dist/ZonKey.app ..."
+rm -rf dist/ZonKey dist/ZonKey.app
 
 echo "Building .app (about 5-15 minutes)..."
 python3 -m PyInstaller --noconfirm "${SPEC_FILE}"
 
-APP_PATH="dist/ZonScale.app"
-MAC_BIN="${APP_PATH}/Contents/MacOS/ZonScale"
+APP_PATH="dist/ZonKey.app"
+MAC_BIN="${APP_PATH}/Contents/MacOS/ZonKey"
 if [[ ! -d "${APP_PATH}" ]] || [[ ! -x "${MAC_BIN}" ]]; then
   echo "ERROR: Build output missing: ${APP_PATH}"
   exit 1
@@ -76,14 +76,14 @@ echo "Packaging ZIP..."
 python3 scripts/package_mac_app.py
 
 if command -v hdiutil >/dev/null 2>&1; then
-  DMG_PATH="dist_release/ZonScale_macOS_$(uname -m)_$(date +%Y%m%d).dmg"
+  DMG_PATH="dist_release/ZonKey_macOS_$(uname -m)_$(date +%Y%m%d).dmg"
   echo "Creating DMG (optional): ${DMG_PATH}"
   DMG_STAGE="${PROJECT_DIR}/build/dmg_stage"
   rm -rf "${DMG_STAGE}"
   mkdir -p "${DMG_STAGE}"
   cp -R "${APP_PATH}" "${DMG_STAGE}/"
   cp "${PROJECT_DIR}/scripts/package_mac_app.py" "${DMG_STAGE}/" 2>/dev/null || true
-  hdiutil create -volname "ZonScale" -srcfolder "${DMG_STAGE}" -ov -format UDZO "${DMG_PATH}" 2>/dev/null || \
+  hdiutil create -volname "ZonKey" -srcfolder "${DMG_STAGE}" -ov -format UDZO "${DMG_PATH}" 2>/dev/null || \
     echo "WARN: hdiutil DMG creation skipped (ZIP still available)"
   rm -rf "${DMG_STAGE}"
 fi
@@ -91,7 +91,7 @@ fi
 echo
 echo "DONE."
 echo "  App:  ${PROJECT_DIR}/${APP_PATH}"
-echo "  Open: open dist/ZonScale.app"
-echo "  ZIP:  dist_release/ZonScale_macOS_*.zip"
-echo "  Data: ~/Library/Application Support/ZonScale/"
+echo "  Open: open dist/ZonKey.app"
+echo "  ZIP:  dist_release/ZonKey_macOS_*.zip"
+echo "  Data: ~/Library/Application Support/ZonKey/"
 echo "  Guide: packaging/macos/README.md"

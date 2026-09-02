@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { ToolId } from '../../types';
-import { isFavorite, toggleFavorite } from '../../lib/toolknit/favoritesCore';
+import { isFavorite, toggleFavorite } from '../../lib/zonkey/favoritesCore';
 
 interface FavoriteStarProps {
   toolId: ToolId;

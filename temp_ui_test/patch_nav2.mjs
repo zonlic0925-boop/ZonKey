@@ -1,5 +1,5 @@
 import fs from 'fs';
-const f1 = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/components/navigation/SubNavPills.tsx';
+const f1 = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/components/navigation/SubNavPills.tsx';
 let t1 = fs.readFileSync(f1, 'utf-8');
 if (!t1.includes('pdf-forms')) {
     t1 = t1.replace( // insert after protect-pdf
@@ -9,7 +9,7 @@ if (!t1.includes('pdf-forms')) {
     fs.writeFileSync(f1, t1);
 }
 
-const f2 = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/components/pdfcenter/PdfCenter.tsx';
+const f2 = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/components/pdfcenter/PdfCenter.tsx';
 let t2 = fs.readFileSync(f2, 'utf-8');
 if (!t2.includes('PdfFormsView')) {
     t2 = t2.replace(
@@ -23,7 +23,7 @@ if (!t2.includes('PdfFormsView')) {
     fs.writeFileSync(f2, t2);
 }
 
-const f3 = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/i18n/locales/zh-CN.ts';
+const f3 = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/i18n/locales/zh-CN.ts';
 let t3 = fs.readFileSync(f3, 'utf-8');
 if (!t3.includes('pdfForms')) {
     t3 = t3.replace(

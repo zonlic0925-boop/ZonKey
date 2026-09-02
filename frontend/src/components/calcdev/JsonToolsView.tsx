@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Braces } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { describeDeveloperToolError, formatJsonText } from '../../lib/toolknit/developerCore'
+import { describeDeveloperToolError, formatJsonText } from '../../lib/zonkey/developerCore'
 import { AreaInput, CopyButton, ErrorLine, TabsRow } from './kit'
 
 type Indent = '2' | '4' | 'tab'

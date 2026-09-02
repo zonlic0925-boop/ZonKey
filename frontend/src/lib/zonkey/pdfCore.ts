@@ -1,6 +1,5 @@
 /**
- * PDF 工坊核心 — 移植自 ToolKnit pdf-document-structure.js /
- * pdf-merge-core.js / pdf-split-core.js / pdf-rotate-core.js（纯 pdf-lib）。
+ * PDF 工坊核心 — 文档结构 / 合并 / 拆分 / 旋转（纯 pdf-lib）。
  * 压缩以 pdf-lib 对象流重写等效实现；转图/增强用 PDF.js + Canvas；
  * 加密/解密用 cryptpdf（AES-256 Rev 5，纯前端 Web Crypto）。
  */
@@ -274,7 +273,7 @@ export async function rotatePdfPages({
   return outputPdf.save();
 }
 
-// ===== 压缩（pdf-lib 对象流重写；等效 ToolKnit 后端压缩的轻量路径） =====
+// ===== 压缩（pdf-lib 对象流重写） =====
 
 export type PdfCompressLevel = 'low' | 'medium' | 'high';
 

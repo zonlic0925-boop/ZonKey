@@ -1,3 +1,3 @@
 @echo off
 cd /d "%~dp0"
-call "%~dp0build_zonscale_exe.bat"
+call "%~dp0build_zonkey_exe.bat"

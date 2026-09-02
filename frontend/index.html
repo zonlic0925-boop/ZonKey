@@ -2,19 +2,19 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/zonscale-icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/zonkey-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="author" content="zonlic" />
-    <title>ZonScale | 日用百宝箱 · 本地离线 · by zonlic</title>
+    <title>ZonKey | 日用百宝箱 · 本地离线 · by zonlic</title>
     <script>
       // 防主题闪屏：React 挂载前先把已存主题/字号写到 <html>，
       // 首帧即用目标主题变量渲染（预设值非法则忽略，走 index.css :root 默认）。
       (function () {
         try {
-          var t = localStorage.getItem('zonscale-theme');
+          var t = localStorage.getItem('zonkey-theme');
           if (t) document.documentElement.setAttribute('data-theme', t);
           var scales = { sm: '15px', md: '16px', lg: '17.5px', xl: '19px' };
-          var f = localStorage.getItem('zonscale-fontsize');
+          var f = localStorage.getItem('zonkey-fontsize');
           if (f && scales[f]) {
             document.documentElement.setAttribute('data-fontsize', f);
             document.documentElement.style.fontSize = scales[f];

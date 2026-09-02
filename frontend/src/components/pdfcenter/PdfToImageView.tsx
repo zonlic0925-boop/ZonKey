@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { ImageDown } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { pdfToImages, type PdfImageFormat, type PdfImageOutput } from '../../lib/toolknit/pdfCore'
+import { pdfToImages, type PdfImageFormat, type PdfImageOutput } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, downloadImageZip, PdfFilePicker, type PickedFile } from './pdfKit'
 import { ErrorLine } from '../calcdev/kit'
 

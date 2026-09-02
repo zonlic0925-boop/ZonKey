@@ -1,4 +1,4 @@
-/** 打字测试词库 —— 移植自 ToolKnit 2.1.1 src/data/typing-words.json。 */
+/** 打字测试词库（中英文双语）。 */
 export const typingWordsData = {
   en: {
     easy: ['the', 'and', 'cat', 'dog', 'run', 'jump', 'home', 'water', 'love', 'time', 'day', 'night', 'friend', 'happy', 'book', 'tree', 'sun', 'moon', 'star', 'food'],

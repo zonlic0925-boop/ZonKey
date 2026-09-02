@@ -13,7 +13,7 @@
  *    （Header 拖拽行手势期转 no-drag，防拖到标题栏被劫持成移窗口）。
  * 5) 壳层「崩溃后打不开」：pywebview WebView2 UDF 默认全局共享 %APPDATA%/pywebview，
  *    残留僵尸 msedgewebview2 持 Singleton Lock → 新实例白屏。修复：
- *    webview.start(storage_path=ZonScale 专属目录) + _cleanup_orphan_webview2()
+ *    webview.start(storage_path=ZonKey 专属目录) + _cleanup_orphan_webview2()
  *    （只杀父进程已死的孤儿，防误杀其他应用）。
  * 跑法：先起 vite dev(5199)，node temp_ui_test/round10_diag.mjs
  * 全功能冒烟见 round10_pdfcenter_smoke.mjs（72 断言，需后端 8765）。

@@ -7,7 +7,7 @@ import {
   extractPptImages,
   extractPptText,
   type PptSlideText,
-} from '../../lib/toolknit/pptCore'
+} from '../../lib/zonkey/pptCore'
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine } from '../calcdev/kit'
 

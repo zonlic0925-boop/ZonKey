@@ -1,7 +1,5 @@
 /**
- * 图像工坊核心 — 校验层按 ToolKnit image-batch-core.js / icon-gen-core.js 移植；
- * Canvas 操作（转换/压缩/裁剪/换色/拼接/图标/取色）按 ToolKnit 的工具语义实现
- * （其算法位于 Tauri UI 层，无法直接移植）。
+ * 图像工坊核心 — 校验层 + Canvas 操作（转换/压缩/裁剪/换色/拼接/图标/取色）。
  */
 
 export const IMAGE_BATCH_LIMITS = Object.freeze({

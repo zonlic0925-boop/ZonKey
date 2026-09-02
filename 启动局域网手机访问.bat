@@ -2,10 +2,10 @@
 setlocal
 cd /d "%~dp0"
 
-title ZonScale LAN Mode
+title ZonKey LAN Mode
 
 echo ========================================================
-echo   ZonScale - LAN mode (phone browser on same WiFi)
+echo   ZonKey - LAN mode (phone browser on same WiFi)
 echo   Local:  http://127.0.0.1:8765
 echo   Phone:  see LAN URL printed after server starts
 echo ========================================================

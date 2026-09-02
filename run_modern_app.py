@@ -1,4 +1,4 @@
-"""ZonScale 脱敏工作台 — 孟菲斯风格统一界面
+"""ZonKey 脱敏工作台 — 孟菲斯风格统一界面
 图纸脱敏 + 公文 PDF + Word + 规则 + 审计
 React + Tailwind CSS + FastAPI Native Bridge
 """

@@ -6,7 +6,7 @@ import {
   assessPasswordStrength,
   generatePassword,
   PASSWORD_LIMITS,
-} from '../../lib/toolknit/passwordCore'
+} from '../../lib/zonkey/passwordCore'
 import { CopyButton, ErrorLine, Field, inputClass } from './kit'
 
 const strengthColors: Record<string, string> = {

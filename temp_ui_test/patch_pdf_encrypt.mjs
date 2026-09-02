@@ -1,5 +1,5 @@
 import fs from 'fs';
-const coreF = 'C:/Users/Zonlic/Desktop/ZonScale/frontend/src/lib/toolknit/pdfCore.ts';
+const coreF = 'C:/Users/Zonlic/Desktop/ZonKey/frontend/src/lib/zonkey/pdfCore.ts';
 let coreCode = fs.readFileSync(coreF, 'utf-8');
 coreCode += `
 export async function encryptPdfFileAdvanced(

@@ -80,7 +80,7 @@ def main():
         sys.exit(1)
 
     webview.create_window(
-        "ZonScale Shell Smoke",
+        "ZonKey Shell Smoke",
         url,
         width=1200,
         height=800,

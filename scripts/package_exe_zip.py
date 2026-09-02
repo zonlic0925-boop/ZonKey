@@ -1,4 +1,4 @@
-"""将 dist/ZonScale 打包为可分发的 ZIP 归档。"""
+"""将 dist/ZonKey 打包为可分发的 ZIP 归档。"""
 
 from __future__ import annotations
 
@@ -8,23 +8,23 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "dist" / "ZonScale"
+SRC = ROOT / "dist" / "ZonKey"
 OUT_DIR = ROOT / "dist_release"
 
 LAN_BAT = """@echo off
 setlocal
 cd /d "%~dp0"
 
-title ZonScale LAN (phone browser)
+title ZonKey LAN (phone browser)
 
 echo ========================================================
-echo   ZonScale EXE - LAN mode
+echo   ZonKey EXE - LAN mode
 echo   PC:    http://127.0.0.1:8765
 echo   Phone: use http://YOUR_PC_IP:8765 on same WiFi
 echo ========================================================
 echo.
 
-ZonScale.exe --lan --browser
+ZonKey.exe --lan --browser
 pause
 endlocal
 """
@@ -35,14 +35,14 @@ def _write_lan_launcher() -> None:
 
 
 def package(version: str | None = None) -> Path:
-    if not (SRC / "ZonScale.exe").is_file():
-        raise FileNotFoundError(f"未找到 {SRC / 'ZonScale.exe'}，请先运行 build_zonscale_exe.bat")
+    if not (SRC / "ZonKey.exe").is_file():
+        raise FileNotFoundError(f"未找到 {SRC / 'ZonKey.exe'}，请先运行 build_zonkey_exe.bat")
 
     _write_lan_launcher()
 
     stamp = datetime.now().strftime("%Y%m%d")
     ver = version or stamp
-    archive_base = OUT_DIR / f"ZonScale_Windows_x64_{ver}"
+    archive_base = OUT_DIR / f"ZonKey_Windows_x64_{ver}"
     zip_path = shutil.make_archive(str(archive_base), "zip", root_dir=SRC)
     return Path(zip_path)
 
@@ -54,7 +54,7 @@ def main() -> int:
         print(f"[ERROR] {exc}")
         return 1
     print(f"[OK] 发布包已生成: {zip_path}")
-    print(f"     解压后运行: ZonScale.exe")
+    print(f"     解压后运行: ZonKey.exe")
     return 0
 
 

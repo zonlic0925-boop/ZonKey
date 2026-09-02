@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { KeySquare } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { decodeJwt, describeDeveloperToolError } from '../../lib/toolknit/developerCore'
+import { decodeJwt, describeDeveloperToolError } from '../../lib/zonkey/developerCore'
 import { AreaInput, CopyButton, ErrorLine } from './kit'
 
 interface JwtViewData {

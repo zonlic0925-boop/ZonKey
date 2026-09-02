@@ -15,7 +15,7 @@ import {
   getFavorites,
   removeFavorite,
   subscribeFavorites,
-} from '../../lib/toolknit/favoritesCore';
+} from '../../lib/zonkey/favoritesCore';
 
 interface FavoritesViewProps {
   onOpenTool: (tool: ToolId) => void;

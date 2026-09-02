@@ -1,6 +1,6 @@
 /* 手机端导航+收藏 实机检查（390×844）：截图 + 溢出 + 交互链路 */
 import { chromium } from 'playwright';
-const SHOTS = 'C:/Users/Zonlic/Desktop/ZonScale/temp_ui_test/shots_mnav';
+const SHOTS = 'C:/Users/Zonlic/Desktop/ZonKey/temp_ui_test/shots_mnav';
 import fs from 'fs';
 fs.mkdirSync(SHOTS, { recursive: true });
 const browser = await chromium.launch();

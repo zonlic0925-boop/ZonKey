@@ -16,7 +16,7 @@ import { pillMorphSpring } from '../../motion/springs';
 import {
   getFavorites,
   subscribeFavorites,
-} from '../../lib/toolknit/favoritesCore';
+} from '../../lib/zonkey/favoritesCore';
 
 const accentBg: Record<MemphisAccent, string> = {
   coral: 'bg-mem-coral/20',

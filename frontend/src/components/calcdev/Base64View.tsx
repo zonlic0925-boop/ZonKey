@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Binary } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
-import { describeDeveloperToolError, decodeBase64Utf8, encodeBase64Utf8 } from '../../lib/toolknit/developerCore'
+import { describeDeveloperToolError, decodeBase64Utf8, encodeBase64Utf8 } from '../../lib/zonkey/developerCore'
 import { AreaInput, CopyButton, ErrorLine, TabsRow } from './kit'
 
 export const Base64View: React.FC = () => {

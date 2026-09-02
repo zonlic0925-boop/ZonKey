@@ -70,4 +70,4 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
   }
 }
 `;
-fs.writeFileSync('C:/Users/Zonlic/Desktop/ZonScale/frontend/src/components/pdfcenter/PdfCenter.tsx', content);
+fs.writeFileSync('C:/Users/Zonlic/Desktop/ZonKey/frontend/src/components/pdfcenter/PdfCenter.tsx', content);

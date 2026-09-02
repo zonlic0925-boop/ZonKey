@@ -11,12 +11,12 @@ await page.locator('button:has-text("PDF 工坊")').first().click();
 await page.waitForTimeout(900);
 await page.locator('button[aria-label="收藏此工具"]').first().click();
 await page.waitForTimeout(300);
-await page.locator('button[title="欢迎来到 ZonScale"]').first().click();
+await page.locator('button[title="欢迎来到 ZonKey"]').first().click();
 await page.waitForTimeout(800);
 await page.locator('button:has-text("页面整理")').first().click();
 await page.waitForTimeout(1200);
 // 打印当前工具态：点击 chip 后停留在哪
-const homeBtnVisible = await page.locator('button[title="欢迎来到 ZonScale"]').first().isVisible().catch(() => false);
+const homeBtnVisible = await page.locator('button[title="欢迎来到 ZonKey"]').first().isVisible().catch(() => false);
 console.log('home btn visible (false=已离开首页):', homeBtnVisible);
 const viewerVisible = await page.locator('text=PDF Editor Viewer').first().isVisible().catch(() => false);
 console.log('landed on pdf-organize editor?', viewerVisible);

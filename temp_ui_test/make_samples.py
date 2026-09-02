@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Generate synthetic test samples for ZonScale browser UI testing.
+"""Generate synthetic test samples for ZonKey browser UI testing.
 
 All sensitive terms are generic (CONFIDENTIAL / PROPRIETARY / INTERNAL USE ONLY)
 plus format-valid fake PII. No vendor-specific words (public release rule).

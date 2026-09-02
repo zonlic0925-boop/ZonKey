@@ -57,9 +57,9 @@ def _sample_pdf_bytes() -> bytes:
 
     styles = getSampleStyleSheet()
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, title="ZonScale convert sample")
+    doc = SimpleDocTemplate(buffer, pagesize=A4, title="ZonKey convert sample")
     story = [
-        Paragraph("ZonScale Convert Marker 42", styles["Title"]),
+        Paragraph("ZonKey Convert Marker 42", styles["Title"]),
         Spacer(1, 12),
         Paragraph("This is the first body paragraph for conversion testing.", styles["BodyText"]),
         Paragraph("中文段落：图纸脱敏工作台转换引擎测试。", styles["BodyText"]),
@@ -171,7 +171,7 @@ def test_pdf_to_word_end_to_end(sample_pdf: bytes):
     client = _make_client()
     response = client.post(
         "/api/convert/pdf-to-word",
-        files={"file": ("zonscale_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
+        files={"file": ("zonkey_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
     )
     assert response.status_code == 200, response.text
     data = _wait_job(client, response.json()["job_id"])
@@ -186,7 +186,7 @@ def test_pdf_to_word_end_to_end(sample_pdf: bytes):
 
         doc = Document(str(out_path))
         full_text = "\n".join(p.text for p in doc.paragraphs)
-        assert "ZonScale Convert Marker 42" in full_text
+        assert "ZonKey Convert Marker 42" in full_text
         table_text = "\n".join(
             cell.text for table in doc.tables for row in table.rows for cell in row.cells
         )
@@ -203,7 +203,7 @@ def test_pdf_to_excel_end_to_end(sample_pdf: bytes):
     client = _make_client()
     response = client.post(
         "/api/convert/pdf-to-excel",
-        files={"file": ("zonscale_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
+        files={"file": ("zonkey_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
     )
     assert response.status_code == 200, response.text
     data = _wait_job(client, response.json()["job_id"])
@@ -263,7 +263,7 @@ def test_pdf_to_ppt_end_to_end(sample_pdf: bytes):
     client = _make_client()
     response = client.post(
         "/api/convert/pdf-to-ppt",
-        files={"file": ("zonscale_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
+        files={"file": ("zonkey_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
         data={"dpi": "110"},
     )
     assert response.status_code == 200, response.text
@@ -294,7 +294,7 @@ def test_office_to_pdf_word_end_to_end(has_office_com: bool):
     client = _make_client()
     response = client.post(
         "/api/convert/office-to-pdf",
-        files={"file": ("zonscale_word_sample.docx", io.BytesIO(_sample_docx_bytes()), "application/octet-stream")},
+        files={"file": ("zonkey_word_sample.docx", io.BytesIO(_sample_docx_bytes()), "application/octet-stream")},
     )
     assert response.status_code == 200, response.text
     data = _wait_job(client, response.json()["job_id"])
@@ -318,7 +318,7 @@ def test_office_to_pdf_excel_end_to_end(has_office_com: bool):
     client = _make_client()
     response = client.post(
         "/api/convert/office-to-pdf",
-        files={"file": ("zonscale_excel_sample.xlsx", io.BytesIO(_sample_xlsx_bytes()), "application/octet-stream")},
+        files={"file": ("zonkey_excel_sample.xlsx", io.BytesIO(_sample_xlsx_bytes()), "application/octet-stream")},
     )
     assert response.status_code == 200, response.text
     data = _wait_job(client, response.json()["job_id"])
@@ -345,7 +345,7 @@ def test_repair_valid_pdf(sample_pdf: bytes):
     client = _make_client()
     response = client.post(
         "/api/convert/repair",
-        files={"file": ("zonscale_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
+        files={"file": ("zonkey_sample.pdf", io.BytesIO(sample_pdf), "application/pdf")},
     )
     assert response.status_code == 200, response.text
     data = response.json()
@@ -480,7 +480,7 @@ def test_ocr_export_txt():
 
     canvas = Canvas(buffer, pagesize=(400, 200))
     canvas.setFont("Helvetica", 40)
-    canvas.drawString(40, 120, "ZONSCALE 2026")
+    canvas.drawString(40, 120, "ZONKEY 2026")
     canvas.showPage()
     canvas.save()
     buffer.seek(0)
@@ -496,7 +496,7 @@ def test_ocr_export_txt():
     out_path = Path(data["outputs"][0]["dir"]) / data["outputs"][0]["name"]
     try:
         text = out_path.read_text(encoding="utf-8")
-        assert "ZONSCALE" in text.upper().replace(" ", "") or "2026" in text
+        assert "ZONKEY" in text.upper().replace(" ", "") or "2026" in text
     finally:
         out_path.unlink(missing_ok=True)
 
@@ -509,7 +509,7 @@ def test_ocr_export_sandwich_pdf_searchable():
 
     canvas = Canvas(buffer, pagesize=(400, 200))
     canvas.setFont("Helvetica", 40)
-    canvas.drawString(40, 120, "ZONSCALE 2026")
+    canvas.drawString(40, 120, "ZONKEY 2026")
     canvas.showPage()
     canvas.save()
     buffer.seek(0)
@@ -528,7 +528,7 @@ def test_ocr_export_sandwich_pdf_searchable():
         with pdfplumber.open(str(out_path)) as pdf:
             text = pdf.pages[0].extract_text() or ""
         # 夹心 PDF：隐形文字层可搜索（OCR 结果）
-        assert "2026" in text or "ZONSCALE" in text.upper()
+        assert "2026" in text or "ZONKEY" in text.upper()
     finally:
         out_path.unlink(missing_ok=True)
 

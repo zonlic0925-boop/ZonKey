@@ -35,7 +35,7 @@ if (await agree.isVisible().catch(() => false)) {
 // ---------- 0. round-4：新访客默认流动背景（fluid 默认化） ----------
 // 注意：默认值不写 localStorage（无偏好=不落盘），断言渲染层而非存储
 const r0 = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-texture'),
+  saved: localStorage.getItem('zonkey-texture'),
   blobs: document.querySelectorAll('.zs-fluid-blob').length,
   anim: (() => {
     const el = document.querySelector('.zs-fluid-a');
@@ -58,7 +58,7 @@ await page.waitForTimeout(350);
 const r1 = await page.evaluate(() => ({
   dataTheme: document.documentElement.getAttribute('data-theme'),
   bodyBg: getComputedStyle(document.body).backgroundColor,
-  saved: localStorage.getItem('zonscale-theme'),
+  saved: localStorage.getItem('zonkey-theme'),
 }));
 ok('data-theme=dark', r1.dataTheme === 'dark', JSON.stringify(r1.dataTheme));
 ok('body 底色翻深', r1.bodyBg === 'rgb(24, 24, 38)', r1.bodyBg);
@@ -68,7 +68,7 @@ ok('localStorage 持久化', r1.saved === 'dark', r1.saved);
 await page.locator('button:has-text("网格纸")').first().click();
 await page.waitForTimeout(250);
 const r2 = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-texture'),
+  saved: localStorage.getItem('zonkey-texture'),
   gridLayer: Boolean(document.querySelector('.zs-texture-grid')),
 }));
 ok('纹理=grid 已存已渲染', r2.saved === 'grid' && r2.gridLayer, JSON.stringify(r2));
@@ -97,7 +97,7 @@ await page.waitForTimeout(200);
 await page.locator('button:has-text("特大")').first().click();
 await page.waitForTimeout(250);
 const r4 = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-fontsize'),
+  saved: localStorage.getItem('zonkey-fontsize'),
   root: getComputedStyle(document.documentElement).fontSize,
   attr: document.documentElement.getAttribute('data-fontsize'),
 }));
@@ -111,7 +111,7 @@ ok('字号=md 回 16px', r4b === '16px', r4b);
 await page.locator('button:has-text("流动")').first().click();
 await page.waitForTimeout(300);
 const r5 = await page.evaluate(() => ({
-  saved: localStorage.getItem('zonscale-texture'),
+  saved: localStorage.getItem('zonkey-texture'),
   blobs: document.querySelectorAll('.zs-fluid-blob').length,
   anim: getComputedStyle(document.querySelector('.zs-fluid-a')).animationName,
 }));

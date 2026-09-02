@@ -9,7 +9,7 @@ import {
   extractPdfPages,
   parsePdfPageRanges,
   splitPdfByRanges,
-} from './src/lib/toolknit/pdfCore';
+} from './src/lib/zonkey/pdfCore';
 
 let failures = 0;
 function check(name: string, condition: boolean, detail = ''): void {

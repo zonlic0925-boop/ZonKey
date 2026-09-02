@@ -2,10 +2,10 @@
 setlocal
 cd /d "%~dp0"
 
-title ZonScale Workbench
+title ZonKey Workbench
 
 echo ========================================================
-echo   ZonScale Desensitization Workbench
+echo   ZonKey Desensitization Workbench
 echo   by zonlic
 echo   URL: http://127.0.0.1:8765
 echo ========================================================

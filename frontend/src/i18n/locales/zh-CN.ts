@@ -2,7 +2,7 @@ import type { MessageTree } from '../types';
 
 export const zhCN: MessageTree = {
   meta: {
-    pageTitle: 'ZonScale | 日用百宝箱 · 本地离线 · by zonlic',
+    pageTitle: 'ZonKey | 日用百宝箱 · 本地离线 · by zonlic',
   },
   brand: {
     workbenchBadge: '日用百宝箱',
@@ -121,8 +121,8 @@ export const zhCN: MessageTree = {
   },
   placeholder: {
     badge: '迁移中',
-    body: 'ToolKnit 工具正在按阶段接入 ZonScale 统一工作台，该中心共 {count} 项工具，将在后续版本陆续开放。当前版本已完整开放「智能脱敏」全部功能。',
-    privacy: '所有工具继续遵循 ZonScale 原则：本地离线处理，数据不出你的电脑。',
+    body: '该中心的工具正在按阶段接入统一工作台，共 {count} 项工具，将在后续版本陆续开放。当前版本已完整开放「智能脱敏」全部功能。',
+    privacy: '所有工具继续遵循 ZonKey 原则：本地离线处理，数据不出你的电脑。',
   },
   calcdev: {
     copy: '复制',
@@ -439,7 +439,7 @@ export const zhCN: MessageTree = {
     toImageDone: '已生成 {count} 张幻灯片图片（ZIP）',
     outlineHint: '输入主题离线生成结构化大纲（本地模板驱动，不联网、不上传）。生成后可自由编辑再下载。',
     outlineTopic: '演示主题',
-    outlineTopicPh: '例如：ZonScale 智能脱敏工作台介绍',
+    outlineTopicPh: '例如：ZonKey 智能脱敏工作台介绍',
     outlineDeckType: '演示类型',
     outlineSlideCount: '目标页数',
     outlineGenerate: '生成大纲',
@@ -538,7 +538,7 @@ export const zhCN: MessageTree = {
     },
   },
   homeNav: {
-    title: '欢迎来到 ZonScale',
+    title: '欢迎来到 ZonKey',
     subtitle: '共 {count} 项本地离线工具 · 选择一个功能分类开始',
     myFavorites: '我的收藏',
     toolCount: '{ready} / {total} 项工具',
@@ -631,7 +631,9 @@ export const zhCN: MessageTree = {
   },
   app: {
     backendOffline:
-      '后端未启动 — 请双击运行 **启动现代化脱敏工作台.bat** 或 **ZonScale.exe** 后刷新（http://127.0.0.1:8765）',
+      '后端未启动 — 请双击运行 **启动现代化脱敏工作台.bat** 或 **ZonKey.exe** 后刷新（http://127.0.0.1:8765）',
+    browserModeInfo:
+      '当前为网页版：文件只在浏览器内处理，不上传任何服务器；需要本机引擎的工具请使用桌面版。',
   },
   editor: {
     document: '文件信息',
@@ -686,8 +688,8 @@ export const zhCN: MessageTree = {
     thanks: '感谢每一位让 {appName} 变得更好的人 ✨',
     linksTitle: '我的 GitHub 与项目主页',
     githubProfile: '作者 GitHub 主页',
-    projectRepo: 'ZonScale 项目仓库',
-    starHint: '如果 ZonScale 帮到了你，方便的话给项目点一颗 Star ⭐ 就是对我最大的鼓励（完全自愿，不点也完全 OK）',
+    projectRepo: 'ZonKey 项目仓库',
+    starHint: '如果 ZonKey 帮到了你，方便的话给项目点一颗 Star ⭐ 就是对我最大的鼓励（完全自愿，不点也完全 OK）',
   },
   drawing: {
     defaultText: '敏感项',
@@ -919,7 +921,7 @@ export const zhCN: MessageTree = {
   },
   privacy: {
     title: '隐私与联网说明',
-    intro: 'ZonScale 是本地离线脱敏工作台：脱敏、转换、渲染全部在电脑端完成，你的文件不会上传到任何云端。',
+    intro: 'ZonKey 是本地离线脱敏工作台：脱敏、转换、渲染全部在电脑端完成，你的文件不会上传到任何云端。',
     currentMode: '当前模式',
     modeDesktopTitle: '桌面版（离线）',
     modeDesktopBody: '应用完全离线运行，文件与规则只保存在你这台电脑上，不连接任何服务器。',

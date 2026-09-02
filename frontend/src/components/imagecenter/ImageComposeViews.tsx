@@ -8,7 +8,7 @@ import {
   stitchImages,
   type PaletteColor,
   type StitchDirection,
-} from '../../lib/toolknit/imageCore'
+} from '../../lib/zonkey/imageCore'
 import { downloadBlob, ImagePicker, SaveRow, type PickedImage } from './imageKit'
 import { ErrorLine } from '../calcdev/kit'
 

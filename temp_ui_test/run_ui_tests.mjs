@@ -1,5 +1,5 @@
 /**
- * ZonScale 智能脱敏 UI 实测脚本（Playwright · 简体中文 UI）
+ * ZonKey 智能脱敏 UI 实测脚本（Playwright · 简体中文 UI）
  */
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'fs/promises';

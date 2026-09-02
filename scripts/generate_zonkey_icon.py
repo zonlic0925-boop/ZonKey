@@ -1,4 +1,4 @@
-"""Generate ZonScale Windows .ico (multi-resolution) from the dragon-scale hexagon brand mark."""
+"""Generate ZonKey Windows .ico (multi-resolution) from the dragon-scale hexagon brand mark."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "packaging" / "windows" / "assets"
-OUT_ICO = OUT_DIR / "zonscale.ico"
-OUT_PNG = OUT_DIR / "zonscale.png"
+OUT_ICO = OUT_DIR / "zonkey.ico"
+OUT_PNG = OUT_DIR / "zonkey.png"
 ROOT_ASSETS = ROOT / "assets"
 
 BG = (255, 249, 240, 255)
@@ -105,8 +105,8 @@ def main() -> None:
     if master_rgba.mode != "RGBA":
         master_rgba = master_rgba.convert("RGBA")
     master_rgba.save(OUT_PNG, format="PNG")
-    master_rgba.save(ROOT_ASSETS / "zonscale.png", format="PNG")
-    images[0].save(ROOT_ASSETS / "zonscale.ico", format="ICO", append_images=images[1:])
+    master_rgba.save(ROOT_ASSETS / "zonkey.png", format="PNG")
+    images[0].save(ROOT_ASSETS / "zonkey.ico", format="ICO", append_images=images[1:])
 
     frame_count = _ico_entry_count(OUT_ICO)
     if frame_count < 2:
@@ -114,7 +114,7 @@ def main() -> None:
 
     print(f"Wrote {OUT_ICO} ({OUT_ICO.stat().st_size} bytes, {frame_count} sizes)")
     print(f"Wrote {OUT_PNG}")
-    print(f"Copied to {ROOT_ASSETS / 'zonscale.ico'}")
+    print(f"Copied to {ROOT_ASSETS / 'zonkey.ico'}")
 
 
 if __name__ == "__main__":

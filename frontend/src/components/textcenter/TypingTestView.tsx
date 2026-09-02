@@ -10,7 +10,7 @@ import {
   TYPING_DURATIONS,
   type TypingDifficulty,
   type TypingLang,
-} from '../../lib/toolknit/typingCore'
+} from '../../lib/zonkey/typingCore'
 
 type Phase = 'settings' | 'running' | 'result'
 
@@ -23,7 +23,7 @@ interface ResultSnapshot {
   rating: string
 }
 
-/** 打字测速：中英文双语词库、四档难度、IME 兼容、实时 WPM（移植自 ToolKnit） */
+/** 打字测速：中英文双语词库、四档难度、IME 兼容、实时 WPM */
 export const TypingTestView: React.FC = () => {
   const { t, locale } = useI18n()
   const [phase, setPhase] = useState<Phase>('settings')
@@ -133,7 +133,7 @@ export const TypingTestView: React.FC = () => {
         finish(nextInput)
       }
     } else if (nextNormalized.length > prevLen) {
-      // 打字/错误音效（WebAudio 振荡器合成，与 ToolKnit 一致）
+      // 打字/错误音效（WebAudio 振荡器合成）
       const lastIdx = nextNormalized.length - 1
       if (nextNormalized[lastIdx] === normalizedTarget[lastIdx]) playTone('key')
       else playTone('error')

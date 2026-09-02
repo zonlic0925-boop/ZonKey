@@ -1,5 +1,5 @@
 /**
- * 密码生成核心 — 1:1 移植自 ToolKnit password-core.js
+ * 密码生成核心 — 密码熵计算与自定义字符集生成
  * 安全随机（无模偏差）、保证每类字符至少出现一次、Fisher-Yates 洗牌、熵强度评估。
  */
 export const PASSWORD_LIMITS = Object.freeze({ minLength: 4, maxLength: 64 });

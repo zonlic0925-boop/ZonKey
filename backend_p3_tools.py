@@ -1,6 +1,6 @@
 """P3 安全工具后端：PDF 高级权限保护 + PAdES 证书签名（pyhanko, MIT）。
 
-许可合规：pyhanko / pyhanko-certvalidator 均为 MIT，符合 ZonScale 零 AGPL 门禁。
+许可合规：pyhanko / pyhanko-certvalidator 均为 MIT，符合 ZonKey 零 AGPL 门禁。
 签名凭证由用户自行提供（PEM 证书 + 私钥），服务端不内置任何证书。
 """
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException

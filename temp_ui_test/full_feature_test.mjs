@@ -1,5 +1,5 @@
 /**
- * ZonScale 全功能真实用户测试（手机 390×844 / 桌面 1366×900 双模式）
+ * ZonKey 全功能真实用户测试（手机 390×844 / 桌面 1366×900 双模式）
  * MODE=mobile|desktop node full_feature_test.mjs
  * 覆盖：8 中心 76 工具 + 导航 + 隐私弹窗 + 横向溢出检测
  * 产物：shots_full/<mode>/NN_*.png + results_full_<mode>.json
@@ -766,7 +766,7 @@ async function testCalcDev(page) {
   await waitMs(600);
   const b64Inputs = page.locator('textarea');
   if (await b64Inputs.first().isVisible().catch(() => false)) {
-    await b64Inputs.first().fill('ZonScale 测试');
+    await b64Inputs.first().fill('ZonKey 测试');
     await clickBtn(page, /编码|加密|→|转换/).catch(() => {});
     await waitMs(800);
     const b64out = await page.getByText(/W9uU2NhbGU=|WpvblNjYWxl|WlvblNjYWxl|5rWL6K\+V/).first().isVisible().catch(() => false);
@@ -780,7 +780,7 @@ async function testCalcDev(page) {
   await waitMs(600);
   const urlTa = page.locator('textarea').first();
   if (await urlTa.isVisible().catch(() => false)) {
-    await urlTa.fill('https://zonscale.com/测试?_q=空 格');
+    await urlTa.fill('https://zonkey.com/测试?_q=空 格');
     await clickBtn(page, /编码/.source ? /编码/ : /encode/).catch(() => {});
     await waitMs(800);
     const enc = await page.getByText(/%E6%|%/).first().isVisible().catch(() => false);
@@ -811,7 +811,7 @@ async function testCalcDev(page) {
   await waitMs(600);
   const hashTa = page.locator('textarea, input[type="text"]').first();
   if (await hashTa.isVisible().catch(() => false)) {
-    await hashTa.fill('zonscale');
+    await hashTa.fill('zonkey');
     await waitMs(1000);
     const hash = await page.getByText(/[0-9a-f]{32,64}/i).first().isVisible().catch(() => false);
     await record(page, 'calc', 'hash-crypto', hash ? 'pass' : 'fail', hash ? '哈希值可见' : '无哈希输出');

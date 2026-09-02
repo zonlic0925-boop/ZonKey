@@ -11,7 +11,7 @@
 
 | 层 | 现状 |
 | --- | --- |
-| 前端 PDF 引擎 | `frontend/src/lib/toolknit/pdfCore.ts`（pdf-lib + PDF.js + cryptpdf），9 个 PDF 工具已上线 |
+| 前端 PDF 引擎 | `frontend/src/lib/zonkey/pdfCore.ts`（pdf-lib + PDF.js + cryptpdf），9 个 PDF 工具已上线 |
 | 后端 PDF 引擎 | PyMuPDF 1.27.1（栅格化/脱敏/水印底子）、RapidOCR（脱敏链路内）、opencv |
 | Office 转换 | PPT→PDF 已通（LibreOffice 优先 + PowerPoint COM 兜底，含能力探测 `/api/ppt/render/capability`） |
 | 异步任务 | `/api/media/jobs/{id}` 进度轮询模式，可直接套用到长时转换 |
@@ -21,7 +21,7 @@
 ### 1.2 已发现的三处「死资产」（接线即得功能，零新依赖）
 
 1. **JPG→PDF**：`core/converter/image_merge.py:10` 后端实现完整且有测试，但无 API、无 UI。
-2. **PDF 水印**：`frontend/src/lib/toolknit/officeCore.ts:122` `addPdfWatermark()` 已实现，零引用。
+2. **PDF 水印**：`frontend/src/lib/zonkey/officeCore.ts:122` `addPdfWatermark()` 已实现，零引用。
 3. **按页码范围拆分**：`officeCore.ts:15` 有 range 拆分实现，`PdfSplitView` 未用（目前只能逐页拆）。
 
 ### 1.3 已知技术债（顺手修）

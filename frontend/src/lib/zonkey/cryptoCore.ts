@@ -1,5 +1,5 @@
 /**
- * 哈希与加密套件核心 — 按 ToolKnit crypto-tool-core.js 移植（17 种算法）。
+ * 哈希与加密套件核心（17 种算法，纯前端 Web Crypto / 纯 JS 实现）。
  * 哈希: MD5 / SHA-1 / SHA-224 / SHA-256 / SHA-384 / SHA-512 / SHA3-256 / SHA3-512 / SM3
  * HMAC: HMAC-MD5 / HMAC-SHA1 / HMAC-SHA256 / HMAC-SHA512
  * 对称: AES / DES / 3DES / RC4 / SM4（字节级密钥，支持模式与填充）

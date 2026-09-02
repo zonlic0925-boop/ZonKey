@@ -33,7 +33,7 @@ def _make_sample_pptx() -> bytes:
 
     layout = prs.slide_layouts[0]
     slide = prs.slides.add_slide(layout)
-    slide.shapes.title.text = "ZonScale 渲染测试"
+    slide.shapes.title.text = "ZonKey 渲染测试"
     slide.placeholders[1].text = "sample subtitle"
 
     bullet_layout = prs.slide_layouts[1]
@@ -94,7 +94,7 @@ def test_render_end_to_end(target: str, sample_pptx: bytes, has_renderer: bool, 
     client = _make_client()
     response = client.post(
         "/api/ppt/render",
-        files={"file": ("zonscale_test_deck.pptx", io.BytesIO(sample_pptx), "application/octet-stream")},
+        files={"file": ("zonkey_test_deck.pptx", io.BytesIO(sample_pptx), "application/octet-stream")},
         data={"target": target, "dpi": "96"},
     )
     assert response.status_code == 200, response.text

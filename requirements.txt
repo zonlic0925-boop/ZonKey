@@ -1,4 +1,4 @@
-# ZonScale 运行时依赖（Python 3.11）
+# ZonKey 运行时依赖（Python 3.11）
 # PDF 引擎（Phase M：100% 宽松许可，零 AGPL——渲染 pypdfium2 / 抽取 pdfplumber / 写入 pikepdf+reportlab）
 numpy>=2.0,<3
 opencv-python>=4.10
