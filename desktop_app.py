@@ -78,6 +78,72 @@ def _wait_for_server(timeout: float = 30.0) -> bool:
     return False
 
 
+def _cleanup_orphan_webview2() -> None:
+    """启动前清理父进程已死的孤儿 msedgewebview2（round-10）。
+
+    前一次宿主崩溃/强杀后，WebView2 子进程可能存活并持有用户数据目录的
+    Singleton Lock——新实例开窗即白屏，且表现为「崩溃后无法再打开软件」。
+    清理策略：只杀父进程已不存在的孤儿 msedgewebview2（PPID 不在存活进程
+    表中），不碰任何有活父进程的 WebView2（其他应用/浏览器的）。非 Windows 无操作。
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import subprocess
+
+        ps = (
+            "Get-CimInstance Win32_Process -Filter \"Name='msedgewebview2.exe'\" | "
+            "Select-Object ProcessId,ParentProcessId | ConvertTo-Csv -NoTypeInformation"
+        )
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command", ps],
+            text=True,
+            errors="ignore",
+            timeout=20,
+        )
+        alive = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command",
+             "(Get-CimInstance Win32_Process).ProcessId"],
+            text=True,
+            errors="ignore",
+            timeout=20,
+        )
+    except Exception:  # noqa: BLE001 — 清理失败绝不能挡启动
+        return
+
+    alive_set = set()
+    for tok in alive.splitlines():
+        tok = tok.strip()
+        if tok.isdigit():
+            alive_set.add(int(tok))
+
+    orphans = []
+    rows = out.splitlines()[1:]  # 跳过 CSV 头
+    for row in rows:
+        cols = [c.strip().strip('"') for c in row.split(",")]
+        if len(cols) < 2 or not cols[0].isdigit() or not cols[1].isdigit():
+            continue
+        pid, ppid = int(cols[0]), int(cols[1])
+        # 当前进程（尚未启动任何 WebView2）不会出现在名单里，防御性排除自身
+        if pid == os.getpid() or ppid == os.getpid():
+            continue
+        if ppid not in alive_set:
+            orphans.append(str(pid))
+
+    if orphans:
+        _log(f"[*] 清理上次崩溃残留的 WebView2 进程: {', '.join(orphans)}")
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID"] + orphans,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=30,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(0.8)
+
+
 def _run_uvicorn(bind_host: str) -> None:
     try:
         import uvicorn
@@ -111,6 +177,15 @@ def _open_pywebview(title: str) -> None:
     # 必须显式放开；放开后 WebView2 弹原生"另存为"对话框，不覆盖原始文件。
     webview.settings['ALLOW_DOWNLOADS'] = True
 
+    # WebView2 用户数据目录（round-10）：pywebview 默认把所有应用共用
+    # %APPDATA%/pywebview 作 UDF，宿主崩溃后残留的 msedgewebview2 持有该
+    # 目录的 Singleton Lock——新实例撞锁开窗即白屏，且与其他 pywebview
+    # 应用互相干扰。改用 ZonScale 专属目录（webview.start 的 storage_path，
+    # 注意 settings 表里没有这个键），配合 _cleanup_orphan_webview2 启动清理。
+    storage_path = str(
+        Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonScale' / 'webview_data'
+    )
+
     # 无边框窗口：去掉系统标题栏，由前端自绘窗口控制；拖拽/缩放/Snap
     # 由 core/frameless_window.py 的 Win32 钩子补回（仅 Windows）。
     # 窗口/任务栏图标由 PyInstaller 打包时写入 EXE；pywebview 的 create_window 不支持 icon 参数
@@ -134,7 +209,8 @@ def _open_pywebview(title: str) -> None:
         background_color=_load_shell_bg(),
     )
     attach_frameless_behaviour(window)
-    webview.start()
+    # 注意：storage_path 只能经 webview.start() 传入（settings 表无此键）
+    webview.start(storage_path=storage_path)
 
 
 class WindowApi:
@@ -288,6 +364,10 @@ def main() -> None:
             use_browser = True
 
     if not use_browser:
+        # 上次崩溃可能残留孤儿 WebView2（持有 UDF 锁 → 新实例白屏），先清。
+        # 必须在 import webview / 建窗前执行。
+        _cleanup_orphan_webview2()
+
         # pywebview 打开失败（WebView2 运行时缺失、GPU 进程崩溃等）时
         # webview.start() 可能直接抛异常——兜底退回浏览器，不让进程白死
         # （用户视角即「双击后窗口一闪而过/永远白屏」）。
