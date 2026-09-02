@@ -1,4 +1,20 @@
-> 更新于：2026-09-02（第十轮：PDF 工坊「页面整理」编辑文字白屏卡死修复 + 壳层 WebView2 UDF 撞锁修复 + 24 工具全功能冒烟，EXE+Pages 已交付）。
+> 更新于：2026-09-02（第十一轮：发布前全面更名 ZonKey + ToolKnit 残留清洗 + 手机端红条改信息条 + 仓库公开化，EXE+Pages 已交付）。
+
+## 2026-09-02 第十一轮进度（发布前更名 ZonKey + 公开化收尾，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 全项目更名 ZonScale → ZonKey | ✅ | 全仓文本替换（ZonScale/Zonscale/zonscale/ZONSCALE → ZonKey/zonkey）：brand、localStorage 键、i18n 三语、bat/sh/command 脚本、README、docs、tests、temp_ui_test 调试脚本；文件名：build_zonkey_exe.bat / build_zonkey_mac.sh / ZonKey.spec×2 / generate_zonkey_icon.py / zonkey-icon.svg / zonkey.ico(png)×3；npm 包名 zonkey-ui；core/brand.py APP_NAME=ZonKey；desktop_app.py UDF %APPDATA%/ZonKey/webview_data。全仓 `git grep -in "toolknit\|zonscale"` 零命中 |
+| ToolKnit 残留清洗 | ✅ | `lib/toolknit/` → `lib/zonkey/`（19 文件 41 处 import）；全部「移植自/对齐 ToolKnit」注释改自述功能描述；`TOOLKNIT_INTEGRATION_PLAN.md` → `INTEGRATION_PLAN.md` 全文档清洗（实现来源改仓库内真实路径）；i18n「ToolKnit 工具按阶段接入」文案泛化；backend_media_tools.py 注释去 ToolKnit |
+| GitHub 仓库 | ✅ | 重命名 ZonKey（gh repo rename，旧链接重定向）；描述/homepage 更新；**可见性按用户确认设为 public**；本地 origin 更新 github.com/zonlic0925-boop/ZonKey.git |
+| Pages 新站点 | ✅ | 新建 Cloudflare Pages 项目 zonkey → https://zonkey.pages.dev；部署 97c37aac（branch=main），主 chunk index-BY9xWu87.js 与本地/zip 哈希三方一致；旧 zonscale.pages.dev 保留 |
+| 手机端红条改信息条 | ✅ | App.tsx 按 isShellMode() 分形：桌面壳保留红底 WifiOff 告警（真实故障信号）；浏览器改 bg-mem-teal/15 + Info 中性信息条 + 新增 i18n app.browserModeInfo（三语） |
+| 跟踪移除 | ✅ | git rm --cached 自签证书 2 枚 + 手机端访问地址.txt（工作区保留供运行时写入）；.gitignore 补两条规则 |
+| 回归验证 | ✅ | npm run build 成功；pytest 133 passed；release_acceptance 全过；EXE 指纹：zip 内 index-BY9xWu87.js 含 ZonKey×34/browserModeInfo×4/ZonScale×0、woff2=27；ZonKey.exe PYZ 流 ZonKey×5/ZonScale×0 |
+| EXE + Pages 交付 | ✅ | `dist_release/ZonKey_Windows_x64_20260902.zip`（15:18）；Pages 主域与 zip 同前端 |
+| 遗留 | ⏳ | 用户手机/浏览器实测红条新样式；GitHub 公开页面确认；旧 ZonScale zip 包与 zonscale.pages.dev 去留拍板 |
+
+# Project Status（项目状态）
 
 ## 2026-09-02 第十轮进度（页面整理白屏卡死 + 崩溃后打不开，本轮）
 
@@ -7,11 +23,11 @@
 | 页面整理编辑文字白屏卡死 | ✅ | 根因：onBlur 的 setElements updater 读 `e.currentTarget.innerText`——React 18 批处理在处理器返回后才跑 updater，事件对象已回收（currentTarget=null）→ 渲染器 reducer 阶段 TypeError → 整棵 React 树卸载（实测 body 只剩 87 字节）＝白屏卡死且无法自恢复。修复：textRefs ref 表读取 + 节点丢失保底原文本；顺带修 fontSize 用不存在的 imageMetrics.scale（NaN）→ scaleY |
 | 全应用白屏防线 | ✅ | 新增 `ZsErrorBoundary`（common/，重试出口），App.tsx 视图层包裹 + resetKey=center:tool 切工具自动恢复——任何渲染期异常不再整树卸载 |
 | 编辑器拖动防窗口劫持 | ✅ | PdfEditorCanvas 拖动/缩放期间标 `<html data-canvas-gesture>`（与 CanvasViewport 同款，Header 拖拽行手势期转 no-drag） |
-| 崩溃后无法重新打开软件 | ✅ | 根因：pywebview WebView2 UDF 默认全局共享 `%APPDATA%/pywebview`（winforms.py::init_storage 实证），宿主崩溃残留僵尸 msedgewebview2 持 Singleton Lock → 新实例白屏。修复：① UDF 改 `%APPDATA%/ZonScale/webview_data`（webview.start(storage_path=...)，settings 表无此键）② 启动前 `_cleanup_orphan_webview2()` 只杀父进程已死的孤儿（CIM 父子关系 + taskkill /T，本机 PanGPA/WhatsApp 的 WebView2 实测不误伤） |
+| 崩溃后无法重新打开软件 | ✅ | 根因：pywebview WebView2 UDF 默认全局共享 `%APPDATA%/pywebview`（winforms.py::init_storage 实证），宿主崩溃残留僵尸 msedgewebview2 持 Singleton Lock → 新实例白屏。修复：① UDF 改 `%APPDATA%/ZonKey/webview_data`（webview.start(storage_path=...)，settings 表无此键）② 启动前 `_cleanup_orphan_webview2()` 只杀父进程已死的孤儿（CIM 父子关系 + taskkill /T，本机 PanGPA/WhatsApp 的 WebView2 实测不误伤） |
 | PDF 工坊全功能冒烟 | ✅ | `round10_pdfcenter_smoke.mjs` **72/72 全绿、零 pageerror**：页面整理（编辑文字闭环）/编辑/合并/拆分/提取/旋转/裁剪/页码/转图片/图转PDF/水印/加密/解密/压缩/增强/在线填表/证书签名 + 转换 8 工具；后端产物真实落 output/（docx/pptx/压缩/修复/OCR txt） |
 | round10_diag | ✅ | **16/16**（源码断言×12 + 运行时×4：修复前后对照复现——修复前 pageerror 全栈 + 白屏，修复后 blur 存活） |
 | 后端回归 | ✅ | pytest **133 passed**；release_acceptance 全过（词表 9 条通用词零厂商泄漏） |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260902.zip`（12:07）：zip 内 `_internal/dist_web` 43 文件与本地 md5 逐一一致；主 chunk `index-C_aZsxzU.js` 含 ErrorBoundary/scaleY/ref 保底 blur 特征；CArchive desktop_app 指纹：`_cleanup_orphan_webview2`/`storage_path`/`msedgewebview2.exe`/`ParentProcessId` 全命中 |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260902.zip`（12:07）：zip 内 `_internal/dist_web` 43 文件与本地 md5 逐一一致；主 chunk `index-C_aZsxzU.js` 含 ErrorBoundary/scaleY/ref 保底 blur 特征；CArchive desktop_app 指纹：`_cleanup_orphan_webview2`/`storage_path`/`msedgewebview2.exe`/`ParentProcessId` 全命中 |
 | Pages 部署 | ✅ | 38c1c3e5（branch=main）；主域主 chunk md5 = 本地 = zip（2dcb6d12…） |
 | 遗留 | ⏳ | 用户最新 EXE 实测闭环（页面整理文字编辑 + 24 工具）；31 样本回归；round-8 扫描件两样本 |
 
@@ -25,8 +41,8 @@
 | 问题2 同类排查修复（矮窗可达性同型问题） | ✅ | `DocPdfView.tsx` 底部操作区同改 `shrink-0`；`RuleCenter.tsx` 根 `overflow-y-auto xl:overflow-hidden` + 两卡 xl 以下自滚（xl 以下两卡纵向堆叠不再限高）；`AppearanceModal.tsx` / `SupportAuthorModal.tsx` 弹窗加 `max-h-[88dvh] overflow-y-auto`（内容超高时弹窗内滚不超出视口） |
 | 问题3 Header 桌面中心导航窄窗滚轮不可达 | ✅ | Chromium 对纯横向滚动区不转换竖向滚轮 delta，鼠标用户够不到折叠的右侧项。修复：`Header.tsx` 中心导航加 `onWheel` 处理器（`|deltaY|>|deltaX|` 时转 `scrollLeft`）+ `.zs-wheel-x` 专用类（`overscroll-behavior-x: contain`，触控板横滑原生通道不受影响） |
 | 回归 | ✅ | 新 `temp_ui_test/round9_diag.mjs` **16/16**（源码断言×10 + 运行时×6：矮窗 700px 左栏按钮底缘不超列底缘、RuleCenter 窄屏 900px 可达、外观弹窗极矮窗 500px 不超视口且可滚、滚轮转横滚 scrollLeft 0→120、零 pageerror）；round7_diag 订正极性断言后同跑通过 |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260902.zip`；zip 内 `_internal/dist_web` 与本地 md5 一致（index-Db29cAmr.js / index-DOlTlCuQ.js），CSS/JS 均含 `zs-wheel-x`、JS 含 `shrink-0 max-lg:min-h-0` 特征串 |
-| Pages 部署 | ✅ | 部署 be2d0749（branch=main）；主域 zonscale.pages.dev 主 chunk `index-Db29cAmr.js` = 本地 = zip，live CSS/JS `zs-wheel-x` 命中 |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260902.zip`；zip 内 `_internal/dist_web` 与本地 md5 一致（index-Db29cAmr.js / index-DOlTlCuQ.js），CSS/JS 均含 `zs-wheel-x`、JS 含 `shrink-0 max-lg:min-h-0` 特征串 |
+| Pages 部署 | ✅ | 部署 be2d0749（branch=main）；主域 zonkey.pages.dev 主 chunk `index-Db29cAmr.js` = 本地 = zip，live CSS/JS `zs-wheel-x` 命中 |
 | 遗留 | ⏳ | 31 样本回归（样本到位后跑 `scripts/regression_acceptance.py`）；round-8 扫描件脱敏两样本待用户最新 EXE 实测闭环；RuleCenter 窄屏可达性离线早退分支实测、主布局待后端在线复测 |
 
 ## 2026-09-02 第八轮进度（脱敏输出整页全黑修复，上轮）
@@ -48,7 +64,7 @@
 | 问题2 脱敏全失效（TiffImageFile.fromarray） | ✅ | 触发条件：**CCITTFaxDecode 1 位扫描图**（工程图纸扫描件标准格式，用户两样本均是）。pikepdf 对 CCITT 经 TIFF 包装解码返回 `TiffImageFile`，`_write_image_stream` 极性反转误用 `pil.__class__.fromarray`（该类无此方法，Phase M 引入）→ AttributeError →「拒绝静默保留敏感内容」拒执行。修复：模块级 `Image.fromarray`。回归：pytest 新增 2 用例（端到端 G4 扫描 PDF 脱敏 + TiffImageFile 直灌单测），**修复前代码实测复现崩溃** |
 | 问题3 外观纹理标签墨块化 | ✅ | 根因：预览 span 复用全页 overlay 定位类 `.zs-texture`（absolute inset-0）铺满按钮垫到文字下，文字压 background-image 渲染时 WebView2 走劣化光栅路径，10px 粗体中文字画粘连。修复：预览只挂图案类（32px 文档流色块），`.zs-texture` 保留给 App.tsx 全页层。真实 Chromium 渲染验证 5 标签全清晰（round7_diag 断言预览 static + 零重叠） |
 | 回归 | ✅ | pytest **133 passed**；npm build 成功；round7_diag **15/15**（新）、round6_diag **9/9** |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`；指纹：zip 内 `index-IBiqWJA6.js`=本地=线上、旧拼接串 `zs-texture zs-texture-fluid-preview` 已消失、woff2×27；PYZ `_write_image_stream` co_names 含 PIL/Image/fromarray |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260901.zip`；指纹：zip 内 `index-IBiqWJA6.js`=本地=线上、旧拼接串 `zs-texture zs-texture-fluid-preview` 已消失、woff2×27；PYZ `_write_image_stream` co_names 含 PIL/Image/fromarray |
 | Pages 部署 | ✅ | 线上主 chunk `index-IBiqWJA6.js` = 本地，live bundle 带修复指纹 |
 | 遗留 | ⏳ | 扫描件脱敏（两样本）+ 纹理标签显示需用户最新 EXE 实测闭环；抹除块不越框目检（验收证据 2）待用户确认 |
 
@@ -60,7 +76,7 @@
 | 问题2 方框拖动劫持（真根因） | ✅ | **pywebview 6.2.1 默认 `easy_drag=True`**：frameless+edgechromium 下注入 window 级 mousedown 拖窗器（`webview/js/customize.js`），画布任意拖动都被转成移窗口，**完全绕过 app-region 与 data-canvas-gesture**——round-3/4 CSS 修复真实生效却无效的原因（劫持不走 app-region 路径）。修复：`desktop_app.py` `easy_drag=False` 拔掉整条劫持路径，窗口拖动只剩 Header 品牌行 app-region: drag（=「限制在标题栏、像正常软件」）。**待用户 EXE 实测闭环** |
 | 问题3 手动框选脱敏 500 | ✅ | TestClient 矩阵确认触发条件：手动框 `page_index` 越界 → `RedactError` 未捕获冒泡成裸 500。多层防御：① `RedactError`→可读 400「页号越界…」；② 新增 `engine_error.log` 落盘（窗口化 EXE stdout 被吞=此前诊断盲区）；③ 坐标防御（null/NaN/负宽高/零面积归一或 400）；④ 输出目录写探针回退 `output/`；⑤ Word 端点同口径。pytest 新增 4 用例（131 total） |
 | 回归 | ✅ | pytest **131 passed**；npm build 成功；theme_drag_check **31/31**、round5_diag **16/16**、round6_diag **9/9**（新）；release_acceptance 全过 |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（PE 22:01）；核验：zip 内 js/css 与本地 md5 一致 + woff2×27；PYZ 含 server_bridge 四新特征；CArchive desktop_app 含 easy_drag kwarg |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260901.zip`（PE 22:01）；核验：zip 内 js/css 与本地 md5 一致 + woff2×27；PYZ 含 server_bridge 四新特征；CArchive desktop_app 含 easy_drag kwarg |
 | Pages 部署 | ✅ | 线上主 chunk `index-CkKyymwk.js` md5 = 本地；live CSS 含 `min-width:76px` 修复特征 |
 | 遗留 | ⏳ | ① 拖动劫持与芯片竖条需用户最新 EXE 实测确认（Playwright 断言不了壳内真实鼠标路径）；② 若再报 500：先看仓库根/EXE 同级 `engine_error.log` |
 
@@ -85,7 +101,7 @@
 | 纹理可感知化 | ✅ | 静态纹理 alpha 提升 2-3 倍（grid 0.11 / dots 0.16 / paper 0.07，旧值肉眼不可见） |
 | 流动背景重设计+默认化 | ✅ | 26-42s 错相循环（旧 135-180s 不可感知）/ opacity 0.5-0.68 / blob 40-56vw / blur 72px；**默认纹理=fluid**（loadTexture 默认值 + desktop_app.py 同步；显式选过「纯色」不受影响） |
 | 回归 | ✅ | theme_drag_check **31/31**（新增计算样式翻转/字体本地加载/默认 fluid 渲染层断言）；homenav_fav_flow 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（16:21）；zip 内 `_internal/dist_web/assets/index-DCPRlCxW.js` 与本地**字节级一致**（zs-drag-row + data-canvas-gesture×4 指纹）；27 个 woff2 字体嵌入 |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260901.zip`（16:21）；zip 内 `_internal/dist_web/assets/index-DCPRlCxW.js` 与本地**字节级一致**（zs-drag-row + data-canvas-gesture×4 指纹）；27 个 woff2 字体嵌入 |
 | Pages 部署 | ✅ | 线上主 chunk = index-DCPRlCxW.js = 本地；CSS = index-D-tG7_4J.css 零 CDN 引用 + zs-fluid-drift-d 在线 |
 | 遗留 | ⏳ | 方框拖动劫持需用户壳内真机复验（本轮 CSS 层已证明真实翻转，若仍复现下一步查 WebView2 层）；手机真机 fluid 性能（blur 72px ×3 blob）待观察 |
 
@@ -99,7 +115,7 @@
 | 字号档 | ✅ | 外观弹层 4 档（15/16/17.5/19px），`<html data-fontsize>` + 根字号，全站 rem 缩放真实生效，localStorage + 防闪屏回放 |
 | 流动背景 | ✅ | FluidBackground 3 blob（CSS animation，transform/opacity only，135-180s 循环，主题变量着色）；纹理 5 档含 fluid；reduced-motion 完全静止 |
 | 回归 | ✅ | theme_drag_check 25/25；homenav_fav_flow 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`（14:24）；内嵌前端指纹验证（index-DZ96rTiz.js + zs-fluid CSS + legacy 齐）；brand.py/desktop_app.py 变更触发 PYZ/PKG 重建 |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260901.zip`（14:24）；内嵌前端指纹验证（index-DZ96rTiz.js + zs-fluid CSS + legacy 齐）；brand.py/desktop_app.py 变更触发 PYZ/PKG 重建 |
 | Pages 部署 | ✅ | 线上主 chunk = index-DZ96rTiz.js，data-canvas-gesture 与 zs-fluid 指纹在线 |
 | 遗留 | ⏳ | 方框拖动劫持修复需用户壳内真机复验（WebView2 手势接管路径无法 Playwright 模拟） |
 
@@ -108,14 +124,14 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | CSS 变量主题层 | ✅ | `tailwind.config.js` mem-* 色板 + 硬阴影挂 CSS 变量（`rgb(var(--x) / <alpha-value>)` 保透明度语法）；`index.css` 4 套 `data-theme` 预设：cream/paper/slate/dark。`white` 归一到 `--mem-surface`，61 处 `bg-white` 深色下自动翻转；组件类名零改动 |
-| ThemeProvider | ✅ | `lib/theme/`（themeCore + context）；localStorage `zonscale-theme`/`zonscale-texture`；`index.html` 内联脚本防闪屏回放 |
+| ThemeProvider | ✅ | `lib/theme/`（themeCore + context）；localStorage `zonkey-theme`/`zonkey-texture`；`index.html` 内联脚本防闪屏回放 |
 | 背景纹理 | ✅ | `none/grid/dots/paper` 纯 CSS 层（`zs-texture-*`），App 根容器渲染，跟随 ink 变量，零资产 |
 | 外观选择 UI | ✅ | `AppearanceModal.tsx`（主题缩略卡 + 纹理档位即点即换）；Header 桌面/手机入口 + HomeNav 快捷入口；i18n `appearance.*` 三语 |
 | 拖拽层重构 | ✅ | 删除 `WindowDragStrip.tsx`（覆盖条几何手工复刻，离线横幅下压时错位 + right-132px 魔法数字），改为 Header 品牌行自身 `app-region: drag` + 行内交互 `.no-drag`。实测横幅下推 43px 时拖拽行跟随对齐 |
 | 壳层闪屏联动 | ✅ | 前端 `save_ui_prefs` api → `ui_prefs.json`；`desktop_app.py::_load_shell_bg()` 启动读它设 `background_color`（THEME_SHELL_BG 与 themeCore.ts 同表，须同步改）；round-trip 实测 dark→`#181826` |
 | MemphisDecor | ✅ | 硬编码 hex 全改变量类；缓漂浮 CSS 动画（prefers-reduced-motion 关闭） |
 | 回归 | ✅ | `theme_drag_check.mjs` 17/17（主题切换/持久化/防闪屏/纹理/拖拽几何双视口/零 pageerror）；`homenav_fav_flow.mjs` 14/14；npm build 成功；pytest 127 passed；release_acceptance 全过 |
-| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260901.zip`；内嵌前端指纹验证 = 本轮构建（`index-B556ldtk.js` + `zs-texture-grid` 特征串，与 dist_web/线上三方一致）；PyInstaller 因 `desktop_app.py changed` 重建 PKG（ui_prefs 闪屏联动进包）；release acceptance 全过 |
+| EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260901.zip`；内嵌前端指纹验证 = 本轮构建（`index-B556ldtk.js` + `zs-texture-grid` 特征串，与 dist_web/线上三方一致）；PyInstaller 因 `desktop_app.py changed` 重建 PKG（ui_prefs 闪屏联动进包）；release acceptance 全过 |
 | Pages 部署 | ✅ | 生产 branch=main（2026-09-01），线上主 chunk = `index-B556ldtk.js` = 本地 dist_web，线上内容含本轮主题特征串 |
 | 遗留 | ⏳ | 真实 WebView2 鼠标拖拽手感/深夜模式观感待壳内实机确认（Playwright 无法覆盖） |
 
@@ -149,7 +165,7 @@
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| 浏览器转换引擎 | ✅ | 新增 `frontend/src/lib/toolknit/convertWebCore.ts`：后端离线时 7/8 转换工具自动降级浏览器本地处理（pdf→word/excel/ppt、office→pdf、html→pdf、compress-deep、pdf-repair）；文件零上传 |
+| 浏览器转换引擎 | ✅ | 新增 `frontend/src/lib/zonkey/convertWebCore.ts`：后端离线时 7/8 转换工具自动降级浏览器本地处理（pdf→word/excel/ppt、office→pdf、html→pdf、compress-deep、pdf-repair）；文件零上传 |
 | OCR 诚实降级 | ✅ | ocr-export 浏览器做不了（OCR 模型过大），显示「此工具需要本机引擎」引导桌面版，不虚标 |
 | ConvertView 接线 | ✅ | capability 失败 → webFallback 自动启用；蓝条标注保真度差异；产物走 deliver.downloadBlob 统一出口；UI 布局零变化 |
 | 许可合规 | ✅ | docx MIT / xlsx Apache-2.0 / pptxgenjs MIT / mammoth BSD-2 / html2canvas MIT / pdf-lib MIT——零 AGPL；动态 import 分 chunk 不进主包 |
@@ -157,7 +173,7 @@
 | 实机验证 | ✅ | Playwright 后端离线场景 6/6：pdf-to-word(excel/ppt) 产物 magic bytes 正确（PK/PK/PK）、compress-deep 与 html-to-pdf %PDF、中文加粗正常、ocr 桌面引导显示。脚本 `temp_ui_test/webconvert_final.mjs` |
 | 构建 | ✅ | npm run build 32.8s；pptxgen 282KB / xlsx 430KB 独立 chunk |
 | 后端回归 | ✅ | pytest 127 passed（后端零改动） |
-| Pages 部署 | ✅ | zonscale.pages.dev → `index-CBxmc5sG.js`（含引擎特征串），HTTP 200 |
+| Pages 部署 | ✅ | zonkey.pages.dev → `index-CBxmc5sG.js`（含引擎特征串），HTTP 200 |
 | EXE | — | 无需重打包（后端零改动，前端构建时自动打入 dist_web） |
 
 ### UI 测试基建备注
@@ -174,8 +190,8 @@
 | P4 导航重组 | ✅ | PDF 中心导航分组（组织/转换/编辑/安全）+ 工具首页宫格（7fc07e0） |
 | P4 清理端点 | ✅ | `/api/system/cleanup/status`（监控 output + temp_bridge_files）；门禁 `cleanup_endpoints` 断言（e33aa2e + 67ff56c） |
 | 桌面全功能复测 | ✅ | `temp_ui_test/full_feature_test*.mjs`（mobile 390×844 / desktop 1366×900 双模式）覆盖 8 中心 76 工具 + 导航 + 隐私弹窗 + 横向溢出检测；CanvasViewport 移动端触控目标微调（e80eb98，`zs-touch-target-mobile`） |
-| Phase 9：EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260831.zip`（~280MB / 3776 条目）。**已验证内嵌前端与源码一致**：`_internal/dist_web/assets/index-BP5sWohB.js` 含最后一笔提交特征串，资产哈希与根 dist_web/、线上 Pages 三方一致 |
-| Phase 10：Pages 部署 | ✅ | wrangler 直传生产 `https://zonscale.pages.dev`（部署 `50f68f08`）；线上资产 = 本地 dist_web/；curl 200 / 0.30s |
+| Phase 9：EXE 重打包 | ✅ | `dist_release/ZonKey_Windows_x64_20260831.zip`（~280MB / 3776 条目）。**已验证内嵌前端与源码一致**：`_internal/dist_web/assets/index-BP5sWohB.js` 含最后一笔提交特征串，资产哈希与根 dist_web/、线上 Pages 三方一致 |
+| Phase 10：Pages 部署 | ✅ | wrangler 直传生产 `https://zonkey.pages.dev`（部署 `50f68f08`）；线上资产 = 本地 dist_web/；curl 200 / 0.30s |
 | 全量 pytest | ✅ | **127 passed**（33.8s，--ignore=tests/test_native_dialog.py；唯一告警 Starlette httpx 弃用提示）。121 → 127：新增 test_p3_security_tools.py（protect 权限位 / pades 真签真验 / verify）+ test_p4_gates.py（cleanup 结构 / capability 键） |
 | 发布门禁 | ✅ | `release_acceptance.py` 全部通过：exe_exists / synthetic_pipeline（零残留）/ no_agpl_components / cleanup_endpoints / convert_capability_gate / generic_terms_in_rules（词表 9 条通用词） |
 | 31 样本回归 | ⏳ | `Testing Drawings\` 目录本机不存在，`scripts/regression_acceptance.py` 未跑——样本到位后必跑 |
@@ -207,7 +223,7 @@
 | ConvertView | ✅ | `pdfcenter/ConvertView.tsx` 单组件覆盖 8 工具（pdf-to-word/excel/ppt + office-to-pdf/compress-deep/ocr-export 走 job 轮询；pdf-repair/html-to-pdf 同步）：CapabilityGate（后端离线提示 + OCR 缺失拦截）、进度条 + stage、压缩比/引擎/局限 note 如实展示、参数 chips（dpi/quality/输出格式）；产物走 MediaOutputList 统一交付 |
 | 导航与接线 | ✅ | navigation.tsx PDF 工坊 17 项全 ready（新增 compress-deep/pdf-to-word/pdf-to-excel/pdf-to-ppt/office-to-pdf/html-to-pdf/ocr-export/pdf-repair）；api.ts 补 ConvertOp/ConvertJobStatus/ConvertCapability 类型 + startConvertJob/pollConvertJob/convertHtmlToPdf/convertRepair；i18n `convert.*` 命名空间三语（zh-CN/zh-TW/en）齐 |
 | 测试 | ✅ | `tests/test_convert_tools.py` 13→22 用例：compress-deep 端到端（断言体积下降）、html-to-pdf markdown/HTML 表格/空输入 422、ocr-export TXT/夹心 PDF（pdfium 重新抽取验证文字层可搜索）、office 兜底链（伪造 COM 失败走 mammoth/openpyxl 路径并断言 note）、capability 新引擎上报；全量 `pytest -q --ignore=tests/test_native_dialog.py` → **121 passed**（原 112 + 新 9） |
-| 构建/部署 | ✅ | `npm run build` 成功（21.6s，仅历史 chunk 体积提示）；Cloudflare Pages 已更新（zonscale.pages.dev）。线上 Pages 仅纯前端能力——转换 8 工具依赖 FastAPI 后端，线上显示后端离线属预期边界 |
+| 构建/部署 | ✅ | `npm run build` 成功（21.6s，仅历史 chunk 体积提示）；Cloudflare Pages 已更新（zonkey.pages.dev）。线上 Pages 仅纯前端能力——转换 8 工具依赖 FastAPI 后端，线上显示后端离线属预期边界 |
 
 ### P2 剩余
 
@@ -226,7 +242,7 @@
 | 测试基建 | ✅ | `tests/pdf_helpers.py`：reportlab 合成样本 + pdfplumber/pdfium 断言（坐标合同=显示空间）；test_executor/test_pipeline/test_doc_pdf/test_box_finder/test_shrink/test_image_verify/test_image_merge/test_convert_tools/test_ppt_tools 全部去 fitz |
 | 全量 pytest | ✅ | `pytest -q --ignore=tests/test_native_dialog.py` → **112 passed**（与迁移前同数量；PyMuPDF 已卸载环境下运行） |
 | 发布门禁 | ✅ | `release_acceptance.py` 全部通过，新增 `no_agpl_components` 断言（环境已装组件 / requirements / fitz 可导入性 / 打包产物文件四路检查） |
-| EXE 重打包 | ✅ | PyInstaller 重建 + 图标侧车 + `dist_release/ZonScale_Windows_x64_20260830.zip`；新 EXE 门禁含 AGPL 断言全绿 |
+| EXE 重打包 | ✅ | PyInstaller 重建 + 图标侧车 + `dist_release/ZonKey_Windows_x64_20260830.zip`；新 EXE 门禁含 AGPL 断言全绿 |
 | 合成端到端回归 | ✅ | A3 图纸：4 命中 / 2 自动 / 3 待人工（与 2026-08-29 fitz 实测同构，残留=待人工项符合宪法）；公文：PII 8 类全净（手机/证件/护照/银行卡/信用代码/邮箱/香港号/座机）、正文保留（hits 12 vs 旧 11，印章/去重口径差） |
 | 31 样本回归 | ⏳ | `Testing Drawings\` 目录本机不存在，`scripts/regression_acceptance.py` 未跑——样本到位后必跑 |
 | 行为微差登记 | ✅ | D8 紧行距用例（基线差 18pt）：「放弃收缩」→「精确收缩+相邻行零污染」（pdfminer span 比 fitz 紧，3.5pt 容差带判定前移；字形净空 ~3.9pt 实测安全；测试改为直接断言安全属性）。引擎限制：WMode 1 垂直书写按水平度量、Inline image 不像素化、CropBox≠MediaBox 按 MediaBox |
@@ -292,7 +308,7 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 全功能公网访问（手机可用） | ✅ | 后端跑本机 + cloudflared 快速隧道（`启动公网手机访问.bat` 一键重启）；URL 每次重启会变 |
-| 静态前端公网 | ✅ | Cloudflare Pages `zonscale.pages.dev`（纯前端工具；项目名 zonscale，wrangler pages deploy dist_web） |
+| 静态前端公网 | ✅ | Cloudflare Pages `zonkey.pages.dev`（纯前端工具；项目名 zonkey，wrangler pages deploy dist_web） |
 | 手机端可读性 | ✅ | `index.css` 手机断点（<768px）html 基准字号 16→17.5px，全站 rem 等比放大，小字/触控目标同步增大，无需捏合缩放 |
 | 缩放手势保障 | ✅ | `html { touch-action: manipulation }`：保留捏合缩放、仅禁双击缩放（消误触）；`text-size-adjust: 100%` 防浏览器擅改字号 |
 | 一级中心 Tab | ✅ | 手机横滚 Tab 激活项显示文字（此前手机端仅图标不可辨识） |
@@ -309,11 +325,11 @@
 | PPT 转 PDF / 转长图 | ✅ | 新增 `backend_ppt_tools.py`（FastAPI `/api/ppt/render`）：LibreOffice 优先，Windows 回退 PowerPoint COM（DispatchEx + WithWindow=False + ppSaveAsPDF=32）；images 目标经 PyMuPDF 逐页渲染打包 ZIP；产物写入 `output/` 走 `/api/download` 与原生另存为，不经 blob 下载通道 |
 | PPT 大纲生成（原"AI 大纲"） | ✅ | 更名"大纲生成"（诚实命名，非 AI）：离线模板驱动（`pptOutlineCore.ts`，8 种演示类型角色序列 + 双语模板），产出可编辑 Markdown |
 | PPT 草稿生成（原"AI 草稿"） | ✅ | 更名"草稿生成"：`pptDraftCore.ts` 纯 JSZip 构建合法 OOXML（16:9，两种主题）；产出经 PowerPoint COM 实测可打开并导出 PDF |
-| OOXML 兼容性修复 | ✅ | 二分定位两处 PowerPoint 拒开问题：① theme `fmtScheme` 需恰好 3 组 fill/line/effect/bgFill（原版 ToolKnit 只有 1 组）；② `p:sldSz type="wide"` 非法（ST_SlideSizeType 无 "wide" 枚举值），去掉 type 属性 |
+| OOXML 兼容性修复 | ✅ | 二分定位两处 PowerPoint 拒开问题：① theme `fmtScheme` 需恰好 3 组 fill/line/effect/bgFill（参考实现只有 1 组）；② `p:sldSz type="wide"` 非法（ST_SlideSizeType 无 "wide" 枚举值），去掉 type 属性 |
 | UI 实测（Playwright） | ✅ | PDF 工坊 9/9、PPT 工坊 4 新工具全通过零报错；草稿产物经 python-pptx 结构校验 + PowerPoint COM 打开验证 |
 | pytest | ✅ | 新增 `tests/test_ppt_tools.py`（渲染端到端真跑 COM，无渲染器环境自动 skip） |
 | 前端构建 | ✅ | `npm run build` → 成功（2607 modules） |
-| ToolKnit 接线 | ✅ | **55 ready / 5 planned**（PPT 工坊 7/7 ready） |
+| 工具接线 | ✅ | **55 ready / 5 planned**（PPT 工坊 7/7 ready） |
 
 ### 关键证据链（PDF 工坊壳内不可用）
 
@@ -361,7 +377,7 @@
 
 ```powershell
 # 1. 启动服务（若未运行）
-cd C:\Users\Zonlic\Desktop\ZonScale
+cd C:\Users\Zonlic\Desktop\ZonKey
 python -m uvicorn server_bridge:app --host 127.0.0.1 --port 8765
 
 # 2. 生成合成样本
@@ -383,32 +399,32 @@ node run_ui_tests.mjs
 | PDF 扫描增强 | ✅ | `enhancePdfScan()` — 对比度/灰度/二值化逐页重建 |
 | PDF 页面编辑器 | ✅ | `rebuildPdfFromPages()` — 重排/旋转/删除后导出 |
 | 前端构建 | ✅ | `cd frontend && npm run build` → **成功**（2607 modules，5.44s） |
-| ToolKnit 接线 | ✅ | **51 ready / 9 planned**（PDF 工坊 9/9 ready） |
+| 工具接线 | ✅ | **51 ready / 9 planned**（PDF 工坊 9/9 ready） |
 
 ### 后续批次（用户 2026-08-29 指定，PDF 批次已完成）
 
 1. ~~PDF 转图片 / 加密 / 解密 / 扫描增强 / 页面编辑器~~ ✅；2. 视频转码 / 视频转 GIF；3. 调性检测（口径待确认）；4. 色彩空间色域对比。其余 planned：PPT 转 PDF/转图片/AI 大纲/AI 草稿、离线转写、打字测速。
 
-## 2026-08-29 进度（ToolKnit 整合收尾轮）
+## 2026-08-29 进度（60 项工具整合收尾轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| ToolKnit 60 项工具整合（Phase 1-8） | ✅ | 8 大中心全部挂载；46 ready / 14 planned（planned 显示"即将上线"占位），明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md) 第五节 |
-| 孤儿文件清理 | ✅ | 删除旧 `navigation/Header.tsx`、孤儿 `pdf/PdfStudioView.tsx`、5 个空组件目录、`packaging/windows/tools/rcedit-x64.exe`（图标方案定为 PyInstaller 嵌入）、`zonscale-test.ico`、根目录 `_tmp_*.pdf` ×24、`startup_error.log` |
-| 计划文档状态登记 | ✅ | TOOLKNIT 计划追加执行状态章节（阶段提交/接线统计/后续批次）；docs/README 索引补全；AGENTS_HANDOFF 重写为当前状态 |
+| 60 项工具整合（Phase 1-8） | ✅ | 8 大中心全部挂载；46 ready / 14 planned（planned 显示"即将上线"占位），明细见 [INTEGRATION_PLAN.md](INTEGRATION_PLAN.md) 第五节 |
+| 孤儿文件清理 | ✅ | 删除旧 `navigation/Header.tsx`、孤儿 `pdf/PdfStudioView.tsx`、5 个空组件目录、`packaging/windows/tools/rcedit-x64.exe`（图标方案定为 PyInstaller 嵌入）、`zonkey-test.ico`、根目录 `_tmp_*.pdf` ×24、`startup_error.log` |
+| 计划文档状态登记 | ✅ | 整合计划追加执行状态章节（阶段提交/接线统计/后续批次）；docs/README 索引补全；AGENTS_HANDOFF 重写为当前状态 |
 | pytest 全量回归 | ✅ | `python -m pytest -q` → **95 passed in 173.51s** |
 | 前端最终构建 | ✅ | `cd frontend && npm run build` → **成功**（2599 modules，4.55s；仅 chunk >500kB 体积提示，无错误） |
 | release_acceptance 发布门禁 | ✅ | **全部通过**：source_rules（9 条通用词，无厂商词）/ exe_bundled_rules / exe_exists / synthetic_pipeline（残留为零，保护内容保留）/ generic_terms_in_rules |
 | 合成样本 UI 实测（上午） | ✅ | FastAPI 桥响应 200；UI 偏好代码核实 |
 | `temp_ui_test/` 处置 | ⏳ | 未跟踪目录（含实测脚本/截图/样本），未入 git；待用户决定清理或 gitignore |
 
-## 2026-08-26 进度（ZonScale 现代化工作台）
+## 2026-08-26 进度（ZonKey 现代化工作台）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| 品牌重塑 ZonScale · by zonlic | ✅ | 艺术字标、龙鳞图标、窗口/页面标题统一 |
+| 品牌重塑 ZonKey · by zonlic | ✅ | 艺术字标、龙鳞图标、窗口/页面标题统一 |
 | React + FastAPI 孟菲斯 UI | ✅ | `frontend/` + `server_bridge.py` + `dist_web/` |
-| Windows exe 打包 | ✅ | `dist/ZonScale/ZonScale.exe`（PyInstaller + pywebview） |
+| Windows exe 打包 | ✅ | `dist/ZonKey/ZonKey.exe`（PyInstaller + pywebview） |
 | exe 导出 PDF / 选路径 | ✅ | Windows 原生另存为 + 文件夹浏览（ctypes，非 tkinter） |
 | 支持作者弹窗 | ✅ | 支付宝/微信收款码 + 趣味打赏文案 |
 | 三语切换 简体/繁體/EN | ✅ | Header 语言按钮，localStorage 记忆；作者简介固定繁体「一個在香港生存的普通人」 |
@@ -419,11 +435,11 @@ node run_ui_tests.mjs
 ```powershell
 cd frontend && npm run build          # dist_web 构建
 python -m pytest -q tests/              # 后端单元测试
-python -m PyInstaller --noconfirm packaging\windows\config\ZonScale.spec  # exe（可选）
+python -m PyInstaller --noconfirm packaging\windows\config\ZonKey.spec  # exe（可选）
 ```
 
 - 前端构建：`npm run build` → **PASS**（1837 modules）
-- exe 启动：`dist\ZonScale\ZonScale.exe` → HTTP 8765 **200**
+- exe 启动：`dist\ZonKey\ZonKey.exe` → HTTP 8765 **200**
 - 语言切换：简体 / 繁體 / EN，刷新后保持；`document.title` 随语言更新
 
 ---
@@ -449,7 +465,7 @@ python -m PyInstaller --noconfirm packaging\windows\config\ZonScale.spec  # exe�
 | pytest 单元测试 | ✅ 完成 | 78 passed（rule_engine / box_finder / executor / pipeline / image_verify / shrink / ui / logo_matcher / manual_box） |
 | PyQt5 UI（ui/） | ✅ 完成 | 一键模式 + 批量 + 自定义输出 + 双预览自由缩放拖动 |
 | 用户文档（docs/） | ⏳ 未开始 | 后续 |
-| PyInstaller 打包 | ✅ 完成 | `dist/ZonScale/ZonScale.exe`，2026-08-26 验收 |
+| PyInstaller 打包 | ✅ 完成 | `dist/ZonKey/ZonKey.exe`，2026-08-26 验收 |
 
 ## 架构概览
 
