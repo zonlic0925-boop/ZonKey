@@ -140,7 +140,9 @@ flowchart TB
 
 ### 方式二 · macOS
 
-在 **Mac 上**执行以下任意一条：
+**自动构建（零本机环境）**：仓库配置了 GitHub Actions（`.github/workflows/macos-dmg.yml`），每次推送 master 或打 `v*` tag 都会在 macOS runner 上自动构建 **Apple Silicon + Intel 两个 DMG**——在仓库 Actions 页或 Release 附件直接下载。
+
+在 **Mac 上**手动执行以下任意一条：
 
 ```bash
 # A. 源码构建（已装 Python 3.11 + Node 18+）
@@ -166,10 +168,10 @@ pip install -r requirements.txt
 ### 方式四 · 源码开发模式
 
 ```powershell
-# 克隆（Gitee 公开仓库）
-git clone https://gitee.com/zonlic/ZonKey.git
-# 或 GitHub 镜像
+# 克隆（GitHub 主仓库）
 git clone https://github.com/zonlic0925-boop/ZonKey.git
+# 或 Gitee 国内镜像
+git clone https://gitee.com/zonlic/ZonKey.git
 cd ZonKey
 
 # Python 依赖

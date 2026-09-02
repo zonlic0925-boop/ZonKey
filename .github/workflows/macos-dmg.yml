@@ -1,0 +1,79 @@
+# ZonKey macOS 自动构建（round-16 ⑥）：GitHub Actions 在 macos runner 上
+# 跑 packaging/macos/scripts/build_app.sh（PyInstaller .app → ZIP → hdiutil DMG），
+# 产物上传为 workflow artifact；打 v* tag 时额外附件到 GitHub Release（主仓库）。
+#
+# 说明：
+# - macos-14 = Apple Silicon (arm64)，macos-13 = Intel (x86_64)；.app 不跨架构，
+#   两个矩阵各出一版，DMG 文件名自带 uname -m 区分。
+# - build_app.sh 内含 clean-rules 宪法检查与 release_acceptance 门禁，任何一步
+#   失败即整次构建失败（不允许带厂商词/失败门禁的产物出去）。
+# - dist_web 若缺失，脚本会用 Node 构建前端——这里显式 npm ci 后预构建，缓存可控。
+
+name: macOS DMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: macOS (${{ matrix.runner }} / ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt pyinstaller
+
+      - name: Build frontend (dist_web)
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Build .app + ZIP + DMG
+        run: bash packaging/macos/scripts/build_app.sh
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p upload
+          cp dist_release/ZonKey_macOS_*.dmg upload/ 2>/dev/null || true
+          cp dist_release/ZonKey_macOS_*.zip upload/ 2>/dev/null || true
+          ls -la upload/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZonKey_macOS_${{ matrix.arch }}
+          path: upload/*
+          if-no-files-found: error
+
+      - name: Attach DMG/ZIP to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            upload/*.dmg
+            upload/*.zip
