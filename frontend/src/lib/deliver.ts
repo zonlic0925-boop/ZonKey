@@ -93,6 +93,15 @@ export function isRestrictedBrowser(): boolean {
   return /MicroMessenger|QQ\/|Weibo/i.test(navigator.userAgent)
 }
 
+/** 简易移动端检测（触屏 + 窄屏），不依赖 UA */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false
+  return (
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+    window.innerWidth < 768
+  )
+}
+
 /**
  * 复制文本：优先 navigator.clipboard（HTTPS/localhost），
  * 局域网 HTTP 等非安全上下文回退 execCommand（手机端复制按钮否则静默失效）。
