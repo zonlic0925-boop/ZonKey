@@ -66,3 +66,7 @@ release_assets/
 # CodeGraph 本地索引与 TS 增量构建缓存
 .codegraph/
 *.tsbuildinfo
+
+# 测试脚本依赖与构建日志（不入库）
+temp_ui_test/node_modules/
+build_exe_log.txt
