@@ -273,24 +273,43 @@ export async function rotatePdfPages({
   return outputPdf.save();
 }
 
-// ===== 压缩（pdf-lib 对象流重写） =====
+// ===== 压缩（逐页栅格化 + JPEG 重编码 + pdf-lib 重建） =====
 
 export type PdfCompressLevel = 'low' | 'medium' | 'high';
 
+/** 压缩级别 → (DPI, JPEG 质量) */
+const COMPRESS_PARAMS: Record<PdfCompressLevel, { dpi: number; quality: number }> = {
+  low:    { dpi: 144, quality: 0.85 },
+  medium: { dpi: 120, quality: 0.70 },
+  high:   { dpi: 96,  quality: 0.50 },
+};
+
+/**
+ * PDF 压缩：逐页渲染为 JPEG 后重建 PDF。
+ *
+ * pdf-lib 的 save({useObjectStreams}) 不解压也不重压缩内容流，对大多数
+ * PDF 体积不变甚至反增。改用栅格化 + JPEG 重编码重建，视觉版式还原，
+ * 但产物无可编辑文本层（与后端 compress-deep 同语义）。
+ */
 export async function compressPdfFile(fileData: Uint8Array, level: PdfCompressLevel = 'medium'): Promise<Uint8Array> {
   if (!fileData?.length) throw new Error('Invalid PDF file data');
-  const document = await PDFDocument.load(fileData.slice(), { updateMetadata: false });
-  if (level !== 'low') {
-    // medium/high 额外剥离 XMP 元数据流，进一步缩小体积
-    try {
-      const metadataRef = document.catalog.get(PDFName.of('Metadata'));
-      if (metadataRef) document.context.delete(metadataRef as never);
-      document.catalog.delete(PDFName.of('Metadata'));
-    } catch {
-      // 元数据缺失时忽略
-    }
+  const { dpi, quality } = COMPRESS_PARAMS[level];
+  const scale = dpi / 72;
+  const document = await loadPdfDocument(fileData);
+  const pageCount = document.numPages;
+  if (pageCount < 1) throw new Error('PDF has no pages to compress');
+  if (pageCount > PDF_CORE_LIMITS.maxPreviewPages) {
+    throw new Error(`Too many pages (max ${PDF_CORE_LIMITS.maxPreviewPages})`);
   }
-  return document.save({ useObjectStreams: true, addDefaultPage: false });
+  const outputPdf = await PDFDocument.create();
+  for (let pageIndex = 1; pageIndex <= pageCount; pageIndex += 1) {
+    const { canvas, width, height } = await renderPdfPageToCanvas(document, pageIndex, scale);
+    const jpegBytes = await canvasToBytes(canvas, 'image/jpeg', quality);
+    const image = await outputPdf.embedJpg(jpegBytes);
+    const page = outputPdf.addPage([width, height]);
+    page.drawImage(image, { x: 0, y: 0, width, height });
+  }
+  return outputPdf.save({ useObjectStreams: true, addDefaultPage: false });
 }
 
 // ===== 转图片（PDF.js + Canvas） =====
