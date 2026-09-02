@@ -6,7 +6,8 @@ export const AUTHOR_NAME = 'Zonlic 子龍';
 export const AUTHOR_BIO = '一個在香港生存的普通人';
 export const AUTHOR_EMAIL = 'zonlic0925@gmail.com';
 export const AUTHOR_GITHUB_URL = 'https://github.com/zonlic0925-boop';
-export const PROJECT_REPO_URL = 'https://gitee.com/zonlic/ZonKey';
-export const PROJECT_GITHUB_URL = 'https://github.com/zonlic0925-boop/ZonKey';
+// 术语约定（round-16）：GitHub = 主仓库，Gitee = 国内镜像（下载提速用）
+export const PROJECT_REPO_URL = 'https://github.com/zonlic0925-boop/ZonKey';
+export const PROJECT_GITEE_URL = 'https://gitee.com/zonlic/ZonKey';
 export const SUPPORT_ALIPAY_QR = '/assets/support/alipay-qr.png';
 export const SUPPORT_WECHAT_QR = '/assets/support/wechat-qr.png';

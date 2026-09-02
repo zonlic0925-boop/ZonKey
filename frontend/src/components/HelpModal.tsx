@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, HelpCircle, Download, FileText, Shield, Coffee, Globe, Lock, Zap, ExternalLink, Smartphone, Monitor } from 'lucide-react';
-import { APP_NAME, PROJECT_REPO_URL, PROJECT_GITHUB_URL } from '../lib/brand';
+import { APP_NAME, PROJECT_REPO_URL, PROJECT_GITEE_URL } from '../lib/brand';
 import { useI18n } from '../i18n';
 
 interface HelpModalProps {
@@ -127,15 +127,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({ open, onClose }) => {
               rel="noopener noreferrer"
               className="block text-mem-teal hover:text-mem-ink underline"
             >
-              {t('help.gitee')} — {PROJECT_REPO_URL}
+              {t('help.repoMain')} — {PROJECT_REPO_URL}
             </a>
             <a
-              href={PROJECT_GITHUB_URL}
+              href={PROJECT_GITEE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="block text-mem-teal hover:text-mem-ink underline"
             >
-              {t('help.github')} — {PROJECT_GITHUB_URL}
+              {t('help.repoMirror')} — {PROJECT_GITEE_URL}
             </a>
           </div>
         </div>

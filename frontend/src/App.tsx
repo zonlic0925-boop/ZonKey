@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from './components/Header';
+import { DownloadPromoBanner } from './components/DownloadPromo';
 import { WindowControls } from './components/WindowControls';
 import { DrawingView } from './components/DrawingView';
 import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
@@ -168,6 +169,9 @@ export default function App() {
         backendOnline={online}
         onOpenPrivacy={() => setPrivacyNoticeOpen(true)}
       />
+
+      {/* 网页版专属：桌面版下载提示区（桌面壳内不渲染），点击打开下载弹窗 */}
+      <DownloadPromoBanner />
 
       {/* 二级子工具导航：home-nav 视图隐藏（首页有自己的分类卡），其余中心固定渲染（等高）避免跳变 */}
       {!(activeCenter === 'redact' && activeTool === 'home-nav') && (
