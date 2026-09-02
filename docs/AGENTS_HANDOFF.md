@@ -1,7 +1,21 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十五轮：六项用户反馈修复）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十六轮：壳内另存对话框根治 + IME 打字 + 图标半透明 + 窗口不可见自愈 + 网页版下载提示 + 术语对调 + Actions DMG）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
+## 〇、2026-09-03 第十六轮（三项实测 bug 真根因 + 三项新功能，本轮）
+
+- **任务（用户 6 项）**：① 图标白底（验证渲染链+ICO 缓存）② 裁切后无法下载导出 ③ 打字测试无法开始 ④ 网页版加桌面版下载提示区+弹窗 ⑤ 术语：GitHub=主仓库/Gitee=国内镜像 ⑥ GitHub Actions macOS DMG；收尾=回归+EXE+Pages+git。
+- **关键教训（本轮方法论）**：round-15 三项「修复+Playwright 全绿」为何用户实测仍坏——**浏览器自动化绕过了三个真实环境要素**：① PIL 半透明 overlay 的像素级缺陷（自动化只断言 corner/center alpha）；② Win32 对话框创建路径（Playwright mock 掉了）；③ 真 IME 组合事件（page.keyboard.type 不产生 composition）。**收尾验收必须含真实环境探针**。
+- **① 图标白底（真根因第二层）**：round-15 修好「帧全透明」，但 `Image.composite(grad, base, mask)` 与 ImageDraw 半透明 fill 都是**整像素替换**——暗带(150)/冠带暗带(90)/拉丝(140)/釉面高光直接把不透明皇冠面改写成半透明，16/32px 帧（桌面图标实际渲染尺寸）冠面成片半透明 = 白桌面视角「发白/白底」。修复：所有半透明叠加改 `Image.alpha_composite` 图层合成（`_overlay_draw` 助手；**每次合成返回新 Image，ImageDraw 句柄必须刷新**，否则后续绘制丢失）+ `_ico_frame_rgba` alpha 二值化（≥128→255 否则 0）兜底。验证：全帧 alpha∈{0,255} 六尺寸+三底色目检+单测防线。**ICO 缓存**：升级安装路径不变内容换 → 缓存不刷新；`.iss [Run]` 加 `ie4uinit -show`（runhidden）。**注意**：桌面快捷方式若仍显示旧图标，右键→属性→更换图标→确定 即可强制刷新（或删 `%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache_*.db` 后重启 Explorer）。
+- **② 裁切无法导出（真根因三连，全在壳内另存链）**：a) `_OPENFILENAMEW.lpstrFile`（LPWSTR）直接赋 `create_unicode_buffer(260)` 抛 TypeError——**GetSaveFileNameW 从未执行**（实证：点「裁剪并下载」后进程无对话框句柄、无报错，而 output/ 里 save-blob 产物齐全——用户 22:34 两次裁切 `photo..._crop.png`/`在港簽注_crop.png` 就是铁证）；b) uvicorn 工作线程未 CoInitialize（同文件的 pick_folder 有、save_as 没有）；c) 无 owner 窗口。修复：`ctypes.cast(file_buf, LPWSTR)` + CoInitialize/CoUninitialize + `hwndOwner=GetForegroundWindow()` + 文件类型按扩展名映射（PNG 曾默认「PDF 文档」过滤器）。前端：`downloadBlob` 返回 `DeliveryResult`（browser-download/saved/cancelled），ImageCropView 行内展示「已导出到 <path>」/「已取消另存——产物保留在 output」；错误不再吞成「范围超出」。验证：单测×2 + 真机弹真对话框（保存类型=图片）+ 取消返回 None。
+- **③ 打字测速（真根因=IME 组合被掐断）**：zh 模式输入框受控 `value=''` + onChange 内 `e.target.value=''` 在 composing 时也执行 → 每次 compositionupdate 清框 → 微软拼音组合过程被打断 → 中文打不进去 = 用户视角「无法开始」。修复：zh 模式非受控（`defaultValue`），组合中不碰 DOM，compositionend 取 `e.data` 追加 zhBuffer 后清框；en 模式保持受控。验证：合成 CompositionEvent 三段事件（start→input→end）提交词库首词 → 目标着色 2 span。**真实壳复验**：安装版 EXE 上「开始挑战→输入→倒计时→结算」全通（合成键盘），坐实只有 IME 路径坏。
+- **壳窗口不可见（本轮新发现+修复）**：实测两次复现（安装版 EXE 与开发壳各一次）：进程/WebView2 子进程树/心跳全正常，顶层窗口 `IsWindowVisible=False`——双击后「没有窗口」。间歇性（重跑即好，最小 pywebview frameless 复现不可得），判为 WebView2 初始化完成事件偶发不触发 → pywebview 不执行 Show 的竞态。修复：`_watchdog_loop` 每周期**先**做可见性自愈（进程启动 >15s 后 IsWindowVisible=False → `ShowWindow(SW_RESTORE)`+`SetForegroundWindow`），再测心跳。**pythonnet 坑**：`.NET IntPtr` 必须 `.ToInt64()`，直接 `int()` 抛 TypeError——首版自愈因此静默失效（bisect 复现实验抓出）。验证：真机强制隐藏 → ~9s 自动恢复。
+- **④ 下载提示区**：`DownloadPromo.tsx` = Banner（`useShellMode()` 浏览器才渲染、localStorage `zonkey.desktopPromoDismissed` 可关、Header 下全页面）+ Modal（桌面独有能力如实标注 + GitHub Release 主通道 + Gitee 镜像 + SHA256 提示）。i18n `promo.*` 三语齐。
+- **⑤ 术语对调**：`brand.ts` PROJECT_REPO_URL→GitHub 主仓库、新增 PROJECT_GITEE_URL；HelpModal/SupportAuthorModal/i18n（repoMain/repoMirror）/README/`.iss` MyAppURL 全栈对齐「GitHub=主仓库，Gitee=国内镜像」。旧 `PROJECT_GITHUB_URL` 常量已删除（grep 确认无残留引用）。
+- **⑥ Actions DMG**：`.github/workflows/macos-dmg.yml`（matrix macos-14 arm64 + macos-13 x86_64；pip requirements→npm ci+build→`build_app.sh`（自带 clean-rules+release_acceptance 门禁）→hdiutil DMG→artifact；`v*` tag 自动附件 Release）。**生效前提：push 到 GitHub**（本轮已随 v1.0.2 tag 推送触发）。
+- **验证汇总**：pytest **141 passed**（+8 round-16 防线：`tests/test_round16_regressions.py` 图标 alpha 契约 6 参数 + save_path 文件类型/COM+owner+cast）；release_acceptance 全过；`temp_ui_test/r16_ui_tests.py` **10/10**（提示区显隐/弹窗/主仓库术语/IME 组合着色/壳内裁切取消反馈/零 pageerror）；`temp_ui_test/r16_e2e.py` 16/16（产物级前端+真实后端，浏览器+壳 stub 双模式）；图标生成器目检 `temp_ui_test/r16_icon_visual.png`。
+- **接手注意**：① 图标任何叠加效果必须走 alpha_composite（直接 ImageDraw 半透明 fill = 替换像素 = 白底回归）；ICO alpha ∈{0,255} 已有单测防线，破坏即红。② `_pick_save_path_win` 的 cast/CoInitialize/owner 三件套缺一即回归「对话框不弹」；文件类型映射别再默认 PDF。③ TypingTestView zh 输入必须保持非受控——改回 `value=` 受控即掐断 IME。④ 窗口可见性自愈在 `_watchdog_loop` 最前，`evaluate_js` 若前移可能饿死它；IntPtr 用 ToInt64()。⑤ DownloadPromoBanner 只在浏览器渲染，壳内不见是预期。⑥ GitHub=主仓库口径已全栈统一，新文案勿再写「Gitee 主」。
 
 ## 〇、2026-09-02 第十五轮（图标真透明 + 白屏自愈 + 裁切拖拽 + 打字测速 + mac 部署 + 下载渠道，本轮）
 

@@ -1,6 +1,19 @@
-> 更新于：2026-09-02（第十五轮：图标真透明 + 白屏自愈 + 裁切拖拽 + 打字测速 + mac 部署 + 下载渠道）。
+> 更新于：2026-09-03（第十六轮：壳内另存对话框根治 + IME 打字修复 + 图标 overlay 半透明修复 + 窗口不可见自愈 + 网页版下载提示 + GitHub 主仓库口径 + Actions DMG）。
 
-## 2026-09-02 第十五轮进度（六项用户反馈修复，本轮）
+## 2026-09-03 第十六轮进度（六项用户反馈，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| ① 图标白底（二次修复） | ✅ | round-15 修的是「帧全透明不可见」，本轮真根因是**半透明 overlay 整像素替换**：`Image.composite(grad, base, mask)` 与 ImageDraw 半透明 fill 是替换语义，暗带 150/冠带 90/拉丝 140 直接把不透明皇冠面改写成半透明——16/32px 帧（桌面/资源管理器实际渲染尺寸）冠面成片半透明，白桌面看即「发白/白底」。修复：`_overlay_vertical_gradient` 与全部半透明装饰改走 alpha_composite 图层合成（`_overlay_draw` 句柄刷新链）+ `_ico_frame_rgba` alpha 二值化兜底。验证：全帧 alpha ∈ {0,255} 六尺寸 + 白/深/灰三底目检；单测 `test_round16_regressions.py::test_ico_frame_alpha_contract` 永久防线。**缓存侧**：升级安装 .lnk/ICO 路径不变内容换 → Explorer 缓存不刷新；`.iss [Run]` 增加 `ie4uinit -show` + MyAppURL 修正为 GitHub 主仓库 |
+| ② 裁切后无法下载导出 | ✅ | **真根因（三连）**：a) `_OPENFILENAMEW.lpstrFile` 声明 LPWSTR，直接赋 `c_wchar_Array_260` 抛 TypeError——GetSaveFileNameW 从未执行、对话框从未创建（实证：点击裁剪并下载后进程无对话框句柄，save-blob 产物却已落 output/）；b) uvicorn 工作线程未 CoInitialize（文件夹选择器有、另存没有）；c) 无 owner 窗口可能被主窗压住。修复：cast 赋值 + CoInitialize/CoUninitialize + hwndOwner=GetForegroundWindow + 文件类型按扩展名（PNG 不再默认「PDF 文档」过滤器）+ 前端 `downloadBlob` 返回 DeliveryResult，取消/成功都有行内反馈（不再静默或误报「范围超出」）。验证：单测×2 + 真机弹真对话框（保存类型=图片、文件名预填、前台显示）+ 取消返回 None |
+| ③ 打字测试无法开始 | ✅ | 根因（round-15 修了竞态但漏了 IME）：zh 模式输入框 `value=''` 受控 + onChange 里 `e.target.value=''` 在 **composition 进行中**也执行——每次 compositionupdate 清框掐断微软拼音组合，中文永远打不进去（合成键盘事件绕过 IME，历轮 Playwright 全绿但用户实测必坏）。修复：zh 模式改非受控 `defaultValue`，组合中不碰输入框，compositionend 取词清框；en 模式保持受控。验证：合成 CompositionEvent（compositionstart→input→compositionend）提交首词 → 目标文字正确着色 |
+| 壳窗口不可见（本轮新发现） | ✅ | 实测复现：进程/WebView2 树/心跳全部正常但顶层窗口 `IsWindowVisible=False`（双击后无窗口），间歇性（最小 frameless 复现不可得，判为 WebView2 初始化完成事件偶发不触发 → pywebview 不 Show 的竞态）。修复：watchdog 每周期先做可见性自愈（>15s 宽限后 IsWindowVisible=False → ShowWindow(SW_RESTORE)+SetForegroundWindow），并修正 pythonnet `int(IntPtr)` TypeError（须 `.ToInt64()`——修复前自愈静默失效）。验证：真机强制隐藏窗口 → ~9s 内自动恢复显示 |
+| ④ 网页版下载提示 | ✅ | 新增 `DownloadPromo.tsx`：`DownloadPromoBanner`（仅浏览器模式渲染，localStorage 可关闭，置于 Header 下全页面）+ `DownloadPromoModal`（桌面版独有能力如实标注：脱敏引擎/OCR 导出/证书签名权限加密；GitHub Release 主通道 + Gitee 国内镜像 + SHA256 校验提示）。i18n `promo.*` 三语 |
+| ⑤ 术语纠正 | ✅ | GitHub=主仓库，Gitee=国内镜像：`brand.ts`（PROJECT_REPO_URL→GitHub、新增 PROJECT_GITEE_URL）、HelpModal（repoMain/repoMirror 顺序 GitHub 在前）、SupportAuthorModal、i18n 三语、README 克隆注释、`.iss` MyAppURL |
+| ⑥ GitHub Actions DMG | ✅ | `.github/workflows/macos-dmg.yml`：matrix macos-14(arm64)+macos-13(x86_64)，pip requirements → 前端构建 → `build_app.sh`（内含 clean-rules 宪法检查 + release_acceptance 门禁）→ hdiutil DMG → artifact 上传；打 `v*` tag 自动附件到 Release。推送 master/tag 后生效 |
+| 回归验证 | ✅ | pytest **141 passed**（+8：图标 alpha 契约 6 尺寸 + save_path 文件类型/COM+owner+cast 防线）；release_acceptance 全过；r16 前端套件 10/10（提示区显隐/弹窗/术语/IME 组合/裁切取消反馈/零 pageerror）；r16_e2e 16/16（产物级前后端） |
+
+## 2026-09-02 第十五轮进度（六项用户反馈修复，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
