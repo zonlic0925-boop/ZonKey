@@ -59,6 +59,9 @@ mkdir -p "${PYINSTALLER_CONFIG_DIR}"
 echo "Cleaning previous dist/ZonKey.app ..."
 rm -rf dist/ZonKey dist/ZonKey.app
 
+echo "Generating macOS icons (icns from crown design)..."
+python3 "${PROJECT_DIR}/scripts/generate_zonkey_icon.py" || echo "WARN: icon gen failed (PIL missing), continuing without icon"
+
 echo "Building .app (about 5-15 minutes)..."
 python3 -m PyInstaller --noconfirm "${SPEC_FILE}"
 

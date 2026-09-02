@@ -14,6 +14,12 @@ PORT = 8765
 HOST = "127.0.0.1"
 URL = f"http://{HOST}:{PORT}"
 
+# 白屏自愈（round-15）：前端 main.tsx 每 2s 推进 window.__zsHeartbeat；
+# 壳层 watchdog 轮询该值，连续超时判定白屏卡死 → 写 degraded.marker →
+# 重启自身进程（降级 GPU 参数启动）。degraded 模式下再白屏不再循环重启。
+APP_SUPPORT_DIR = Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonKey'
+DEGRADED_MARKER = APP_SUPPORT_DIR / 'degraded.marker'
+
 # 主题闪屏底色联动：前端 ThemeProvider 把主题镜像到 ui_prefs.json（经
 # save_ui_prefs api），create_window 前读它——Python 侧读不到 localStorage，
 # 文件是唯一桥。键值与 frontend/src/lib/theme/themeCore.ts THEME_SHELL_BG 同表，
@@ -199,9 +205,7 @@ def _open_pywebview(title: str) -> None:
     # 目录的 Singleton Lock——新实例撞锁开窗即白屏，且与其他 pywebview
     # 应用互相干扰。改用 ZonKey 专属目录（webview.start 的 storage_path，
     # 注意 settings 表里没有这个键），配合 _cleanup_orphan_webview2 启动清理。
-    storage_path = str(
-        Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonKey' / 'webview_data'
-    )
+    storage_path = str(APP_SUPPORT_DIR / 'webview_data')
 
     # 无边框窗口：去掉系统标题栏，由前端自绘窗口控制；拖拽/缩放/Snap
     # 由 core/frameless_window.py 的 Win32 钩子补回（仅 Windows）。
@@ -226,19 +230,94 @@ def _open_pywebview(title: str) -> None:
         background_color=_load_shell_bg(),
     )
     attach_frameless_behaviour(window)
+
+    # GPU 策略（round-15 修正）：默认不再注入 --disable-gpu——
+    # round-13 注入的 --disable-gpu + --disable-software-rasterizer 组合
+    # 在 GPU 受限环境会把软渲染兜底一并禁用，GPU 进程初始化卡死 = 白屏，
+    # 白屏频率反而升高。只在 watchdog 判定白屏后重启的 degraded 模式
+    # 注入降级参数（经验自愈链：默认 GPU → 白屏 → degraded 软渲染）。
+    _configure_webview2_args()
+
+    # 白屏 watchdog：前端心跳驱动；判定卡死 → 重启为 degraded 模式。
+    threading.Thread(target=_watchdog_loop, daemon=True).start()
+
     # 注意：storage_path 只能经 webview.start() 传入（settings 表无此键）
-    #
-    # 白屏卡死三号嫌疑（round-13）：WebView2 GPU 进程在弱驱动/老显卡
-    # 环境下 GPU 加速初始化失败，整窗白屏且无 JS 错误可见。禁用 GPU
-    # 加速（本应用是表单/文档型 UI，零 WebGL/Canvas 3D）。pywebview 6.x
-    # 不提供直接传参接口，走环境变量（WebView2 在创建
-    # CoreWebView2Environment 前读取此变量）。
+    webview.start(storage_path=storage_path)
+
+
+def _configure_webview2_args() -> None:
+    """按模式注入 WebView2 启动参数。
+
+    degraded 模式下用 --disable-gpu 保留 --disable-software-rasterizer
+    之外的软渲染路径；WebView2 在创建 CoreWebView2Environment 前读取
+    此环境变量（pywebview 6.x 不提供直接传参接口）。
+    """
+    degraded = DEGRADED_MARKER.exists()
     os.environ.setdefault('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '')
     extra_args = os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS']
-    for flag in ['--disable-gpu', '--disable-software-rasterizer']:
+    flags = ['--disable-gpu'] if degraded else []
+    for flag in flags:
         if flag not in extra_args:
-            os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = f'{extra_args} {flag}'.strip()
-    webview.start(storage_path=storage_path)
+            extra_args = f'{extra_args} {flag}'.strip()
+    os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = extra_args
+    if degraded:
+        _log(f"[*] degraded 模式：{extra_args}")
+
+
+def _watchdog_loop() -> None:
+    """心跳看门狗：前端 main.tsx 每 2s 推进 __zsHeartbeat。
+
+    开窗后前 20s 宽限（首屏挂载）；此后连续 15s 无心跳 = 页面未挂载或
+    JS 卡死 = 用户视角的「白屏卡死」。第一次判定时写 degraded.marker 并
+    重启自身进程（降级 GPU 参数）；degraded 模式下再白屏不再重启（避免
+    无限循环，留 startup_error.log 供人工排查）。
+    """
+    started_at = time.time()
+    last_seen = time.time()
+    try:
+        import webview
+
+        while True:
+            time.sleep(5.0)
+            try:
+                if not (webview.windows and webview.windows[0]):
+                    continue
+                window = webview.windows[0]
+                hb = window.evaluate_js('window.__zsHeartbeat || 0')
+                hb = int(hb) if str(hb).isdigit() else 0
+                if hb > 0:
+                    last_seen = time.time()
+            except Exception:  # noqa: BLE001 — evaluate_js 失败时按未更新处理
+                pass
+
+            if time.time() - started_at < 20:
+                continue
+            if time.time() - last_seen <= 15:
+                continue
+
+            _log("[!] 检测到前端白屏卡死（心跳超时）")
+            if DEGRADED_MARKER.exists():
+                _log("[!] degraded 模式仍白屏，不再自动重启；请提交 %APPDATA%/ZonKey 日志")
+                return
+            try:
+                APP_SUPPORT_DIR.mkdir(parents=True, exist_ok=True)
+                DEGRADED_MARKER.write_text("degraded", encoding="utf-8")
+            except OSError:
+                pass
+            _log("[*] 正在以降级 GPU 参数重启...")
+            time.sleep(1.0)
+            try:
+                import subprocess
+                subprocess.Popen([sys.executable] + sys.argv)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                window.destroy()
+            except Exception:  # noqa: BLE001
+                pass
+            os._exit(0)  # 立即退出（不跑 atexit 清理）
+    except Exception:  # noqa: BLE001 — watchdog 自身任何异常不挡主流程
+        pass
 
 
 class WindowApi:

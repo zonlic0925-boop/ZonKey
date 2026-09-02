@@ -1,9 +1,22 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十四轮：透明图标 + 压缩命名优化 + Inno Setup 安装包）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十五轮：六项用户反馈修复）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
-## 〇、2026-09-02 第十四轮（透明图标 + 压缩命名优化 + Setup 安装包，本轮）
+## 〇、2026-09-02 第十五轮（图标真透明 + 白屏自愈 + 裁切拖拽 + 打字测速 + mac 部署 + 下载渠道，本轮）
+
+- **任务（用户 6 项反馈）**：① 图标仍有白底 → 真透明；② 首启白屏卡死（高频）→ 根治；③ 图片裁切支持手动拖拽调范围；④ 打字测速无效 → 修复；⑤ mac 版本部署方案；⑥ 用户下载便捷渠道。
+- **① 图标真透明（根因）**：上一轮 `_to_ico_rgb` 白底合成（注释误称「Windows ICO 不支持真透明」——Vista+ 的 32 位 DIB 帧与 PNG 帧都支持 alpha）。修复：`scripts/generate_zonkey_icon.py` 自写 ICO（每尺寸 32 位 alpha DIB + 全零 AND 掩码），小尺寸不再回退白底；`_ico_frame_rgba` 修复 bytearray 切片副本陷阱（slice 赋值是副本，原数据全零——EXE 图标「全透明不可见」的真根因）。**验证链**：帧级断言 corner_a=0 / center_a=255 六尺寸全过；PyInstaller 嵌入后资源树 RT_GROUP_ICON(14) + RT_ICON(3) 存在。
+- **② 白屏卡死根治（壳层自愈架构）**：round-13 注入的 `--disable-gpu` + `--disable-software-rasterizer` 组合在 GPU 受限环境把软渲染兜底也禁了（GPU 初始化卡死 = 白屏，频率升高与此时间线吻合）。修复：默认不再注入任何 GPU 参数；新增**心跳看门狗自愈**——`frontend/src/main.tsx` 每 2s 推进 `window.__zsHeartbeat`（主线程存活才能推进，可检测 JS 卡死），`desktop_app.py` `_watchdog_loop` 每 5s 经 `window.evaluate_js` 轮询，连续 15s 无心跳（开窗前 20s 宽限）→ 写 `%APPDATA%/ZonKey/degraded.marker` → 拉起新进程（`--disable-gpu` 降级软渲染）→ 销毁旧窗口。degraded 模式下再白屏不循环重启，留日志人工排查。
+- **③ 裁切拖拽（重写）**：`ImageEditViews.tsx` ImageCropView 全量重写。原实现只有 X/Y/宽/高四个数字输入，不可拖拽；预览用 `inline-block` + `max-w-full` 会把 img 渲成 26px（shrink-to-fit 循环依赖）。新实现：canvas 固定尺寸（原图等比缩放到 600px）+ rect 存原图坐标、渲染时换算；八向手柄（框内放置——stage `overflow-hidden` 会把半挂边缘的手柄裁到不可点）；pointer capture 设在 stage 上（手柄 capture 会让 move 只发手柄、stage 收不到）；空白处拖拽画新框；数字输入与拖拽双向联动。
+- **④ 打字测速（根因+修复）**：`TypingTestView.tsx` 的 `finishRef.current?.(input)` 在 `setInterval` 回调里捕获**首次输入的旧 state**（闭包竞态）；且 `live` WPM 依赖 `timeLeft` 而不重算。修复：新增 `inputValueRef` + `tick` state，倒计时与实时 WPM 都从 `state.startTime` 推导（`remaining = duration - floor((now-start)/1000)`），interval 改 250ms，结算读 `inputValueRef.current`。
+- **⑤ mac 部署**：mac spec `icon=None` 已修（`packaging/macos/config/ZonKey.spec` 指向 `assets/zonkey.icns`）；`build_app.sh` 构建前自动跑 `generate_zonkey_icon.py` 生成 icns。**交付物**：`dist_release/ZonKey_mac_build_kit_20260902.zip`（5.9MB，含 frontend 源码，Mac 上无需 Node 可直接构建）；README 新增「方式二 · macOS」两条命令（源码构建 / 构建包）。
+- **⑥ 下载渠道**：GitHub 仓库已是公开（`private:false`），无需登录；Release 有 v1.0.1（旧资产 ZonScale 命名）。README 重写下载段：Setup 安装包（推荐）+ 便携 zip/7z + SHA256 校验说明；Gitee 分卷合并说明保留。本轮新 EXE 打包完成后上传新 Release 资产（见下文「收尾状态」）。
+- **build 链路修复**：① `build_zonkey_exe.bat` 改为**无条件重建前端**（原「dist_web 存在即跳过」会打包陈旧 UI）；② `scripts/apply_exe_icon.py` 检查器两个 PE 解析 bug（资源目录头 NumberOf* 是 2+2 字节误读为 4 字节；PointerToRawData 在段头 +20 误读为 +16 的 SizeOfRawData）——曾致误报「EXE 无图标」并中断打包。
+- **验证**：`npm run build` 成功；pytest **133 passed**；`release_acceptance.py` 全过；Playwright `temp_ui_test/round15_fixes.py` **14/14 ALL PASS**（心跳推进 / 打字测速全流程含结算 / 裁切拖拽手柄+框体移动+下载产物零 pageerror）；watchdog 参数单测（默认无 GPU 参数 / degraded 注入 --disable-gpu）通过。
+- **接手注意**：① 图标任何「白底合成回退」都是回归（透明性约定写进 generate_zonkey_icon.py 模块注释）；② 白屏自愈链：前端心跳 main.tsx ↔ 壳 watchdog desktop_app.py 两端契约，改任意一端需同步；degraded.marker 在 `%APPDATA%/ZonKey/`，用户报「总是降级启动」时先看此文件与 startup_error.log；③ 裁切坐标体系：rect 存**原图像素**，渲染用 `fromImage/fromImageY` 换算，事件用 `stageToImage/toImage/toImageY`，勿混用；④ 打字测速 timer 逻辑禁止回退到「interval 里读 state 闭包」；⑤ mac 构建包需在 mac 上验证（本机无法执行 build_app.sh，spec 语法已按 PyInstaller 6.x 检查）；⑥ EXE 图标验证口径：`scripts/apply_exe_icon.py`（已修）+ 帧级 corner/center alpha 断言，勿信 mtime。
+
+## 〇、2026-09-02 第十四轮（透明图标 + 压缩命名优化 + Setup 安装包，上轮）
 
 - **任务**：① 软件图标背景改成透明（只留皇冠，桌面 EXE + iOS PWA 同步）；② PDF 压缩重命名「文字类 PDF 压缩」，深度压缩括号标注「图片、扫描件、图纸类」；③ 软件改用 Setup 单安装包分发。
 - **图标透明化**：`scripts/generate_zonkey_icon.py` 底衬圆角方块移除，`Image.new("RGBA", (size, size), (0,0,0,0))` 透明底 + 深色外描边保形（`_draw_outer_outline` 新函数）；`_to_ico_rgb` 白底合成（Windows ICO 不支持真透明）；`frontend/public/zonkey-icon.svg` 同步去掉底衬 `<rect>`。全平台资源已重新生成：ICO 7 尺寸透明、PNG 256px 透明、icns 透明、PWA 180/192/512 透明；目检浅色/深色背景均清晰。

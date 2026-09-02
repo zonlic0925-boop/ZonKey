@@ -85,23 +85,14 @@ def _find_7z() -> str | None:
 
 
 def _sha256(path: Path) -> str:
-    try:
-        result = subprocess.run(
-            ["certutil", "-hashfile", str(path), "SHA256"],
-            capture_output=True,
-            timeout=120,
-            text=True,
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return ""
-    if result.returncode != 0:
-        return ""
-    lines = (result.stdout or "").strip().splitlines()
-    # certutil 输出格式: "SHA256 的 path 哈希:\nhash\nCertUtil: ..."
-    for line in lines:
-        line = line.strip()
-        if len(line) == 64 and all(c in "0123456789abcdefABCDEF" for c in line):
-            return line.lower()
+    """Python hashlib 直算（certutil 在中文 Windows 输出 GBK，解析易失败）。"""
+    import hashlib
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
     return ""
 
 

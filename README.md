@@ -126,21 +126,44 @@ flowchart TB
 
 ## 快速开始
 
-### 方式一 · Windows 可执行文件（推荐）
+### 方式一 · Windows 一键安装（推荐）
 
 | 下载源 | 说明 |
 | --- | --- |
-| [**GitHub Release**](https://github.com/zonlic0925-boop/ZonKey/releases)（主） | 单文件下载，无需分卷，永久存档 |
-| [**Gitee Release**](https://gitee.com/zonlic/ZonKey/releases)（国内镜像） | 国内下载更快，大文件可能分卷（合并命令见 Release 说明） |
+| [**GitHub Release**](https://github.com/zonlic0925-boop/ZonKey/releases)（主） | 仓库已公开，无需登录；含 **Setup 安装包**（推荐）与便携压缩包两种 |
+| [**Gitee Release**](https://gitee.com/zonlic/ZonKey/releases)（国内镜像） | 国内下载更快；大文件分卷时合并命令见 Release 说明 |
 
-> 下载后解压，双击 `ZonKey.exe` 即可。软件内「帮助」按钮有完整使用说明。
+- **Setup 安装包**（`ZonKey_Setup_x64_*.exe`）：双击一路下一步，自动创建桌面/开始菜单快捷方式，卸载干净。
+- **便携版**（`ZonKey_Windows_x64_*.zip` / `.7z`）：解压即用，免安装，双击 `ZonKey.exe`。
 
-### 方式二 · 手机网页版（无需安装）
+> 下载的文件均附 SHA256 校验值，可在 Release 页面核对完整性。软件内「帮助」按钮有完整使用说明。
+
+### 方式二 · macOS
+
+在 **Mac 上**执行以下任意一条：
+
+```bash
+# A. 源码构建（已装 Python 3.11 + Node 18+）
+git clone https://github.com/zonlic0925-boop/ZonKey.git
+cd ZonKey && pip install -r requirements.txt && cd frontend && npm install && npm run build && cd ..
+./build_zonkey_mac.sh          # 产物：dist/ZonKey.app
+
+# B. 构建包（Mac 上无需 Node）
+#    从 Release 下载 ZonKey_mac_build_kit_*.zip，解压后：
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+./build_zonkey_mac.sh          # 产物：dist/ZonKey.app + dist_release/ZonKey_macOS_*.zip
+```
+
+> 完整步骤与故障排查见 `packaging/macos/MAC_BUILD_ON_MAC.md`（构建包内含副本）。
+> 首次打开：右键 ZonKey.app → 打开（未公证应用需此步）；数据目录 `~/Library/Application Support/ZonKey/`。
+
+### 方式三 · 手机网页版（无需安装）
 
 - 局域网：电脑运行「启动局域网手机访问.bat」，手机同 WiFi 打开提示地址
 - 或直接访问 **[zonkey.pages.dev](https://zonkey.pages.dev)**
 
-### 方式三 · 源码开发模式
+### 方式四 · 源码开发模式
 
 ```powershell
 # 克隆（Gitee 公开仓库）

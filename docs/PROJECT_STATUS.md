@@ -1,6 +1,19 @@
-> 更新于：2026-09-02（第十一轮：发布前全面更名 ZonKey + ToolKnit 残留清洗 + 手机端红条改信息条 + 仓库公开化，EXE+Pages 已交付）。
+> 更新于：2026-09-02（第十五轮：图标真透明 + 白屏自愈 + 裁切拖拽 + 打字测速 + mac 部署 + 下载渠道）。
 
-## 2026-09-02 第十一轮进度（发布前更名 ZonKey + 公开化收尾，本轮）
+## 2026-09-02 第十五轮进度（六项用户反馈修复，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| ① 图标真透明 | ✅ | 根因：`_to_ico_rgb` 白底合成（Windows ICO 真透明自 Vista 起支持 32 位 DIB/PNG 帧）；且 `_ico_frame_rgba` 的 bytearray 切片赋值是副本 → DIB 数据全零。修复：自写 ICO（6 尺寸 32 位 alpha DIB + 全零 AND 掩码）+ 按索引直写。验证：帧级 corner_a=0/center_a=255 六尺寸全过；EXE 资源树 RT_GROUP_ICON(14)+RT_ICON(3) 存在 |
+| ② 首启白屏卡死 | ✅ | round-13 的 `--disable-gpu`+`--disable-software-rasterizer` 把软渲染兜底一并禁用（GPU 受限环境白屏频率升高）。修复：默认零 GPU 参数 + 心跳看门狗自愈（main.tsx `__zsHeartbeat` 2s 推进 ↔ desktop_app `_watchdog_loop` 15s 超时 → degraded.marker → 降级重启）。参数单测通过；EXE 实测待用户 |
+| ③ 图片裁切拖拽 | ✅ | ImageCropView 重写：固定 canvas 尺寸 + 原图坐标体系、八向手柄（框内放置防裁剪）、pointer capture 设 stage、空白拖拽画新框、数值/拖拽双向联动。Playwright 拖拽缩放+移动+下载产物 零 pageerror |
+| ④ 打字测速 | ✅ | 根因：setInterval 回调捕获首次输入闭包（旧 state 结算）+ live WPM 不重算。修复：inputValueRef + tick + startTime 推导倒计时。Playwright 全流程（设置→打字→结算→结果页）通过 |
+| ⑤ mac 部署 | ✅ | mac spec icon 指向透明 icns；build_app.sh 自动生成 icns；导出 `dist_release/ZonKey_mac_build_kit_20260902.zip`（5.9MB，Mac 上无需 Node）；README「方式二 · macOS」两条命令 |
+| ⑥ 下载渠道 | ✅ | GitHub 仓库已公开（无需登录）；README 下载段重写（Setup 推荐 + 便携 zip/7z + SHA256）；新 EXE 资产上传见收尾 |
+| build 链路 | ✅ | build bat 无条件重建前端；apply_exe_icon.py 两处 PE 解析 bug 修复（2+2 字节计数头、PointerToRawData +20） |
+| 回归验证 | ✅ | npm build 成功；pytest 133 passed；release_acceptance 全过；round15_fixes.py 14/14 ALL PASS |
+
+## 2026-09-02 第十一轮进度（发布前更名 ZonKey + 公开化收尾，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

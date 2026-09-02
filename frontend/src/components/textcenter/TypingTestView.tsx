@@ -37,6 +37,8 @@ export const TypingTestView: React.FC = () => {
   const [result, setResult] = useState<ResultSnapshot | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputValueRef = useRef('')
+  const [tick, setTick] = useState(0) // 驱动实时 WPM 重算
   const stateRef = useRef({
     startTime: 0,
     isRunning: false,
@@ -51,7 +53,8 @@ export const TypingTestView: React.FC = () => {
 
   const live = useMemo(
     () => computeTypingStats(targetText, input, stateRef.current.startTime ? (Date.now() - stateRef.current.startTime) / 60000 : 0),
-    [targetText, input, timeLeft]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [targetText, input, tick]
   )
 
   const stopTimer = () => {
@@ -91,9 +94,11 @@ export const TypingTestView: React.FC = () => {
       zhBuffer: '',
       finishedTimer: null,
     }
+    inputValueRef.current = ''
     setTargetText(generateTypingText(lang, difficulty))
     setInput('')
     setTimeLeft(duration)
+    setTick(0)
     setResult(null)
     setPhase('running')
     setTimeout(() => inputRef.current?.focus(), 50)
@@ -104,26 +109,25 @@ export const TypingTestView: React.FC = () => {
     if (state.isFinished || state.composing) return
     const rawValueNormalized = lang === 'zh' ? state.zhBuffer : rawValue
 
-    const prevLen = normalizeTypingValue(input).length
+    const prevLen = normalizeTypingValue(inputValueRef.current).length
     const nextInput = lang === 'zh'
       ? rawValueNormalized + (compositionData ? normalizeTypingValue(compositionData) : '')
       : rawValue
 
+    inputValueRef.current = nextInput
     setInput(nextInput)
 
     const nextNormalized = normalizeTypingValue(nextInput)
     if (!state.isRunning && nextNormalized.length > 0) {
       state.isRunning = true
       state.startTime = Date.now()
+      // 倒计时与实时 WPM 都从 startTime 推导，避免 setInterval 失步
       state.finishedTimer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            finishRef.current?.(input)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+        const remaining = duration - Math.floor((Date.now() - state.startTime) / 1000)
+        setTimeLeft(Math.max(0, remaining))
+        setTick((t) => t + 1)
+        if (remaining <= 0) finishRef.current?.(inputValueRef.current)
+      }, 250)
     }
 
     if (nextNormalized.length >= normalizedTarget.length && nextNormalized.length > 0) {
@@ -285,7 +289,7 @@ export const TypingTestView: React.FC = () => {
         <StatTile label={t('textcenter.ttAccuracy')} value={`${live.accuracy}%`} />
         <StatTile
           label={t('textcenter.ttTimeLeft')}
-          value={String(Math.max(0, timeLeft))}
+          value={String(timeLeft)}
           danger={timeLeft <= 10 && stateRef.current.isRunning}
         />
       </div>

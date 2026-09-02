@@ -408,6 +408,8 @@ export const en: MessageTree = {
     height: 'Height',
     cropNow: 'Crop & download',
     cropOutOfRange: 'Crop rectangle is outside the image bounds',
+    cropTooSmall: 'Crop area is too small (at least 4×4 px)',
+    cropDragHint: 'Drag the box to move it; drag the corner/edge handles to resize',
     fromColor: 'From color',
     toColor: 'To color',
     tolerance: 'Tolerance',

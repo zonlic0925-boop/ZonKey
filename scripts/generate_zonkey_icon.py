@@ -10,6 +10,10 @@ lucide chess-king 轮廓语言），去掉钥匙剪影。配色沿用 Memphis �
 设计真源是 frontend/public/zonkey-icon.svg（64×64 设计稿）；本脚本按同一
 几何绘制栅格版，供 Windows EXE / macOS .app / PWA 图标使用。两处几何必须
 同步修改。
+
+透明性约定（2026-09-02）：ICO 自写 32 位 alpha DIB 帧（非 PIL 默认 RGB
+白底合成），PNG/ICNS 全 RGBA；白底是用户反复投诉项，任何把透明底合成
+白底的「兼容回退」都视为回归，禁止恢复。
 """
 
 from __future__ import annotations
@@ -231,20 +235,59 @@ def render_icon(size: int) -> Image.Image:
         for x0, x1 in [(13, 19.5), (21.5, 28), (38, 44.5), (46.5, 53)]:
             draw.line([pt(x0, 44.6), pt(x1, 44.6)], fill=(255, 249, 240, 140), width=max(1, round(1 * s)))
 
-    if size <= 32:
-        rgb = Image.new("RGB", (size, size), (255, 255, 255))  # 小尺寸走纯白衬底（透明背景缩小后轮廓发虚）
-        rgb.paste(img, mask=img.split()[3])
-        return rgb
+    # 小尺寸不再回退白底：ICO 帧自带 32 位 alpha，白底是用户反复投诉的
+    # 「图标有白底」直接来源。小尺寸靠外描边 + 已加粗的笔画保形。
     return img
 
 
-def _to_ico_rgb(img: Image.Image) -> Image.Image:
-    """ICO 各尺寸用 RGB，避免 Windows 资源管理器回退到默认图标。"""
-    if img.mode == "RGBA":
-        base = Image.new("RGB", img.size, (255, 255, 255))  # 透明底在 ICO 用白底合成（Windows 不支持真透明 ICO）
-        base.paste(img, mask=img.split()[3])
-        return base
-    return img.convert("RGB")
+def _ico_frame_rgba(img: Image.Image) -> tuple[Image.Image, bytes]:
+    """RGBA → 带 alpha 的 32 位 DIB 帧（BGRA 行序，自下而上）。
+
+    Windows Vista+ 的 ICO 支持真透明（32 位 BMP 帧带 alpha 通道，PNG 帧
+    亦支持）；此前 _to_ico_rgb 白底合成是「图标有白底」的直接根因。
+    只支持 BGRA 直通编码：本图 alpha 非 0 即 255（外描边/渐变全不透明、
+    底全透明），无需预乘与阈值化；若未来引入半透明像素，须先改这里为
+    预乘 + 阈值二值化，否则资源管理器渲染会发黑。
+    """
+    w = h = img.width
+    row_bytes = w * 4
+    data = bytearray(h * row_bytes)
+    px = img.load()
+    for y in range(h):
+        src_y = h - 1 - y  # DIB 自下而上
+        for x in range(w):
+            r, g, b, a = px[x, src_y]
+            # 注意：bytearray 切片是副本，必须直接按索引写 data
+            base = y * row_bytes + x * 4
+            data[base] = b
+            data[base + 1] = g
+            data[base + 2] = r
+            data[base + 3] = a
+    return img, bytes(data)
+
+
+def _write_ico(path: Path, images: list[Image.Image]) -> None:
+    """自写 ICO：每尺寸一个 32 位 alpha DIB 帧 + 全零 AND 掩码（alpha 已含透明信息）。"""
+    payload = bytearray()
+    payload += struct.pack("<HHH", 0, 1, len(images))
+    headers = bytearray()
+    offset = 6 + 16 * len(images)
+    for img in images:
+        w = img.width if img.width < 256 else 0  # 256 写成 0
+        h = img.height if img.height < 256 else 0
+        _, dib = _ico_frame_rgba(img)
+        and_mask = bytes((img.width * img.height + 7) // 8)  # AND 掩码全 0：alpha 通道已含透明
+        # BITMAPINFOHEADER：40 字节。biHeight 为像素高的 2 倍（XOR 图 + AND 掩码）
+        frame = (
+            struct.pack("<IIIHHIIIIII", 40, img.width, img.height * 2, 1, 32, 0, len(dib), 0, 0, 0, 0)
+            + dib
+            + and_mask
+        )
+        headers += struct.pack("<BBBBHHII", w, h, 0, 0, 1, 32, len(frame), offset)
+        payload += frame
+        offset += len(frame)
+    payload[6:6] = headers  # 目录头 + 条目 + 帧数据
+    path.write_bytes(bytes(payload))
 
 
 def _ico_entry_count(path: Path) -> int:
@@ -305,15 +348,15 @@ def main() -> None:
     MAC_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     ROOT_ASSETS.mkdir(parents=True, exist_ok=True)
 
-    images = [_to_ico_rgb(render_icon(s)) for s in ICO_SIZES]
-    images[0].save(OUT_ICO, format="ICO", append_images=images[1:])
+    images = [render_icon(s) for s in ICO_SIZES]  # 真透明 RGBA（2026-09-02：白底合成已移除）
+    _write_ico(OUT_ICO, images)
 
     master_rgba = render_icon(256)
     if master_rgba.mode != "RGBA":
         master_rgba = master_rgba.convert("RGBA")
     master_rgba.save(OUT_PNG, format="PNG")
     master_rgba.save(ROOT_ASSETS / "zonkey.png", format="PNG")
-    images[0].save(ROOT_ASSETS / "zonkey.ico", format="ICO", append_images=images[1:])
+    _write_ico(ROOT_ASSETS / "zonkey.ico", images)
 
     # PWA / iOS 图标：apple-touch 180 + webmanifest 192/512
     for size in [180, 192, 512]:

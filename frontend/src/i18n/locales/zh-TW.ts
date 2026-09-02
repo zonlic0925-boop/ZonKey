@@ -408,6 +408,8 @@ export const zhTW: MessageTree = {
     height: '高',
     cropNow: '裁剪並下載',
     cropOutOfRange: '裁剪區域超出圖片範圍',
+    cropTooSmall: '裁剪區域過小（至少 4×4 像素）',
+    cropDragHint: '拖動框體移動裁剪範圍，拖動四角/四邊手柄調整大小',
     fromColor: '原始顏色',
     toColor: '目標顏色',
     tolerance: '容差',

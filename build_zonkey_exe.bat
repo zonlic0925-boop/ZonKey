@@ -17,23 +17,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "dist_web\index.html" (
-    echo dist_web missing. Building frontend...
-    if not exist "frontend\package.json" (
-        echo ERROR: frontend folder not found.
-        pause
-        exit /b 1
-    )
-    pushd frontend
-    call npm run build
-    if errorlevel 1 (
-        echo ERROR: npm run build failed.
-        popd
-        pause
-        exit /b 1
-    )
-    popd
+echo Rebuilding frontend (round-15: always rebuild — stale dist_web caused stale-UI bugs)...
+if not exist "frontend\package.json" (
+    echo ERROR: frontend folder not found.
+    pause
+    exit /b 1
 )
+pushd frontend
+call npm run build
+if errorlevel 1 (
+    echo ERROR: npm run build failed.
+    popd
+    pause
+    exit /b 1
+)
+popd
 
 if not exist "packaging\windows\config\ZonKey.spec" (
     echo ERROR: Spec file not found: packaging\windows\config\ZonKey.spec

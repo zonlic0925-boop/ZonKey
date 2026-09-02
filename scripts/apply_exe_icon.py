@@ -37,7 +37,10 @@ def _pe_has_icon_resource(exe_path: Path) -> bool:
         off = section_table + i * 40
         if off + 40 > len(data):
             break
-        virtual_addr, raw_ptr = struct.unpack_from("<II", data, off + 12)
+        # IMAGE_SECTION_HEADER: +12=VirtualAddress, +16=SizeOfRawData,
+        # +20=PointerToRawData（此前误把 +16 的 SizeOfRawData 当 raw 指针）
+        virtual_addr = struct.unpack_from("<I", data, off + 12)[0]
+        raw_ptr = struct.unpack_from("<I", data, off + 20)[0]
         rva_to_offset[virtual_addr] = raw_ptr
 
     def rva_to_file_offset(rva: int) -> int | None:
@@ -63,7 +66,11 @@ def _pe_has_icon_resource(exe_path: Path) -> bool:
     if res_off is None:
         return False
 
-    num_named, num_id = struct.unpack_from("<II", data, res_off + 12)
+    # 资源目录头：offset 12 = NumberOfNamedEntries（2 字节）+ offset 14
+    # = NumberOfIdEntries（2 字节）；条目自 offset 16 起，每条 8 字节。
+    # 此前误读为 offset 12 一个 4 字节数（把两个计数字段并作一个），
+    # 条目偏移整体错位 4 字节 → 永远漏检 GROUP_ICON。
+    num_named, num_id = struct.unpack_from("<HH", data, res_off + 12)
     total = num_named + num_id
     entry_off = res_off + 16
     for _ in range(total):

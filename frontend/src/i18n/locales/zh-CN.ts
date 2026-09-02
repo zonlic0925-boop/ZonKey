@@ -411,6 +411,8 @@ export const zhCN: MessageTree = {
     height: '高',
     cropNow: '裁剪并下载',
     cropOutOfRange: '裁剪区域超出图片范围',
+    cropTooSmall: '裁剪区域过小（至少 4×4 像素）',
+    cropDragHint: '拖动框体移动裁剪范围，拖动四角/四边手柄调整大小',
     fromColor: '原始颜色',
     toColor: '目标颜色',
     tolerance: '容差',
