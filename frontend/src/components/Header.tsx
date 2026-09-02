@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Coffee, ShieldCheck, Palette } from 'lucide-react';
+import { Coffee, ShieldCheck, Palette, HelpCircle } from 'lucide-react';
 import { CenterId } from '../types';
 import { CENTERS } from '../lib/navigation';
 import { BrandMark } from './BrandMark';
@@ -7,6 +7,7 @@ import { SupportAuthorModal } from './SupportAuthorModal';
 import { AppearanceModal } from './AppearanceModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useI18n } from '../i18n';
+import { PROJECT_REPO_URL } from '../lib/brand';
 
 interface HeaderProps {
   activeCenter: CenterId;
@@ -137,6 +138,15 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Coffee className="w-4 h-4 text-mem-coral" />
             </button>
+            <a
+              href={PROJECT_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-sky/30 border-2 border-mem-ink text-mem-ink/80"
+              title={t('header.helpTitle')}
+            >
+              <HelpCircle className="w-4 h-4 text-mem-sky" />
+            </a>
             <LanguageSwitcher />
           </div>
         </div>
@@ -193,6 +203,18 @@ export const Header: React.FC<HeaderProps> = ({
               <Coffee className="w-3.5 h-3.5 text-mem-coral" />
               <span className="font-brand-script text-sm leading-none">{t('header.supportAuthor')}</span>
             </button>
+            <a
+              href={PROJECT_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium
+                         bg-mem-sky/25 border-2 border-mem-ink text-mem-ink/80
+                         hover:bg-mem-sky/40 hover:-translate-y-px transition-all"
+              title={t('header.helpTitle')}
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-mem-sky" />
+              <span className="font-brand-script text-sm leading-none">{t('header.help')}</span>
+            </a>
             <LanguageSwitcher />
           </div>
 

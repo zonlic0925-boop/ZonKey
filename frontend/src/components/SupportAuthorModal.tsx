@@ -5,6 +5,7 @@ import {
   AUTHOR_EMAIL,
   AUTHOR_GITHUB_URL,
   PROJECT_REPO_URL,
+  PROJECT_GITHUB_URL,
   SUPPORT_ALIPAY_QR,
   SUPPORT_WECHAT_QR,
 } from '../lib/brand';
@@ -82,9 +83,24 @@ export const SupportAuthorModal: React.FC<SupportAuthorModalProps> = ({ open, on
             <span className="min-w-0">
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <Star className="w-3.5 h-3.5 text-mem-coral shrink-0" />
-                {t('support.projectRepo')}
+                {t('support.projectRepo')}（Gitee）
               </span>
               <span className="block text-xs text-mem-ink/45 truncate mt-0.5">{PROJECT_REPO_URL}</span>
+            </span>
+            <ExternalLink className="w-3 h-3 text-mem-ink/40 shrink-0" />
+          </a>
+          <a
+            href={PROJECT_GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-mem-ink/20 bg-mem-cream/50 hover:bg-mem-yellow/30 transition-colors text-xs text-mem-ink"
+          >
+            <span className="min-w-0">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <Star className="w-3.5 h-3.5 text-mem-yellow shrink-0" />
+                {t('support.githubMirror')}
+              </span>
+              <span className="block text-xs text-mem-ink/45 truncate mt-0.5">{PROJECT_GITHUB_URL}</span>
             </span>
             <ExternalLink className="w-3 h-3 text-mem-ink/40 shrink-0" />
           </a>
