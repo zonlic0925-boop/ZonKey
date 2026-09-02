@@ -1,4 +1,9 @@
-"""Generate ZonKey Windows .ico (multi-resolution) from the dragon-scale hexagon brand mark."""
+"""Generate ZonKey Windows .ico (multi-resolution) from the dragon-scale key brand mark.
+
+品牌语义（2026-09-02 用户拍板）：Zon=龙鳞（Zon）+ Key=钥匙 —— 钥匙柄为
+渐变龙鳞六边形环，柄心为内六边形钥孔，钥匙杆 + 鳞片状双齿。配色沿用
+Memphis 三色渐变（teal→yellow→coral），与全站 UI 一致。
+"""
 
 from __future__ import annotations
 
@@ -16,8 +21,7 @@ ROOT_ASSETS = ROOT / "assets"
 BG = (255, 249, 240, 255)
 STROKE = (26, 26, 46, 255)
 GRAD = [(78, 205, 196), (255, 230, 109), (255, 107, 107)]
-INNER = (255, 255, 255, 140)
-CORE = (255, 255, 255, 200)
+KEYHOLE = (255, 249, 240, 255)  # 柄心钥孔填背景色
 ICO_SIZES = [256, 128, 64, 48, 32, 16]
 
 
@@ -47,29 +51,44 @@ def _hex_points(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
 
 
 def render_icon(size: int) -> Image.Image:
+    """龙鳞钥匙：柄(六边形环渐变+钥孔) 在左上，杆垂直下延，双齿向右。"""
     img = Image.new("RGBA", (size, size), BG)
-    cx = cy = size / 2
-    radius = (size / 2) - size * 0.08
-    stroke_w = max(2, size // 18)
+    s = size / 64.0  # 以 64×64 设计稿为基准缩放
+    stroke_w = max(2, round(size / 18))
+    thin_w = max(1, round(size / 28))
 
-    outer = _hex_points(cx, cy, radius)
+    def pt(x: float, y: float) -> tuple[float, float]:
+        return (x * s, y * s)
+
+    # ---- 钥匙杆（含柄部正下方的杆段，避免柄与齿之间断裂） ----
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle(
+        [pt(17.5, 8.6), pt(26.5, 53)], radius=pt(2, 0)[0], fill=STROKE
+    )
+
+    # ---- 钥匙齿（鳞片状双齿） ----
+    draw.rounded_rectangle([pt(26.5, 40), pt(37.5, 46)], radius=pt(1.5, 0)[0], fill=STROKE)
+    draw.rounded_rectangle([pt(26.5, 48), pt(33.5, 52.5)], radius=pt(1.5, 0)[0], fill=STROKE)
+
+    # ---- 钥匙柄：龙鳞六边形环（渐变） ----
+    cx, cy, r = pt(22, 21.8)[0], pt(22, 21.8)[1], 13.2 * s
+    outer = _hex_points(cx, cy, r)
     mask = Image.new("L", (size, size), 0)
     ImageDraw.Draw(mask).polygon(outer, fill=255)
     grad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    for y in range(size):
-        t = y / max(size - 1, 1)
-        color = _grad_color(t) + (255,)
-        ImageDraw.Draw(grad).line([(0, y), (size, y)], fill=color, width=1)
+    grad_draw = ImageDraw.Draw(grad)
+    min_y = int(min(p[1] for p in outer))
+    max_y = int(max(p[1] for p in outer))
+    for y in range(max(min_y, 0), min(max_y, size - 1) + 1):
+        t = (y - min_y) / max(max_y - min_y, 1)
+        grad_draw.line([(0, y), (size, y)], fill=_grad_color(t) + (255,), width=1)
     img = Image.composite(grad, img, mask)
-
     draw = ImageDraw.Draw(img)
     draw.polygon(outer, outline=STROKE, width=stroke_w)
 
-    inner = _hex_points(cx, cy, radius * 0.62)
-    draw.polygon(inner, fill=INNER, outline=STROKE, width=max(1, size // 28))
-
-    core = _hex_points(cx, cy, radius * 0.28)
-    draw.polygon(core, fill=CORE)
+    # ---- 柄心钥孔（内六边形，填背景色形成镂空感） ----
+    inner = _hex_points(cx, cy, r * 0.58)
+    draw.polygon(inner, fill=KEYHOLE, outline=STROKE, width=thin_w)
 
     if size <= 32:
         rgb = Image.new("RGB", (size, size), BG[:3])

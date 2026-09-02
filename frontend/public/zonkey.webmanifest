@@ -1,0 +1,16 @@
+{
+  "name": "ZonKey",
+  "short_name": "ZonKey",
+  "description": "ZonKey · 本地离线日用百宝箱 | 智能脱敏为核心 + PDF/PPT/图像/音视频/文本/计算/系统 8 大中心 70+ 工具",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF9F0",
+  "theme_color": "#FFF9F0",
+  "icons": [
+    {
+      "src": "/zonkey-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

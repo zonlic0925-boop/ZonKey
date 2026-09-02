@@ -5,7 +5,8 @@
  * - pdf-to-word   ：PDF.js 文本行抽取（字号/粗体/坐标）→ docx 重建（标题分级/段落/分页；表格线性化，如实标注）
  * - pdf-to-excel  ：文本行按 y 聚类 + x 间隙分列 → xlsx（每页一个 sheet；无框线检测，简化口径）
  * - pdf-to-ppt    ：PDF.js 逐页渲染整页贴图 → pptx（视觉版式还原，与后端同思路）
- * - office-to-pdf ：mammoth(docx→HTML) / SheetJS(xlsx→HTML) → foreignObject 栅格化 → pdf-lib 回写
+ * - word-to-pdf  ：mammoth(docx→HTML) → foreignObject 栅格化 → pdf-lib 回写
+ * - excel-to-pdf ：SheetJS(xlsx→HTML) → foreignObject 栅格化 → pdf-lib 回写
  * - html-to-pdf   ：Markdown/HTML 子集 → 同一栅格化管线
  * - compress-deep ：逐页栅格化 + JPEG 重编码 → pdf-lib 重建（无文本层，与后端同语义）
  * - pdf-repair    ：pdf-lib 容错解析重建（尽力而为，严重损坏仍报错）
@@ -20,7 +21,8 @@ export const WEB_SUPPORTED_OPS: ReadonlySet<string> = new Set([
   'pdf-to-word',
   'pdf-to-excel',
   'pdf-to-ppt',
-  'office-to-pdf',
+  'word-to-pdf',
+  'excel-to-pdf',
   'html-to-pdf',
   'compress-deep',
   'pdf-repair',
@@ -289,7 +291,7 @@ async function pdfToPpt(
 }
 
 /* ------------------------------------------------------------------ */
-/* HTML → PDF 栅格化管线（office-to-pdf 与 html-to-pdf 共用）          */
+/* HTML → PDF 栅格化管线（word/excel-to-pdf 与 html-to-pdf 共用）          */
 /* ------------------------------------------------------------------ */
 
 const PAGE_CSS_PX_W = 794; // A4 @96dpi
@@ -517,10 +519,15 @@ async function officeToPdf(
   file: File,
   _opts: WebConvertOptions,
   onStage?: (stage: string) => void,
+  kind: 'word' | 'excel' = 'word',
 ): Promise<WebConvertResult> {
   const ext = extOf(file.name);
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (ext === 'docx') {
+  const wordOk = ext === 'docx' || ext === 'doc';
+  const excelOk = ext === 'xlsx' || ext === 'xls';
+  if (kind === 'word' && !wordOk) throw new Error('word-to-pdf:unsupported-input');
+  if (kind === 'excel' && !excelOk) throw new Error('excel-to-pdf:unsupported-input');
+  if (kind === 'word' && wordOk) {
     onStage?.('parse-docx');
     const body = await docxToBodyHtml(bytes.buffer as ArrayBuffer);
     onStage?.('layout');
@@ -532,7 +539,7 @@ async function officeToPdf(
       engine: 'browser:mammoth+rasterize',
     };
   }
-  if (ext === 'xlsx' || ext === 'xls') {
+  if (kind === 'excel' && (ext === 'xlsx' || ext === 'xls')) {
     onStage?.('parse-xlsx');
     const body = await xlsxToBodyHtml(bytes.buffer as ArrayBuffer);
     const canvas = await rasterizeHtmlToCanvas(body, onStage);
@@ -648,8 +655,10 @@ export async function runWebConversion(
       return pdfToExcel(bytes, file.name);
     case 'pdf-to-ppt':
       return pdfToPpt(bytes, file.name, opts.dpi ?? 144, opts.imageFormat ?? 'png');
-    case 'office-to-pdf':
-      return officeToPdf(file, opts, onStage);
+    case 'word-to-pdf':
+      return officeToPdf(file, opts, onStage, 'word');
+    case 'excel-to-pdf':
+      return officeToPdf(file, opts, onStage, 'excel');
     case 'compress-deep':
       return compressDeep(bytes, file.name, opts.dpi ?? 144, opts.quality ?? 70);
     case 'pdf-repair':

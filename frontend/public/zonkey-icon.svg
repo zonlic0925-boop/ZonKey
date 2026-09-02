@@ -1,9 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect width="64" height="64" rx="14" fill="#FFF9F0"/>
-  <path d="M32 8L52 18V46L32 56L12 46V18L32 8Z" fill="url(#g)" stroke="#1A1A2E" stroke-width="3"/>
-  <path d="M32 18L42 24V40L32 46L22 40V24L32 18Z" fill="rgba(255,255,255,0.35)" stroke="#1A1A2E" stroke-width="2"/>
+  <!-- 钥匙杆 -->
+  <rect x="17.5" y="26" width="9" height="27" rx="2" fill="#1A1A2E"/>
+  <!-- 钥匙齿（鳞片状） -->
+  <rect x="26.5" y="40" width="11" height="6" rx="1.5" fill="#1A1A2E"/>
+  <rect x="26.5" y="48" width="7" height="4.5" rx="1.5" fill="#1A1A2E"/>
+  <!-- 钥匙柄：龙鳞六边形环（渐变） -->
+  <path d="M22 8.6L33.4 15.2V28.4L22 35L10.6 28.4V15.2L22 8.6Z" fill="url(#g)" stroke="#1A1A2E" stroke-width="3" stroke-linejoin="round"/>
+  <!-- 柄心：内六边形钥孔 -->
+  <path d="M22 15.2L27.2 18.2V24.2L22 27.2L16.8 24.2V18.2L22 15.2Z" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="2" stroke-linejoin="round"/>
   <defs>
-    <linearGradient id="g" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+    <linearGradient id="g" x1="10.6" y1="8.6" x2="33.4" y2="35" gradientUnits="userSpaceOnUse">
       <stop stop-color="#4ECDC4"/>
       <stop offset="0.5" stop-color="#FFE66D"/>
       <stop offset="1" stop-color="#FF6B6B"/>

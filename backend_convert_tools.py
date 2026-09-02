@@ -100,7 +100,9 @@ def _save_pdf_upload(tmp_dir: Path, file: UploadFile) -> tuple[Path, str]:
     return dest, _safe_base_name(raw_name)
 
 
-def _save_office_upload(tmp_dir: Path, file: UploadFile) -> tuple[Path, str, str]:
+def _save_office_upload(
+    tmp_dir: Path, file: UploadFile, allowed: str | None = None
+) -> tuple[Path, str, str]:
     raw_name = Path(file.filename or "document.docx").name
     ext = Path(raw_name).suffix.lower()
     if ext in _WORD_EXTS:
@@ -111,6 +113,11 @@ def _save_office_upload(tmp_dir: Path, file: UploadFile) -> tuple[Path, str, str
         raise HTTPException(status_code=400, detail="PPT 转 PDF 请使用 PPT 工坊（已支持 LibreOffice/COM 双路渲染）")
     else:
         raise HTTPException(status_code=400, detail=f"不支持的格式: {ext or '(无扩展名)'}，支持 .docx/.doc/.xlsx/.xls")
+    if allowed is not None and kind != allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"文件类型不匹配：本工具接受 {('Word (.docx/.doc)' if allowed == 'word' else 'Excel (.xlsx/.xls)')}",
+        )
     dest = _write_upload(tmp_dir, file, raw_name)
     return dest, _safe_base_name(raw_name), kind
 
@@ -644,12 +651,11 @@ def _excel_to_pdf_fallback(source: Path, out_path: Path, job_id: str) -> None:
     _build_pdf_from_flowables(flowables, out_path, source.stem)
 
 
-@router.post("/office-to-pdf")
-def office_to_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+def _start_office_job(file: UploadFile, allowed: str | None, op_name: str) -> dict[str, Any]:
     tmp_dir = Path(tempfile.mkdtemp(prefix="convert_office_"))
-    source, base, kind = _save_office_upload(tmp_dir, file)
+    source, base, kind = _save_office_upload(tmp_dir, file, allowed)
     out_path = _unique_output_path(base, ".pdf")
-    job_id = _new_job("office-to-pdf")
+    job_id = _new_job(op_name)
 
     def target() -> None:
         try:
@@ -691,6 +697,24 @@ def office_to_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
 
     _spawn_job(job_id, tmp_dir, target)
     return {"job_id": job_id, "status": "running"}
+
+
+@router.post("/office-to-pdf")
+def office_to_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+    """兼容端点：Word/Excel 混合上传（保留旧接口，前端已改用拆分端点）。"""
+    return _start_office_job(file, None, "office-to-pdf")
+
+
+@router.post("/word-to-pdf")
+def word_to_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+    """Word → PDF（.docx/.doc）：Office COM 优先，mammoth+reportlab 兜底。"""
+    return _start_office_job(file, "word", "word-to-pdf")
+
+
+@router.post("/excel-to-pdf")
+def excel_to_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+    """Excel → PDF（.xlsx/.xls）：Office COM 优先，openpyxl+reportlab 兜底。"""
+    return _start_office_job(file, "excel", "excel-to-pdf")
 
 
 # ---------------------------------------------------------------------------

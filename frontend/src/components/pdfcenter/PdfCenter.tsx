@@ -60,7 +60,8 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
     case 'pdf-to-word':
     case 'pdf-to-excel':
     case 'pdf-to-ppt':
-    case 'office-to-pdf':
+    case 'word-to-pdf':
+    case 'excel-to-pdf':
     case 'compress-deep':
     case 'html-to-pdf':
     case 'ocr-export':

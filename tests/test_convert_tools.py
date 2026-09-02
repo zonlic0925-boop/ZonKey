@@ -290,10 +290,10 @@ def test_pdf_to_ppt_end_to_end(sample_pdf: bytes):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.skipif(not convert_tools._probe_win32(), reason="本机无 pywin32/Office COM")
-def test_office_to_pdf_word_end_to_end(has_office_com: bool):
+def test_word_to_pdf_end_to_end(has_office_com: bool):
     client = _make_client()
     response = client.post(
-        "/api/convert/office-to-pdf",
+        "/api/convert/word-to-pdf",
         files={"file": ("zonkey_word_sample.docx", io.BytesIO(_sample_docx_bytes()), "application/octet-stream")},
     )
     assert response.status_code == 200, response.text
@@ -314,10 +314,10 @@ def test_office_to_pdf_word_end_to_end(has_office_com: bool):
 
 
 @pytest.mark.skipif(not convert_tools._probe_win32(), reason="本机无 pywin32/Office COM")
-def test_office_to_pdf_excel_end_to_end(has_office_com: bool):
+def test_excel_to_pdf_end_to_end(has_office_com: bool):
     client = _make_client()
     response = client.post(
-        "/api/convert/office-to-pdf",
+        "/api/convert/excel-to-pdf",
         files={"file": ("zonkey_excel_sample.xlsx", io.BytesIO(_sample_xlsx_bytes()), "application/octet-stream")},
     )
     assert response.status_code == 200, response.text

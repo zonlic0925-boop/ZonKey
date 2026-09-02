@@ -437,7 +437,8 @@ export type ConvertOp =
   | 'pdf-to-word'
   | 'pdf-to-excel'
   | 'pdf-to-ppt'
-  | 'office-to-pdf'
+  | 'word-to-pdf'
+  | 'excel-to-pdf'
   | 'compress-deep'
   | 'ocr-export'
 
