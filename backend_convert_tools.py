@@ -750,7 +750,10 @@ def repair_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 深度压缩（栅格化重编码：pypdfium2 渲染 + JPEG 质量档重建，图片型 PDF 显著瘦身）
+# 深度压缩（栅格化重编码：pypdfium2 渲染 + PIL 量化降色 + JPEG DCTDecode
+# 直嵌 pikepdf，不经过 reportlab 无损重包——reportlab 会把 JPEG 解码成裸
+# 像素再 Flate 回写，压缩因子完全丢失，文字型 PDF 反而变大。
+# 若压缩后体积更大则退回原文件（保底返原）。
 # ---------------------------------------------------------------------------
 
 @router.post("/compress-deep")
@@ -771,10 +774,10 @@ def compress_deep(
     def target() -> None:
         import io as _io
 
+        import pikepdf
         import pypdfium2 as pdfium
         from PIL import Image
-        from reportlab.lib.utils import ImageReader
-        from reportlab.pdfgen import canvas as rl_canvas
+        from pikepdf import Array, Dictionary, Name
 
         source_pdf = pdfium.PdfDocument(str(source))
         try:
@@ -784,39 +787,105 @@ def compress_deep(
             if total > MAX_PAGES:
                 raise RuntimeError(f"PDF 超过 {MAX_PAGES} 页上限")
             scale = dpi_clamped / 72.0
-            c = rl_canvas.Canvas(str(out_path))
+
+            output_pdf = pikepdf.Pdf.new()
             for index in range(total):
-                _set_job(job_id, progress=10 + int(80 * (index + 1) / total), stage=f"recompressing {index + 1}/{total}")
+                _set_job(
+                    job_id,
+                    progress=10 + int(80 * (index + 1) / total),
+                    stage=f"recompressing {index + 1}/{total}",
+                )
                 page = source_pdf[index]
                 width_pt, height_pt = page.get_size()
                 pil_image = page.render(scale=scale).to_pil().convert("RGB")
+
+                # 量化降色：大幅减少 JPEG 编码复杂度（文字/图表页尤其受益）
+                w, h = pil_image.size
+                if w * h > 64000 and quality_clamped <= 80:
+                    pil_image = pil_image.quantize(
+                        colors=256, method=Image.Quantize.FASTOCTREE
+                    ).convert("RGB")
+
                 buf = _io.BytesIO()
-                pil_image.save(buf, format="JPEG", quality=quality_clamped, optimize=True)
-                buf.seek(0)
-                c.setPageSize((width_pt, height_pt))
-                c.drawImage(ImageReader(buf), 0, 0, width=width_pt, height=height_pt)
-                c.showPage()
-            c.save()
+                pil_image.save(
+                    buf, format="JPEG", quality=quality_clamped, optimize=True, subsampling=0
+                )
+                jpeg_bytes = buf.getvalue()
+                img_w, img_h = pil_image.size
+
+                # DCTDecode 直嵌 JPEG 字节流——不经过任何解码/重编码
+                img_stream = output_pdf.make_stream(
+                    jpeg_bytes,
+                    Dictionary(
+                        Type=Name.XObject,
+                        Subtype=Name.Image,
+                        Width=img_w,
+                        Height=img_h,
+                        ColorSpace=Name.DeviceRGB,
+                        BitsPerComponent=8,
+                        Filter=Name.DCTDecode,
+                    ),
+                )
+                # 内容流：把图像缩放到整页
+                content = f"q {width_pt} 0 0 {height_pt} 0 0 cm /Im0 Do Q"
+                content_stream = output_pdf.make_stream(content.encode("ascii"))
+
+                page_dict = output_pdf.make_indirect(
+                    Dictionary(
+                        Type=Name.Page,
+                        MediaBox=Array([0, 0, width_pt, height_pt]),
+                        Contents=content_stream,
+                        Resources=Dictionary(
+                            XObject=Dictionary(Im0=img_stream),
+                        ),
+                    )
+                )
+                output_pdf.pages.append(pikepdf.Page(page_dict))
         finally:
             source_pdf.close()
 
+        output_pdf.save(str(out_path))
         compressed_bytes = out_path.stat().st_size
-        ratio = round(compressed_bytes / max(original_bytes, 1) * 100, 1)
-        _set_job(
-            job_id, status="done", progress=100, stage="done",
-            engine="pypdfium2+reportlab", page_count=total,
-            dpi=dpi_clamped, quality=quality_clamped,
-            original_bytes=original_bytes, compressed_bytes=compressed_bytes,
-            compression_ratio_pct=ratio,
-            note=(
+
+        # 保底返原：压缩后体积反而更大时退回原文件（文字型 PDF 栅格化后矢量
+        # 信息丢失，像素量可能超过原文件紧凑的内容流编码）
+        if compressed_bytes >= original_bytes:
+            out_path.unlink(missing_ok=True)
+            shutil.copy2(source, out_path)
+            compressed_bytes = original_bytes
+            ratio = 100.0
+            note = (
+                f"压缩无效（原 {original_bytes // 1024} KB，栅格化后体积不降）。"
+                "已退回原始文件——文字型 PDF 建议先转为更紧凑格式（如 PDF/A）再压缩。"
+            )
+            engine = "fallback-original"
+        else:
+            ratio = round(compressed_bytes / max(original_bytes, 1) * 100, 1)
+            note = (
                 f"栅格化深度压缩：视觉版式还原，无可编辑文本层"
                 f"（原 {original_bytes // 1024} KB → {compressed_bytes // 1024} KB，{ratio}%）。"
                 "适合扫描件/图片型 PDF；文字型 PDF 建议用前端轻压缩"
-            ),
+            )
+            engine = "pypdfium2+pikepdf+DCTDecode"
+
+        _set_job(
+            job_id,
+            status="done",
+            progress=100,
+            stage="done",
+            engine=engine,
+            page_count=total,
+            dpi=dpi_clamped,
+            quality=quality_clamped,
+            original_bytes=original_bytes,
+            compressed_bytes=compressed_bytes,
+            compression_ratio_pct=ratio,
+            note=note,
             outputs=[{"name": out_path.name, "dir": str(out_path.parent)}],
         )
 
     _spawn_job(job_id, tmp_dir, target)
+    return {"job_id": job_id, "status": "running"}
     return {"job_id": job_id, "status": "running"}
 
 

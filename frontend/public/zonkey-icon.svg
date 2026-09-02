@@ -1,35 +1,71 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <!-- ZonKey 皇冠标（2026-09-02 用户拍板）：金色皇冠 = 王冠气质，
-       冠面中央白色钥匙剪影 = ZonKey 的「Key」特色（龙鳞环柄 + 鳞片双齿）。
-       设计源：lucide chess-king 轮廓语言 + 英皇娱乐式饱满三角冠形，
-       颜色沿用 Memphis 三色渐变（teal→yellow→coral），与全站 UI 一致。 -->
+  <!-- ZonKey 单皇冠标（2026-09-02 用户拍板）：纯皇冠、无钥匙剪影。
+       渐变仍是 Memphis 三色（teal→yellow→coral），与全站 UI 一致。
+       渲染增强：受光侧 + 背光侧双渐变带 → 金冠立体感；冠面顶部釉面高光、
+       冠带右侧暗带与微光条 → 立体饰条；三冠珠白色珠心 + 暗色月牙 → 珍珠体感；
+       底部四道高光斜纹 → 拉丝金质感；6px 圆角底衬做图标边界。 -->
   <defs>
     <linearGradient id="zg" x1="8" y1="12" x2="56" y2="52" gradientUnits="userSpaceOnUse">
       <stop stop-color="#4ECDC4"/>
       <stop offset="0.5" stop-color="#FFE66D"/>
       <stop offset="1" stop-color="#FF6B6B"/>
     </linearGradient>
+    <linearGradient id="zgDark" x1="14" y1="14" x2="52" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2FA9A0"/>
+      <stop offset="0.52" stop-color="#D9BE3C"/>
+      <stop offset="1" stop-color="#D94F52"/>
+    </linearGradient>
+    <linearGradient id="zgHi" x1="12" y1="10" x2="34" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="zgBandHi" x1="8" y1="41.5" x2="30" y2="51" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="zgBandDark" x1="44" y1="41.5" x2="57" y2="51" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A2E" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#1A1A2E" stop-opacity="0"/>
+    </linearGradient>
   </defs>
 
-  <!-- 冠带（基底饰条） -->
+  <!-- 圆角底衬：图标边界（R=5 圆角 + 1.5 深色描边） -->
+  <rect x="3" y="3" width="58" height="58" rx="9" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="3"/>
+
+  <!-- 冠带（基底饰条）：主渐变 + 右暗带 + 上微光条 -->
   <path d="M7 41.5H57V46.5A4.5 4.5 0 0 1 52.5 51H11.5A4.5 4.5 0 0 1 7 46.5Z" fill="url(#zg)" stroke="#1A1A2E" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M44 41.5H57V46.5A4.5 4.5 0 0 1 52.5 51H44Z" fill="url(#zgBandDark)"/>
+  <path d="M8.5 42.5H55.5V45H8.5Z" fill="url(#zgBandHi)"/>
 
   <!-- 冠面（英皇式饱满三角冠形） -->
   <path d="M6 43V16L18 21L32 8.5L46 21L58 16V43Z" fill="url(#zg)" stroke="#1A1A2E" stroke-width="3" stroke-linejoin="round"/>
 
-  <!-- 三冠珠（皇冠三尖顶） -->
-  <circle cx="18" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
-  <circle cx="32" cy="8.5" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
-  <circle cx="46" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
+  <!-- 冠面渲染：右侧/下缘暗色渐变带（立体背光） -->
+  <path d="M42 19.2L56 14.4V43H6V42H41.2L33.8 33.4L46 21Z" fill="url(#zgDark)"/>
+  <path d="M6 43H58V40.5H6Z" fill="#1A1A2E" fill-opacity="0.14"/>
 
-  <!-- 冠面中央：钥匙剪影（ZonKey 特色） -->
-  <g stroke="#1A1A2E" stroke-linejoin="round">
-    <rect x="25.5" y="15.5" width="4.5" height="20" rx="1.4" fill="#FFF9F0" stroke-width="1.7"/>
-    <rect x="30" y="28" width="7.5" height="3.4" rx="1.2" fill="#FFF9F0" stroke-width="1.7"/>
-    <rect x="30" y="32.2" width="5" height="2.8" rx="1.2" fill="#FFF9F0" stroke-width="1.7"/>
-    <path d="M27.75 20.6L31.2 22.6V26.6L27.75 28.6L24.3 26.6V22.6L27.75 20.6Z" fill="#FFF9F0" stroke-width="1.5"/>
+  <!-- 冠面顶部釉面高光 -->
+  <path d="M14.5 17.5L19.5 14.5L29.5 7.5L31.5 9.2L24 14.6L21 15.6L26 12.4L14.5 17.5Z" fill="url(#zgHi)"/>
+
+  <!-- 三冠珠：白色珠心 + 暗色月牙（珍珠体感） -->
+  <g>
+    <circle cx="18" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
+    <path d="M20.2 19.4A2.4 2.4 0 1 1 16.5 23A2.05 2.05 0 0 0 20.2 19.4Z" fill="#1A1A2E" fill-opacity="0.22"/>
+    <circle cx="32" cy="8.5" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
+    <path d="M34.2 6.9A2.4 2.4 0 1 1 30.5 10.5A2.05 2.05 0 0 0 34.2 6.9Z" fill="#1A1A2E" fill-opacity="0.22"/>
+    <circle cx="46" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
+    <path d="M48.2 19.4A2.4 2.4 0 1 1 44.5 23A2.05 2.05 0 0 0 48.2 19.4Z" fill="#1A1A2E" fill-opacity="0.22"/>
   </g>
 
-  <!-- 冠带锁孔（ZonKey 的 Key 点睛） -->
-  <circle cx="32" cy="46.2" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.8"/>
+  <!-- 冠带中央：菱形宝石（Key 之「眼」，保留品牌点睛，不画钥匙） -->
+  <path d="M32 43.2L36 46.4L32 49.6L28 46.4Z" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M33.5 44.4L35.1 46.4L33.5 48.4L31.9 46.4Z" fill="url(#zg)"/>
+
+  <!-- 冠带高光斜纹（拉丝金质感） -->
+  <g stroke="#FFF9F0" stroke-opacity="0.55" stroke-width="1" stroke-linecap="round">
+    <path d="M13 44.6L19.5 44.6"/>
+    <path d="M21.5 44.6L28 44.6"/>
+    <path d="M38 44.6L44.5 44.6"/>
+    <path d="M46.5 44.6L53 44.6"/>
+  </g>
 </svg>

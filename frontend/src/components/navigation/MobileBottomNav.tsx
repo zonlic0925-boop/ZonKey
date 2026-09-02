@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Star, ShieldCheck, FileStack, LayoutGrid, X } from 'lucide-react';
+import { Home, Star, ShieldCheck, FileStack, LayoutGrid, X, Coffee } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { CENTERS, type MemphisAccent } from '../../lib/navigation';
 import type { CenterId } from '../../types';
@@ -17,6 +17,7 @@ import {
   getFavorites,
   subscribeFavorites,
 } from '../../lib/zonkey/favoritesCore';
+import { SupportAuthorModal } from '../SupportAuthorModal';
 
 const accentBg: Record<MemphisAccent, string> = {
   coral: 'bg-mem-coral/20',
@@ -46,6 +47,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const { t } = useI18n();
   const [favCount, setFavCount] = useState(() => getFavorites().length);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   useEffect(() => subscribeFavorites(() => setFavCount(getFavorites().length)), []);
 
@@ -150,6 +152,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </motion.div>
         </div>
       )}
+      <SupportAuthorModal open={supportOpen} onClose={() => setSupportOpen(false)} />
     </>
   );
 };

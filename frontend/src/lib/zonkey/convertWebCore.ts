@@ -575,6 +575,14 @@ async function compressDeep(
     page.drawImage(embedded, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
   }
   const saved = await out.save();
+  // 保底返原：压缩后体积反而变大时退回原文件
+  if (saved.length >= bytes.length) {
+    return {
+      blob: new Blob([bytes as BlobPart], { type: 'application/pdf' }),
+      filename: `${baseName(sourceName)}_original.pdf`,
+      engine: 'browser:fallback-original',
+    };
+  }
   return {
     blob: new Blob([saved as BlobPart], { type: 'application/pdf' }),
     filename: `${baseName(sourceName)}_compressed.pdf`,

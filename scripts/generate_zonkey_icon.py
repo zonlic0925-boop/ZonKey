@@ -1,14 +1,15 @@
 """Generate ZonKey Windows .ico (multi-resolution), .png and macOS .icns
 from the crown brand mark.
 
-品牌语义（2026-09-02 用户拍板）：ZonKey = 皇冠（英皇娱乐式饱满三角冠形 +
-lucide chess-king 轮廓语言）+ Key 特色（冠面中央白色钥匙剪影：龙鳞六边形
-环柄 + 鳞片状双齿，冠带锁孔点睛）。配色沿用 Memphis 三色渐变
-（teal→yellow→coral），与全站 UI 一致。
+品牌语义（2026-09-02 用户拍板）：ZonKey = 单皇冠（英皇娱乐式饱满三角冠形 +
+lucide chess-king 轮廓语言），去掉钥匙剪影。配色沿用 Memphis 三色渐变
+（teal→yellow→coral），与全站 UI 一致。渲染增强：冠面带受光/背光双渐变、
+顶部釉面高光；三冠珠白色珠心 + 暗色月牙；冠带右侧暗带 + 上微光条 +
+拉丝斜纹；中央菱形宝石作 Key 之「眼」。
 
-设计真源是 frontend/public/zonkey-icon.svg（64×64 设计稿，金色渐变皇冠 +
-白色钥匙剪影）；本脚本按同一几何绘制栅格版，供 Windows EXE / macOS .app /
-PWA 图标使用。两处几何必须同步修改。
+设计真源是 frontend/public/zonkey-icon.svg（64×64 设计稿）；本脚本按同一
+几何绘制栅格版，供 Windows EXE / macOS .app / PWA 图标使用。两处几何必须
+同步修改。
 """
 
 from __future__ import annotations
@@ -31,7 +32,8 @@ WEB_PUBLIC = ROOT / "frontend" / "public"
 BG = (255, 249, 240, 255)
 STROKE = (26, 26, 46, 255)
 GRAD = [(78, 205, 196), (255, 230, 109), (255, 107, 107)]
-KEYHOLE = BG  # 钥匙剪影与锁孔填背景色，形成镂空感
+GRAD_DARK = [(47, 169, 160), (217, 190, 60), (217, 79, 82)]
+PEARL = (255, 249, 240, 255)  # 珠心/宝石/高光用背景色，形成镂空感
 ICO_SIZES = [256, 128, 64, 48, 32, 16]
 
 # macOS icns 必须含 16/32/64/128/256/512/1024 全套 PNG 通道，
@@ -47,11 +49,11 @@ def _lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[i
     )
 
 
-def _grad_color(t: float) -> tuple[int, int, int]:
+def _grad_color(stops: list[tuple[int, int, int]], t: float) -> tuple[int, int, int]:
     t = max(0.0, min(1.0, t))
     if t <= 0.5:
-        return _lerp(GRAD[0], GRAD[1], t / 0.5)
-    return _lerp(GRAD[1], GRAD[2], (t - 0.5) / 0.5)
+        return _lerp(stops[0], stops[1], t / 0.5)
+    return _lerp(stops[1], stops[2], (t - 0.5) / 0.5)
 
 
 def _fill_vertical_gradient(
@@ -62,7 +64,25 @@ def _fill_vertical_gradient(
     gd = ImageDraw.Draw(grad)
     for y in range(max(top, 0), min(bottom, size - 1) + 1):
         t = (y - top) / max(bottom - top, 1)
-        gd.line([(0, y), (size, y)], fill=_grad_color(t) + (255,), width=1)
+        gd.line([(0, y), (size, y)], fill=_grad_color(GRAD, t) + (255,), width=1)
+    return Image.composite(grad, base, mask)
+
+
+def _overlay_vertical_gradient(
+    base: Image.Image,
+    mask: Image.Image,
+    top: int,
+    bottom: int,
+    stops: list[tuple[int, int, int]],
+    alpha: int,
+    size: int,
+) -> Image.Image:
+    """在 mask 内叠加一层半透明竖直渐变（受光/背光带），不破坏底下的主渐变。"""
+    grad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(grad)
+    for y in range(max(top, 0), min(bottom, size - 1) + 1):
+        t = (y - top) / max(bottom - top, 1)
+        gd.line([(0, y), (size, y)], fill=_grad_color(stops, t) + (alpha,), width=1)
     return Image.composite(grad, base, mask)
 
 
@@ -71,7 +91,7 @@ def _poly_pts(pts: list[tuple[float, float]], s: float) -> list[tuple[float, flo
 
 
 def render_icon(size: int) -> Image.Image:
-    """金色渐变皇冠 + 中央白色钥匙剪影（与 zonkey-icon.svg 同几何，64 设计稿缩放）。"""
+    """单皇冠（渐变 + 立体渲染），与 zonkey-icon.svg 同几何，64 设计稿缩放。"""
     img = Image.new("RGBA", (size, size), BG)
     s = size / 64.0
     stroke_w = max(2, round(3 * s))
@@ -81,7 +101,21 @@ def render_icon(size: int) -> Image.Image:
     def pt(*xy: float) -> tuple[float, float]:
         return (xy[0] * s, xy[1] * s)
 
-    # ---- 冠面渐变（冠面+冠带同向渐变，仅填皇冠形状内部） ----
+    def line_seg(p0: tuple[float, float], p1: tuple[float, float]) -> list[tuple[float, float]]:
+        n = max(1, int(round(math.hypot(p1[0] - p0[0], p1[1] - p0[1]))))
+        return [
+            (p0[0] + (p1[0] - p0[0]) * i / n, p0[1] + (p1[1] - p0[1]) * i / n)
+            for i in range(n + 1)
+        ]
+
+    # ---- 底衬（圆角方块 + 深色描边，小尺寸保底图形边界） ----
+    if size >= 48:
+        draw0 = ImageDraw.Draw(img)
+        draw0.rounded_rectangle(
+            [pt(3, 3), pt(61, 61)], radius=pt(9, 0)[0], fill=BG, outline=STROKE, width=stroke_w
+        )
+
+    # ---- 冠面 + 冠带主渐变 ----
     crown_shape = _poly_pts(
         [(6, 43), (6, 16), (18, 21), (32, 8.5), (46, 21), (58, 16), (58, 43)], s
     )
@@ -91,52 +125,78 @@ def render_icon(size: int) -> Image.Image:
     ImageDraw.Draw(grad_mask).rectangle(band_shape, fill=255)
     img = _fill_vertical_gradient(img, grad_mask, int(8.5 * s), int(51 * s), size)
 
-    draw = ImageDraw.Draw(img)
+    # ---- 冠面暗带（右侧 + 下缘）----
+    dark_shape = _poly_pts(
+        [(42, 19.2), (56, 14.4), (56, 43), (6, 43), (6, 42), (41.2, 42), (33.8, 33.4), (46, 21)], s
+    )
+    dark_mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(dark_mask).polygon(dark_shape, fill=255)
+    img = _overlay_vertical_gradient(img, dark_mask, int(8.5 * s), int(43 * s), GRAD_DARK, 150, size)
 
-    # ---- 冠带（基底饰条，渐变底已铺好，只需描边） ----
+    # ---- 冠带暗带（右侧）+ 微光条（顶部）----
+    band_dark_shape = _poly_pts([(44, 41.5), (57, 41.5), (57, 46.5), (52.5, 51), (44, 51)], s)
+    band_dark_mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(band_dark_mask).polygon(band_dark_shape, fill=255)
+    img = _overlay_vertical_gradient(img, band_dark_mask, int(41.5 * s), int(51 * s), GRAD_DARK, 90, size)
+    if size >= 48:
+        draw = ImageDraw.Draw(img)
+        draw.rectangle([pt(8.5, 42.5), pt(55.5, 45)], fill=(255, 255, 255, 90))
+
+    # ---- 冠面顶部釉面高光（右侧小三角透白）----
+    if size >= 48:
+        hi_shape = _poly_pts(
+            [(14.5, 17.5), (19.5, 14.5), (29.5, 7.5), (31.5, 9.2), (24, 14.6), (21, 15.6), (26, 12.4)], s
+        )
+        hi_mask = Image.new("L", (size, size), 0)
+        ImageDraw.Draw(hi_mask).polygon(hi_shape, fill=255)
+        white_grad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        hd = ImageDraw.Draw(white_grad)
+        for y in range(int(7.5 * s), int(28 * s)):
+            t = (y - 7.5 * s) / (28 * s - 7.5 * s)
+            hd.line([(0, y), (size, y)], fill=(255, 255, 255, int(128 * (1 - t))), width=1)
+        img = Image.composite(white_grad, img, hi_mask)
+
+    # ---- 描边：冠带 + 冠面 + 下缘暗线 ----
+    draw = ImageDraw.Draw(img)
     draw.rounded_rectangle(
         [pt(7, 41.5), pt(57, 51)], radius=pt(2, 0)[0], outline=STROKE, width=stroke_w
     )
-
-    # ---- 冠面（三角冠形） ----
     draw.polygon(crown_shape, outline=STROKE, width=stroke_w)
+    if size >= 48:
+        draw.line([pt(6, 43), pt(58, 43)], fill=(26, 26, 46, 60), width=max(1, round(0.7 * s)))
 
-    # ---- 三冠珠 ----
+    # ---- 三冠珠：白珠心 + 暗色月牙 ----
     for cx, cy in [(18, 21), (32, 8.5), (46, 21)]:
         draw.ellipse(
             [pt(cx - 2.6, cy - 2.6), pt(cx + 2.6, cy + 2.6)],
-            fill=KEYHOLE,
+            fill=PEARL,
             outline=STROKE,
             width=ball_w,
         )
+        if size >= 48:
+            draw.pieslice(
+                [pt(cx - 2.4, cy - 2.4), pt(cx + 2.4, cy + 2.4)],
+                start=210,
+                end=330,
+                fill=(26, 26, 46, 56),
+            )
 
-    # ---- 钥匙剪影（冠面中央，背景色镂空 + 墨线描边） ----
-    # PIL 的 rounded_rectangle 在 ≤32px 时对过窄的齿条带 outline 会抛
-    # "x1 must be greater than or equal to x0"（描边收缩后矩形塌陷），
-    # 小尺寸只画纯色镂空（白色剪影在渐变底上依然清晰）。
-    small = size <= 32
-    outline_kw = {} if small else {"outline": STROKE, "width": thin_w}
-    draw.rounded_rectangle(
-        [pt(25.5, 15.5), pt(30, 35.5)], radius=pt(1.4, 0)[0], fill=KEYHOLE, **outline_kw
-    )
-    draw.rounded_rectangle(
-        [pt(30, 28), pt(37.5, 31.4)], radius=pt(1.2, 0)[0], fill=KEYHOLE, **outline_kw
-    )
-    draw.rounded_rectangle(
-        [pt(30, 32.2), pt(35, 35)], radius=pt(1.2, 0)[0], fill=KEYHOLE, **outline_kw
-    )
-    hex_pts = [
-        pt(27.75 + 3.45 * math.cos(math.radians(60 * i - 90)), 24.6 + 3.45 * math.sin(math.radians(60 * i - 90)))
-        for i in range(6)
-    ]
-    draw.polygon(hex_pts, fill=KEYHOLE, **outline_kw)
+    # ---- 冠带中央菱形宝石（Key 之「眼」）----
+    diamond = [pt(32, 43.2), pt(36, 46.4), pt(32, 49.6), pt(28, 46.4)]
+    draw.polygon(diamond, fill=PEARL, outline=STROKE, width=thin_w)
+    inner = [pt(33.5, 44.4), pt(35.1, 46.4), pt(33.5, 48.4), pt(31.9, 46.4)]
+    for seg in zip(inner, inner[1:] + inner[:1]):
+        for i, p in enumerate(line_seg(seg[0], seg[1])):
+            t = i / max(len(line_seg(seg[0], seg[1])) - 1, 1)
+            draw.ellipse(
+                [p[0] - 0.8 * s, p[1] - 0.8 * s, p[0] + 0.8 * s, p[1] + 0.8 * s],
+                fill=_grad_color(GRAD, t) + (255,),
+            )
 
-    # ---- 冠带锁孔 ----
-    draw.ellipse(
-        [pt(32 - 2.6, 46.2 - 2.6), pt(32 + 2.6, 46.2 + 2.6)],
-        fill=KEYHOLE,
-        **outline_kw,
-    )
+    # ---- 冠带高光斜纹（拉丝金）----
+    if size >= 32:
+        for x0, x1 in [(13, 19.5), (21.5, 28), (38, 44.5), (46.5, 53)]:
+            draw.line([pt(x0, 44.6), pt(x1, 44.6)], fill=(255, 249, 240, 140), width=max(1, round(1 * s)))
 
     if size <= 32:
         rgb = Image.new("RGB", (size, size), BG[:3])

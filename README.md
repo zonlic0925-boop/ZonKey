@@ -128,14 +128,16 @@ flowchart TB
 
 ### 方式一 · Windows 可执行文件（推荐）
 
-1. 从 [Gitee Releases](https://gitee.com/zonlic/ZonKey/releases) 下载最新 EXE 压缩包，或本机运行 `build_zonkey_exe.bat` 构建
-2. 双击 **启动现代化脱敏工作台.bat** 或直接运行 exe
-3. 浏览器 / 内嵌窗口访问 `http://127.0.0.1:8765`
+| 下载源 | 说明 |
+| --- | --- |
+| [**GitHub Release**](https://github.com/zonlic0925-boop/ZonKey/releases)（主） | 单文件下载，无需分卷，永久存档 |
+| [**Gitee Release**](https://gitee.com/zonlic/ZonKey/releases)（国内镜像） | 国内下载更快，大文件可能分卷（合并命令见 Release 说明） |
+
+> 下载后解压，双击 `ZonKey.exe` 即可。软件内「帮助」按钮有完整使用说明。
 
 ### 方式二 · 手机网页版（无需安装）
 
 - 局域网：电脑运行「启动局域网手机访问.bat」，手机同 WiFi 打开提示地址
-- 公网：电脑运行「启动公网手机访问.bat」（Cloudflare 隧道），任何网络可用
 - 或直接访问 **[zonkey.pages.dev](https://zonkey.pages.dev)**
 
 ### 方式三 · 源码开发模式

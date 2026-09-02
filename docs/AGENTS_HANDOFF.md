@@ -1,9 +1,21 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十二轮：发布前全面更名 ZonKey + ToolKnit 残留清洗 + 手机端红条改信息条 + 仓库公开化，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十三轮：用户反馈 7 项全面修复，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
-## 〇、2026-09-02 第十二轮（皇冠新图标 + 帮助入口 + README 架构重写 + Gitee 仓库上线，本轮）
+## 〇、2026-09-02 第十三轮（用户反馈 7 项全面修复，本轮）
+
+- **任务**：① 图标去钥匙改单皇冠（渲染加强）；② 帮助按钮改弹窗（软件内使用说明，三语）；③ 压缩无效根因修复（后端 DCTDecode 直嵌 + 保底返原）；④ 软件内 logo 换新皇冠；⑤ 手机端支持作者更醒目；⑥ EXE 白屏卡死根治（禁 GPU + 锁文件清理）；⑦ 发布下载方案调研（README 双源 + 7z 打包脚本）。
+- **图标**：`frontend/public/zonkey-icon.svg` 重绘——单皇冠、三色渐变、冠面带暗带+高光、三冠珠珍珠体感、拉丝斜纹、冠带中央菱形宝石（Key 之「眼」）；`scripts/generate_zonkey_icon.py` 同步重写（PIL 同几何栅格化：冠面暗带叠加、高光三角、珠心月牙、菱形宝石渐变、拉丝斜纹；小尺寸 ≤32px 只保冠形+渐变）；`BrandMark.tsx` `ScaleIcon` → `CrownIcon`（同 SVG 几何）。全平台资源已生成：ICO 7 尺寸、PNG 256px、icns 全套、PWA 180/192/512。
+- **帮助弹窗**：新建 `HelpModal.tsx`（四栏：简介+核心特色+下载安装+快速上手 4 步+仓库链接），Header 桌面/手机双布局 Help 按钮从 `<a href>` 跳 Gitee 改 `<button>` 弹窗；i18n `help.*` 15 键三语（zh-CN/en/zh-TW）齐。
+- **压缩根因修复**（`backend_convert_tools.py`）：原 reportlab `drawImage` 对 JPEG 走**无损 Flate 重包**（JPEG 压缩因子完全丢失，文字型 PDF 必变大）。改 **pikepdf DCTDecode 直嵌 JPEG 字节流**（`make_stream` + `Filter=/DCTDecode`，不经解码/重编码）+ PIL 量化降色（`quantize(colors=256)` 低质量档）+ **保底返原**（压缩后体积更大→退回原文件 + 诚实标注 `fallback-original`）。前端两条路径同口径保底：`pdfCore.ts::compressPdfFile`、`convertWebCore.ts::compressDeep` 均加 `compressed.length < original.length ? compressed : original`。
+- **手机端支持作者**：`Header.tsx` 手机咖啡按钮从纯图标改 `flex items-center gap-1.5` + 文字标签「支持作者」+ `bg-mem-coral/30` 醒目底；`MobileBottomNav` 引入 `SupportAuthorModal`（弹窗状态）。
+- **壳层白屏加固**（`desktop_app.py`）：① 环境变量 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` 注入 `--disable-gpu` + `--disable-software-rasterizer`（WebView2 GPU 进程在弱驱动/老显卡上是白屏头号嫌疑，本应用是表单/文档型 UI 零 WebGL 无感知）；② `_cleanup_orphan_webview2` 增补清理残留 `Singleton Lock` / `SingletonLock` / `lockfile` 文件（即使孤儿进程已杀，残留锁文件也能让新实例持续白屏）。
+- **发布方案**（调研子代理 `agent_eea69cbb`）：Gitee 付费也不解决单文件 100MB 限制；**推荐主分发 GitHub Release（单文件 2GiB）+ 国内镜像 Gitee（2 卷 7z 替 3 卷 zip，省 32%）**。`scripts/package_exe_zip.py` 重写：7z LZMA2 最高压缩 + zip 兼容 + SHA256 + certutil 缺失容错。README 下载区改为双源表格（GitHub 主 / Gitee 国内镜像）。
+- **验证**：`npm run build` 成功；pytest **133 passed**；`release_acceptance.py` 全过；EXE `dist_release/ZonKey_Windows_x64_20260902.zip`（19:44，282MB）：zip 内 `index-BJzT85FG.js` MD5 = 本地 = 线上（`68ee4d39d844...`）；Pages 部署 `847a05cc`（branch=main），主 chunk 三方一致。
+- **接手注意**：① 新图标真源是 `frontend/public/zonkey-icon.svg`（64×64 单皇冠），修改时 SVG 与 `generate_zonkey_icon.py` 的 PIL 几何必须同步；② `BrandMark.tsx` 的 `CrownIcon` 是独立 SVG 内联（不引用 public 文件），修改时也要同步；③ 压缩保底返原后 `compress-deep` 对文字型 PDF 直接返回原文件，`note` 字段会标注 `fallback-original`，前端 ConvertView 应展示 note 信息；④ 壳层 GPU 禁用在 `_open_pywebview` 里通过 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` 环境变量注入，只在 WebView2 创建 `CoreWebView2Environment` 时生效；⑤ 发布 zip 用 `shutil.make_archive` 直接生成（`package_exe_zip.py` 的 certutil 在 Build 脚本环境可能不可用，7z 同理——开发模式手动运行 `scripts/package_exe_zip.py` 即可得到 7z），`build_zonkey_exe.bat` 的最后一步打包脚本已做容错；⑥ 手机端「支持作者」两个入口：Header 有文字标签的咖啡按钮 + MobileBottomNav 上的弹窗支持。
+
+## 〇、2026-09-02 第十二轮（皇冠新图标 + 帮助入口 + README 架构重写 + Gitee 仓库上线，上轮）
 
 - **任务**：① 设计新皇冠图标（英皇娱乐式饱满三角冠形 + 中央钥匙剪影），全平台落地（EXE/ICO/PNG/icns/PWA）；② Header 新增「帮助」入口（桌面+手机双布局，HelpCircle 图标，跳转 Gitee 仓库）；③ README 重写系统架构图（Mermaid 三端一体图 + 目录树 + 下载链接）；④ Gitee 公开仓库上线 + v1.0.1 Release（含 EXE 分卷附件）。
 - **图标落地**：`frontend/public/zonkey-icon.svg`（64x64 设计稿，金色渐变皇冠 + 中央白色钥匙剪影 + 冠带锁孔，真源设计）；`scripts/generate_zonkey_icon.py` 重写：PIL 同几何栅格化（冠面渐变 mask + 钥匙剪影，<=32px 省略齿条描边），输出 ICO（7 尺寸）、PNG（256px）、icns（macOS 全套 PNG 通道 + is32/il32/s8mk/l8mk 掩码）、PWA 图标（180/192/512）。`packaging/macos/assets/zonkey.icns` 首次生成（32KB），macOS build 可用。

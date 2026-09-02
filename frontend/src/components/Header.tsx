@@ -5,9 +5,9 @@ import { CENTERS } from '../lib/navigation';
 import { BrandMark } from './BrandMark';
 import { SupportAuthorModal } from './SupportAuthorModal';
 import { AppearanceModal } from './AppearanceModal';
+import { HelpModal } from './HelpModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useI18n } from '../i18n';
-import { PROJECT_REPO_URL } from '../lib/brand';
 
 interface HeaderProps {
   activeCenter: CenterId;
@@ -51,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { t } = useI18n();
   const [supportOpen, setSupportOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   // 桌面中心导航：窄窗折叠出横向滚动时，竖向滚轮转横向滚动
   // （Chromium 纯横向滚动区不消费竖向 delta，鼠标用户够不到右侧项）。
   const centersNavRef = useRef<HTMLElement>(null);
@@ -133,20 +134,20 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-yellow/50 border-2 border-mem-ink text-mem-ink/80"
+              className="zs-touch-target flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-mem-coral/30 border-2 border-mem-ink"
               title={t('header.supportTitle')}
             >
               <Coffee className="w-4 h-4 text-mem-coral" />
+              <span className="text-[11px] font-bold text-mem-ink">{t('header.supportAuthor')}</span>
             </button>
-            <a
-              href={PROJECT_REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
               className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-sky/30 border-2 border-mem-ink text-mem-ink/80"
               title={t('header.helpTitle')}
             >
               <HelpCircle className="w-4 h-4 text-mem-sky" />
-            </a>
+            </button>
             <LanguageSwitcher />
           </div>
         </div>
@@ -203,10 +204,9 @@ export const Header: React.FC<HeaderProps> = ({
               <Coffee className="w-3.5 h-3.5 text-mem-coral" />
               <span className="font-brand-script text-sm leading-none">{t('header.supportAuthor')}</span>
             </button>
-            <a
-              href={PROJECT_REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium
                          bg-mem-sky/25 border-2 border-mem-ink text-mem-ink/80
                          hover:bg-mem-sky/40 hover:-translate-y-px transition-all"
@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <HelpCircle className="w-3.5 h-3.5 text-mem-sky" />
               <span className="font-brand-script text-sm leading-none">{t('header.help')}</span>
-            </a>
+            </button>
             <LanguageSwitcher />
           </div>
 
@@ -240,6 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       <SupportAuthorModal open={supportOpen} onClose={() => setSupportOpen(false)} />
       <AppearanceModal open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 };

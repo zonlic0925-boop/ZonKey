@@ -79,12 +79,14 @@ def _wait_for_server(timeout: float = 30.0) -> bool:
 
 
 def _cleanup_orphan_webview2() -> None:
-    """启动前清理父进程已死的孤儿 msedgewebview2（round-10）。
+    """启动前清理父进程已死的孤儿 msedgewebview2 与残留 Singleton Lock（round-10 + round-13）。
 
     前一次宿主崩溃/强杀后，WebView2 子进程可能存活并持有用户数据目录的
     Singleton Lock——新实例开窗即白屏，且表现为「崩溃后无法再打开软件」。
-    清理策略：只杀父进程已不存在的孤儿 msedgewebview2（PPID 不在存活进程
-    表中），不碰任何有活父进程的 WebView2（其他应用/浏览器的）。非 Windows 无操作。
+    清理策略：① 只杀父进程已不存在的孤儿 msedgewebview2（PPID 不在存活进程
+    表中），不碰任何有活父进程的 WebView2（其他应用/浏览器的）；② 清理残留
+    Singleton Lock 文件（即使没有孤儿进程，文件本身也可能锁住新实例）。
+    非 Windows 无操作。
     """
     if sys.platform != "win32":
         return
@@ -142,6 +144,21 @@ def _cleanup_orphan_webview2() -> None:
         except Exception:  # noqa: BLE001
             pass
         time.sleep(0.8)
+
+    # 清理残留 Singleton Lock 文件（即使孤儿进程已清理，文件也可能还在）
+    storage_path = Path(os.environ.get('APPDATA', str(Path.home()))) / 'ZonKey' / 'webview_data'
+    lock_files = [
+        storage_path / 'Singleton Lock',
+        storage_path / 'SingletonLock',
+        storage_path / 'lockfile',
+    ]
+    for lock in lock_files:
+        if lock.exists():
+            try:
+                lock.unlink()
+                _log(f"[*] 清理残留锁文件: {lock}")
+            except OSError:
+                pass
 
 
 def _run_uvicorn(bind_host: str) -> None:
@@ -210,6 +227,17 @@ def _open_pywebview(title: str) -> None:
     )
     attach_frameless_behaviour(window)
     # 注意：storage_path 只能经 webview.start() 传入（settings 表无此键）
+    #
+    # 白屏卡死三号嫌疑（round-13）：WebView2 GPU 进程在弱驱动/老显卡
+    # 环境下 GPU 加速初始化失败，整窗白屏且无 JS 错误可见。禁用 GPU
+    # 加速（本应用是表单/文档型 UI，零 WebGL/Canvas 3D）。pywebview 6.x
+    # 不提供直接传参接口，走环境变量（WebView2 在创建
+    # CoreWebView2Environment 前读取此变量）。
+    os.environ.setdefault('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '')
+    extra_args = os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS']
+    for flag in ['--disable-gpu', '--disable-software-rasterizer']:
+        if flag not in extra_args:
+            os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = f'{extra_args} {flag}'.strip()
     webview.start(storage_path=storage_path)
 
 

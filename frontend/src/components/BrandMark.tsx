@@ -7,38 +7,37 @@ interface BrandMarkProps {
   showSubtitle?: boolean;
 }
 
-function ScaleIcon({ className }: { className?: string }) {
+function CrownIcon({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       className={className}
       aria-hidden
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M24 4L40 13V35L24 44L8 35V13L24 4Z"
-        fill="url(#scaleGrad)"
-        stroke="#1A1A2E"
-        strokeWidth="2.5"
-      />
-      <path
-        d="M24 12L32 17V31L24 36L16 31V17L24 12Z"
-        fill="rgba(255,255,255,0.35)"
-        stroke="#1A1A2E"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M24 20L28 23V29L24 32L20 29V23L24 20Z"
-        fill="rgba(255,255,255,0.55)"
-      />
+      {/* 单皇冠：与 zonkey-icon.svg 同几何，Memphis 三色渐变 + 立体渲染 */}
       <defs>
-        <linearGradient id="scaleGrad" x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+        <linearGradient id="zgBrand" x1="8" y1="12" x2="56" y2="52" gradientUnits="userSpaceOnUse">
           <stop stopColor="#4ECDC4" />
           <stop offset="0.5" stopColor="#FFE66D" />
           <stop offset="1" stopColor="#FF6B6B" />
         </linearGradient>
+        <linearGradient id="zgDarkBrand" x1="14" y1="14" x2="52" y2="46" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2FA9A0" />
+          <stop offset="0.52" stopColor="#D9BE3C" />
+          <stop offset="1" stopColor="#D94F52" />
+        </linearGradient>
       </defs>
+      <rect x="3" y="3" width="58" height="58" rx="9" fill="#FFF9F0" stroke="#1A1A2E" strokeWidth="3" />
+      <path d="M7 41.5H57V46.5A4.5 4.5 0 0 1 52.5 51H11.5A4.5 4.5 0 0 1 7 46.5Z" fill="url(#zgBrand)" stroke="#1A1A2E" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M6 43V16L18 21L32 8.5L46 21L58 16V43Z" fill="url(#zgBrand)" stroke="#1A1A2E" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M42 19.2L56 14.4V43H6V42H41.2L33.8 33.4L46 21Z" fill="url(#zgDarkBrand)" />
+      <circle cx="18" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" strokeWidth="1.8" />
+      <circle cx="32" cy="8.5" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" strokeWidth="1.8" />
+      <circle cx="46" cy="21" r="2.6" fill="#FFF9F0" stroke="#1A1A2E" strokeWidth="1.8" />
+      <path d="M32 43.2L36 46.4L32 49.6L28 46.4Z" fill="#FFF9F0" stroke="#1A1A2E" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M33.5 44.4L35.1 46.4L33.5 48.4L31.9 46.4Z" fill="url(#zgBrand)" />
     </svg>
   );
 }
@@ -56,7 +55,7 @@ export const BrandMark: React.FC<BrandMarkProps> = ({
           compact ? 'w-9 h-9' : 'w-11 h-11'
         }`}
       >
-        <ScaleIcon className={compact ? 'w-6 h-6' : 'w-7 h-7'} />
+        <CrownIcon className={compact ? 'w-6 h-6' : 'w-7 h-7'} />
       </div>
       <div className="leading-none">
         <div className="flex items-end gap-2 flex-wrap">

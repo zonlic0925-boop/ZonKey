@@ -290,6 +290,8 @@ const COMPRESS_PARAMS: Record<PdfCompressLevel, { dpi: number; quality: number }
  * pdf-lib 的 save({useObjectStreams}) 不解压也不重压缩内容流，对大多数
  * PDF 体积不变甚至反增。改用栅格化 + JPEG 重编码重建，视觉版式还原，
  * 但产物无可编辑文本层（与后端 compress-deep 同语义）。
+ *
+ * 压缩后若体积反而变大，返回原文件（保底返原）。
  */
 export async function compressPdfFile(fileData: Uint8Array, level: PdfCompressLevel = 'medium'): Promise<Uint8Array> {
   if (!fileData?.length) throw new Error('Invalid PDF file data');
@@ -309,7 +311,9 @@ export async function compressPdfFile(fileData: Uint8Array, level: PdfCompressLe
     const page = outputPdf.addPage([width, height]);
     page.drawImage(image, { x: 0, y: 0, width, height });
   }
-  return outputPdf.save({ useObjectStreams: true, addDefaultPage: false });
+  const compressed = await outputPdf.save({ useObjectStreams: true, addDefaultPage: false });
+  // 保底返原：压缩后体积反而变大时退回原文件
+  return compressed.length < fileData.length ? compressed : fileData;
 }
 
 // ===== 转图片（PDF.js + Canvas） =====
