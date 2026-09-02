@@ -99,10 +99,10 @@ if errorlevel 1 (
 )
 
 echo.
-echo Packaging ZIP for distribution...
-python scripts\package_exe_zip.py
+echo Packaging installer + portable archives...
+python scripts\package_release.py
 if errorlevel 1 (
-    echo ERROR: ZIP packaging failed.
+    echo ERROR: packaging failed.
     pause
     exit /b 1
 )

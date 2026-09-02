@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <!-- ZonKey 单皇冠标（2026-09-02 用户拍板）：纯皇冠、无钥匙剪影。
+  <!-- ZonKey 单皇冠标（2026-09-02 透明底化）：纯皇冠、无钥匙剪影、无底衬。
        渐变仍是 Memphis 三色（teal→yellow→coral），与全站 UI 一致。
        渲染增强：受光侧 + 背光侧双渐变带 → 金冠立体感；冠面顶部釉面高光、
        冠带右侧暗带与微光条 → 立体饰条；三冠珠白色珠心 + 暗色月牙 → 珍珠体感；
-       底部四道高光斜纹 → 拉丝金质感；6px 圆角底衬做图标边界。 -->
+       底部四道高光斜纹 → 拉丝金质感；深色外描边保形。 -->
   <defs>
     <linearGradient id="zg" x1="8" y1="12" x2="56" y2="52" gradientUnits="userSpaceOnUse">
       <stop stop-color="#4ECDC4"/>
@@ -28,9 +28,6 @@
       <stop offset="1" stop-color="#1A1A2E" stop-opacity="0"/>
     </linearGradient>
   </defs>
-
-  <!-- 圆角底衬：图标边界（R=5 圆角 + 1.5 深色描边） -->
-  <rect x="3" y="3" width="58" height="58" rx="9" fill="#FFF9F0" stroke="#1A1A2E" stroke-width="3"/>
 
   <!-- 冠带（基底饰条）：主渐变 + 右暗带 + 上微光条 -->
   <path d="M7 41.5H57V46.5A4.5 4.5 0 0 1 52.5 51H11.5A4.5 4.5 0 0 1 7 46.5Z" fill="url(#zg)" stroke="#1A1A2E" stroke-width="3" stroke-linejoin="round"/>

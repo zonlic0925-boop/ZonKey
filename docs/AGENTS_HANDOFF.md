@@ -1,9 +1,18 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十三轮：用户反馈 7 项全面修复，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第十四轮：透明图标 + 压缩命名优化 + Inno Setup 安装包）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
-## 〇、2026-09-02 第十三轮（用户反馈 7 项全面修复，本轮）
+## 〇、2026-09-02 第十四轮（透明图标 + 压缩命名优化 + Setup 安装包，本轮）
+
+- **任务**：① 软件图标背景改成透明（只留皇冠，桌面 EXE + iOS PWA 同步）；② PDF 压缩重命名「文字类 PDF 压缩」，深度压缩括号标注「图片、扫描件、图纸类」；③ 软件改用 Setup 单安装包分发。
+- **图标透明化**：`scripts/generate_zonkey_icon.py` 底衬圆角方块移除，`Image.new("RGBA", (size, size), (0,0,0,0))` 透明底 + 深色外描边保形（`_draw_outer_outline` 新函数）；`_to_ico_rgb` 白底合成（Windows ICO 不支持真透明）；`frontend/public/zonkey-icon.svg` 同步去掉底衬 `<rect>`。全平台资源已重新生成：ICO 7 尺寸透明、PNG 256px 透明、icns 透明、PWA 180/192/512 透明；目检浅色/深色背景均清晰。
+- **压缩命名优化**：三语 i18n 全部更新——`pdfCompress` → `文字类 PDF 压缩` / `Text PDF Compress` / `文字類 PDF 壓縮`；`compressDeep` → `深度压缩（图片、扫描件、图纸类）` / `Deep Compress (images, scans, drawings)` / `深度壓縮（圖片、掃描件、圖紙類）`。压缩档文字同步更新：「轻度（仅重写，保留文本层）」；hint 文字引导用户文字型 PDF 走轻压缩。
+- **Setup 安装包**：安装 Inno Setup 6.7.3（`C:\Program Files (x86)\Inno Setup 6\ISCC.exe`）；新建 `packaging/windows/setup/ZonKey_setup.iss`（LZMA2/ultra64 固实压缩，195MB，仅比 7z 多 3MB 壳开销）；新建 `scripts/package_release.py`（主分发 setup.exe + 7z + zip + SHA256）；`build_zonkey_exe.bat` 最后一步指向新打包脚本。安装包特性：自定义安装路径、桌面快捷方式可选、开始菜单图标、卸载干净。
+- **验证**：`npm run build` 成功；pytest 133 passed；`release_acceptance.py` 全过；EXE 重打包成功（`dist_release/ZonKey_Setup_x64_20260902.exe` 195MB + `ZonKey_Windows_x64_20260902.7z` 193MB + `ZonKey_Windows_x64_20260902.zip` 282MB）；Pages 部署 `743b77ec`（branch=main），主 chunk `index-MqvwzXYf.js` = 本地。
+- **接手注意**：① 图标设计真源是 `frontend/public/zonkey-icon.svg`（64×64 透明底单皇冠），修改时 SVG 与 `generate_zonkey_icon.py` 的 PIL 几何必须同步；② 安装包生成依赖 Inno Setup 6.7.3（`C:\Program Files (x86)\Inno Setup 6\ISCC.exe`），若重装系统需 `winget install JRSoftware.InnoSetup` 或手动下载；③ 安装包版本号通过 `scripts/package_release.py` 的 `/DMyAppVersion=` 参数传入，`.iss` 中 `#ifndef MyAppVersion` 可被覆盖；④ 空目录（`rules/`/`assets/`）在 dist 中用 `[Dirs]` 创建，不走 `[Files]` 通配符（Inno Setup 空目录 `*` 报错）；⑤ 压缩文案在所有 i18n 文件中靠 key 驱动，导航/工具名/按钮/提示全栈统一。
+
+## 〇、2026-09-02 第十三轮（用户反馈 7 项全面修复，上轮）
 
 - **任务**：① 图标去钥匙改单皇冠（渲染加强）；② 帮助按钮改弹窗（软件内使用说明，三语）；③ 压缩无效根因修复（后端 DCTDecode 直嵌 + 保底返原）；④ 软件内 logo 换新皇冠；⑤ 手机端支持作者更醒目；⑥ EXE 白屏卡死根治（禁 GPU + 锁文件清理）；⑦ 发布下载方案调研（README 双源 + 7z 打包脚本）。
 - **图标**：`frontend/public/zonkey-icon.svg` 重绘——单皇冠、三色渐变、冠面带暗带+高光、三冠珠珍珠体感、拉丝斜纹、冠带中央菱形宝石（Key 之「眼」）；`scripts/generate_zonkey_icon.py` 同步重写（PIL 同几何栅格化：冠面暗带叠加、高光三角、珠心月牙、菱形宝石渐变、拉丝斜纹；小尺寸 ≤32px 只保冠形+渐变）；`BrandMark.tsx` `ScaleIcon` → `CrownIcon`（同 SVG 几何）。全平台资源已生成：ICO 7 尺寸、PNG 256px、icns 全套、PWA 180/192/512。

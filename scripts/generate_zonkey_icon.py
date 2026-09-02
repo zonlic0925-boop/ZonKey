@@ -34,6 +34,7 @@ STROKE = (26, 26, 46, 255)
 GRAD = [(78, 205, 196), (255, 230, 109), (255, 107, 107)]
 GRAD_DARK = [(47, 169, 160), (217, 190, 60), (217, 79, 82)]
 PEARL = (255, 249, 240, 255)  # 珠心/宝石/高光用背景色，形成镂空感
+HALO = (26, 26, 46, 255)  # 透明底（2026-09-02 起）：深色外描边，浅色壁纸/浅色 PWA 背景下保形
 ICO_SIZES = [256, 128, 64, 48, 32, 16]
 
 # macOS icns 必须含 16/32/64/128/256/512/1024 全套 PNG 通道，
@@ -90,9 +91,44 @@ def _poly_pts(pts: list[tuple[float, float]], s: float) -> list[tuple[float, flo
     return [(x * s, y * s) for x, y in pts]
 
 
+def _draw_outer_outline(
+    img: Image.Image,
+    crown: list[tuple[float, float]],
+    band: list[float],
+    color: tuple[int, int, int, int],
+    width: float,
+    s: float,
+) -> None:
+    """在冠面多边形与冠带圆角矩形外侧画一圈外描边（偏外一半宽度，
+    避免吃掉内部细节）。透明底时这是图形与浅色背景之间唯一的边界。"""
+    import PIL.ImageDraw as _ID
+
+    w = max(1, round(width * 0.5))
+    top, right, bottom, left = (
+        min(p[1] for p in crown),
+        max(p[0] for p in crown),
+        band[3],
+        min(p[0] for p in crown),
+    )
+    half = (top + bottom) / 2.0
+    _ID.ImageDraw(img).line(
+        [crown[-1], crown[0], crown[1], crown[2]],
+        fill=color, width=w, joint="curve",
+    )
+    _ID.ImageDraw(img).polygon(crown[2:], outline=color, width=w)
+    _ID.ImageDraw(img).rounded_rectangle(
+        [left, band[1], right, band[3]],
+        radius=2 * s + w * 0.5,
+        outline=color,
+        width=w,
+    )
+    _ID.ImageDraw(img).line([(left, half), (crown[0][0], crown[0][1])], fill=color, width=w)
+    _ID.ImageDraw(img).line([(right, half), (crown[-2][0], crown[-2][1])], fill=color, width=w)
+
+
 def render_icon(size: int) -> Image.Image:
     """单皇冠（渐变 + 立体渲染），与 zonkey-icon.svg 同几何，64 设计稿缩放。"""
-    img = Image.new("RGBA", (size, size), BG)
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))  # 透明底（专业软件风格）
     s = size / 64.0
     stroke_w = max(2, round(3 * s))
     thin_w = max(1, round(1.5 * s))
@@ -107,13 +143,6 @@ def render_icon(size: int) -> Image.Image:
             (p0[0] + (p1[0] - p0[0]) * i / n, p0[1] + (p1[1] - p0[1]) * i / n)
             for i in range(n + 1)
         ]
-
-    # ---- 底衬（圆角方块 + 深色描边，小尺寸保底图形边界） ----
-    if size >= 48:
-        draw0 = ImageDraw.Draw(img)
-        draw0.rounded_rectangle(
-            [pt(3, 3), pt(61, 61)], radius=pt(9, 0)[0], fill=BG, outline=STROKE, width=stroke_w
-        )
 
     # ---- 冠面 + 冠带主渐变 ----
     crown_shape = _poly_pts(
@@ -155,6 +184,10 @@ def render_icon(size: int) -> Image.Image:
             t = (y - 7.5 * s) / (28 * s - 7.5 * s)
             hd.line([(0, y), (size, y)], fill=(255, 255, 255, int(128 * (1 - t))), width=1)
         img = Image.composite(white_grad, img, hi_mask)
+
+    # ---- 外描边（透明底下唯一保形手段，替代原奶油底衬）----
+    halo_w = max(2, round(3.6 * s))
+    _draw_outer_outline(img, crown_shape, band_shape, STROKE, halo_w, s)
 
     # ---- 描边：冠带 + 冠面 + 下缘暗线 ----
     draw = ImageDraw.Draw(img)
@@ -199,7 +232,7 @@ def render_icon(size: int) -> Image.Image:
             draw.line([pt(x0, 44.6), pt(x1, 44.6)], fill=(255, 249, 240, 140), width=max(1, round(1 * s)))
 
     if size <= 32:
-        rgb = Image.new("RGB", (size, size), BG[:3])
+        rgb = Image.new("RGB", (size, size), (255, 255, 255))  # 小尺寸走纯白衬底（透明背景缩小后轮廓发虚）
         rgb.paste(img, mask=img.split()[3])
         return rgb
     return img
@@ -208,7 +241,7 @@ def render_icon(size: int) -> Image.Image:
 def _to_ico_rgb(img: Image.Image) -> Image.Image:
     """ICO 各尺寸用 RGB，避免 Windows 资源管理器回退到默认图标。"""
     if img.mode == "RGBA":
-        base = Image.new("RGB", img.size, BG[:3])
+        base = Image.new("RGB", img.size, (255, 255, 255))  # 透明底在 ICO 用白底合成（Windows 不支持真透明 ICO）
         base.paste(img, mask=img.split()[3])
         return base
     return img.convert("RGB")
