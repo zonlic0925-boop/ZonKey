@@ -1,8 +1,20 @@
 # Project Status（项目状态）
 
-> 更新于：2026-09-02（第八轮：用户实测脱敏输出整页全黑——双层根因修复，EXE+Pages 已交付）。
+> 更新于：2026-09-02（第九轮：用户实测矮窗可达性——底部操作区被裁切修复 + 滚轮横滚，EXE+Pages 已交付）。
 
-## 2026-09-02 第八轮进度（脱敏输出整页全黑修复）
+## 2026-09-02 第九轮进度（矮窗可达性修复，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 问题1 图纸脱敏左栏底部「执行脱敏」被挤出视口 | ✅ | 根因：`DrawingView.tsx` 底部操作区 `flex-1 + lg:overflow-visible`（不可压缩也不滚动），与候选列表平分高度后溢出被列 `overflow-hidden` 裁切，多命中/矮窗必现。修复：操作区 `shrink-0 max-lg:min-h-0 max-lg:overflow-y-auto` 恒可达，候选列表 `flex-1` 独占伸缩；顺带删除了无布局作用的 `lg:contents` 包裹层 |
+| 问题2 同类排查修复（矮窗可达性同型问题） | ✅ | `DocPdfView.tsx` 底部操作区同改 `shrink-0`；`RuleCenter.tsx` 根 `overflow-y-auto xl:overflow-hidden` + 两卡 xl 以下自滚（xl 以下两卡纵向堆叠不再限高）；`AppearanceModal.tsx` / `SupportAuthorModal.tsx` 弹窗加 `max-h-[88dvh] overflow-y-auto`（内容超高时弹窗内滚不超出视口） |
+| 问题3 Header 桌面中心导航窄窗滚轮不可达 | ✅ | Chromium 对纯横向滚动区不转换竖向滚轮 delta，鼠标用户够不到折叠的右侧项。修复：`Header.tsx` 中心导航加 `onWheel` 处理器（`|deltaY|>|deltaX|` 时转 `scrollLeft`）+ `.zs-wheel-x` 专用类（`overscroll-behavior-x: contain`，触控板横滑原生通道不受影响） |
+| 回归 | ✅ | 新 `temp_ui_test/round9_diag.mjs` **16/16**（源码断言×10 + 运行时×6：矮窗 700px 左栏按钮底缘不超列底缘、RuleCenter 窄屏 900px 可达、外观弹窗极矮窗 500px 不超视口且可滚、滚轮转横滚 scrollLeft 0→120、零 pageerror）；round7_diag 订正极性断言后同跑通过 |
+| EXE 重打包 | ✅ | `dist_release/ZonScale_Windows_x64_20260902.zip`；zip 内 `_internal/dist_web` 与本地 md5 一致（index-Db29cAmr.js / index-DOlTlCuQ.js），CSS/JS 均含 `zs-wheel-x`、JS 含 `shrink-0 max-lg:min-h-0` 特征串 |
+| Pages 部署 | ✅ | 部署 be2d0749（branch=main）；主域 zonscale.pages.dev 主 chunk `index-Db29cAmr.js` = 本地 = zip，live CSS/JS `zs-wheel-x` 命中 |
+| 遗留 | ⏳ | 31 样本回归（样本到位后跑 `scripts/regression_acceptance.py`）；round-8 扫描件脱敏两样本待用户最新 EXE 实测闭环；RuleCenter 窄屏可达性离线早退分支实测、主布局待后端在线复测 |
+
+## 2026-09-02 第八轮进度（脱敏输出整页全黑修复，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

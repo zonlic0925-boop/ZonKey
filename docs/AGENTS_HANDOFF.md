@@ -1,9 +1,19 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第八轮：用户实测脱敏输出整页全黑——CCITT 修复牵出双层根因，极性反转迁就坏夹具 + Flate 回写裸数据声明失配，EXE+Pages 已交付）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-02（第九轮：用户实测矮窗可达性——DrawingView 底部操作区被裁切 + 同类排查修复 + Header 导航滚轮转横滚，EXE+Pages 已交付）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)；ToolKnit 整合明细见 [TOOLKNIT_INTEGRATION_PLAN.md](TOOLKNIT_INTEGRATION_PLAN.md)；iLovePDF 对齐计划见 [ILOVEPDF_INTEGRATION_PLAN.md](ILOVEPDF_INTEGRATION_PLAN.md)。
 
-## 〇、2026-09-02 第八轮（脱敏输出整页全黑——双层根因修复，本轮）
+## 〇、2026-09-02 第九轮（矮窗可达性修复，本轮）
+
+- **现象**：用户实测图纸脱敏左栏在多命中/矮窗口时底部「执行脱敏」按钮被挤出视口且无滚动通道，点不到。
+- **根因**：`DrawingView.tsx` 底部操作区 `flex-1 + lg:overflow-visible`——不可压缩也不滚动，与候选列表平分高度后溢出被列 `overflow-hidden` 裁切。
+- **修复**：操作区 `shrink-0 max-lg:min-h-0 max-lg:overflow-y-auto`（恒可达，极矮窗口身开滚），候选列表 `flex-1` 独占伸缩；删除无布局作用的 `lg:contents` 包裹层。**同型排查**一并修：`DocPdfView.tsx` 底部操作区 `shrink-0`；`RuleCenter.tsx` 根 `overflow-y-auto xl:overflow-hidden` + 两卡 xl 以下自滚；`AppearanceModal` / `SupportAuthorModal` 弹窗 `max-h-[88dvh] overflow-y-auto`。
+- **滚轮横滚**：Header 桌面中心导航窄窗折叠出横向滚动后，Chromium 不把竖向滚轮 delta 转横向——鼠标用户够不到右侧项。修复：`onWheel` 处理器（`|deltaY|>|deltaX|` → `scrollLeft += deltaY`）+ `.zs-wheel-x` 类（`overscroll-behavior-x: contain`，触控板不受影响）。
+- **验证**：新 `temp_ui_test/round9_diag.mjs` **16/16**（源码断言×10 + 运行时×6：矮窗 700px 按钮不裁切、RuleCenter 窄屏可达、弹窗极矮窗不超视口、滚轮转横滚、零 pageerror）；round7_diag 极性断言订正为「无反转残留 + _write_flate 在位」（对齐 round-8 真结论）后通过；npm build 成功。
+- **交付**：EXE `dist_release/ZonScale_Windows_x64_20260902.zip`（zip 内 dist_web 与本地 md5 一致 + `zs-wheel-x`/`shrink-0 max-lg:min-h-0` 特征串命中）；Pages 部署 be2d0749（branch=main），主域主 chunk `index-Db29cAmr.js` = 本地 = zip。
+- **接手注意**：① 底部操作区/弹窗类组件新增时遵循「操作区 `shrink-0`、内容区 `flex-1` 伸缩、弹窗 `max-h-[88dvh]` 内滚」约定，别再让按钮进伸缩区；② 纯横向滚动容器要接竖向滚轮一律用 `.zs-wheel-x` + onWheel 模式；③ RuleCenter 后端离线时渲染早退卡，主布局可达性断言靠 round9_diag 源码断言兜底，后端在线场景待实测；④ 31 样本回归与 round-8 扫描件两样本用户实测仍开放。
+
+## 〇-0、2026-09-02 第八轮（脱敏输出整页全黑——双层根因修复，上轮）
 
 - **现象**：用户对 1C4957_H.PDF（CCITT G4 扫描图纸）执行脱敏，输出 PDF **整页全黑**、仅白色脱敏条可见（截图确认）；round-7 修复后新复现。
 - **根因一（极性反转迁就坏夹具）**：round-7 的测试夹具 `make_ccitt_scan_pdf` 本身极性反了（PIL mode "1" 0=黑 → G4 TIFF 按 min-is-white 0=白 编码存盘时位流翻转 → 夹具按直觉填 PIL 白底(1)，PDF（BlackIs1=False 0=黑）渲染出**黑底白块**，夹具作者未发现）。为让回归通过，round-7 在 `_write_image_stream` 加了「CCITT 解码后整体反转极性」来迁就坏夹具——而**真实扫描件解码极性正常**（实测 1C4957 角点=255 白），被统一反转后白底变黑底 → 全黑页。脱敏条是后画矢量填充所以独白。
@@ -15,7 +25,7 @@
 - **接手注意**：① **1 位图极性禁止整体反转**——两重天然一致是实证结论（真实件+合成件双实测），不是理论推导；② **pikepdf write() 永远存裸数据**，任何「原始样本回写」必须先 zlib.compress（`_write_flate` 已收口，新分支勿绕过）；③ 坏夹具诱导的「补偿修复」是本轮事故链起点——测试样本渲染结果与真实语义不符时先修夹具再谈引擎；④ 外观纹理标签墨块问题 round-7 已修（.zs-texture overlay 类禁复用），用户本轮确认解决。
 - **第七轮订正**：该轮 round-7 修复描述中的「极性反转」与「Image.fromarray」方案已被本轮取代（fromarray 修复本身正确——TiffImageFile 确无类方法 fromarray——但其后的极性反转是错的）。
 
-## 〇-0、2026-09-01 第七轮（用户实测 2 问题修复，上轮）
+## 〇-0-2、2026-09-01 第七轮（用户实测 2 问题修复）
 
 - **① 问题2 脱敏全失效——系统识别与手动框选同报「图像像素化失败…TiffImageFile has no attribute 'fromarray'」（真 bug，Phase M 起就坏）**：触发条件是 **CCITTFaxDecode 1 位传真扫描图**（工程图纸扫描件的标准格式，用户两样本 AA01_1K4168_A.pdf / 1C4957_H.PDF 均是）——pikepdf 对 CCITT 走 TIFF 包装解码，`as_pil_image()` 返回 `PIL.TiffImagePlugin.TiffImageFile`；`_write_image_stream` 做 CCITT 极性反转时写的是 `pil.__class__.fromarray(...)`，**TiffImageFile 类（以及 Image.Image 类本身）根本没有 fromarray**（它是 PIL.Image 模块级函数），AttributeError 被 round-6 的防御包装成「拒绝静默保留敏感图像内容」拒绝执行。git 考古：该行 Phase M（ee25339）引入，pikepdf 引擎上线起扫描件像素化从未成功过。修复：`core/redact/pikepdf_engine.py` 改模块级 `Image.fromarray`（函数内局部导入，合文件风格）。回归双保险：`test_executor.py` 新增 ①端到端 `test_ccitt_scan_pixelated_after_erase`（pdf_helpers 新增 `make_ccitt_scan_pdf`：PIL G4 TIFF 提条带 → 手拼 CCITTFaxDecode PDF，脱敏后深色块区域全白断言）②单测 `test_write_image_stream_accepts_tiff_image_file`（真 TiffImageFile 直灌 `_write_image_stream`）。**两用例在修复前代码上实测复现 AttributeError、修复后通过**（stash 验证法）。
 - **② 问题3 外观纹理标签字体异常（渲染成墨块/图章状，真 bug）**：现象只有纹理行 5 个标签花、同弹窗其他同款 10px 粗体标签（界面字号行）正常。**根因**：`AppearanceModal.tsx` 预览 span 复用了 `.zs-texture`——那是**全页 overlay 定位类**（`position:absolute; inset:0`，App.tsx 页面纹理层专用），预览块被绝对定位铺满**整个按钮**垫到文字底下；Chromium/WebView2 对**压在 background-image 上的 10px 粗体中文**走劣化光栅路径，笔画粘连成墨块。定位法（可复用）：计算样式逐项 diff 为零 + CDP `getPlatformFontsForNode` 两边都是 MicrosoftYaHei-Bold 仍复现 → 唯一关联是「标签下有无 zs-texture 背景图兄弟」（纯色档无图案类所以一直干净）；实验矩阵（重绘/禁动画/改字号/改字重/搬位置/克隆互换）证明伪象**跟随节点**而非样式。修复：预览 span 只挂图案类（`zs-texture-grid/dots/paper/fluid-preview`），不再挂 `.zs-texture`——`block h-8 rounded` 本身就是 32px 文档流色块，图案类只管 background-image；App.tsx 全页层用法不动。
