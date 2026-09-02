@@ -21,6 +21,7 @@ import { FavoritesView } from './components/navigation/FavoritesView';
 import { HomeNavView } from './components/navigation/HomeNavView';
 import { FavoriteStar } from './components/navigation/FavoriteStar';
 import { CenterPlaceholder } from './components/common/CenterPlaceholder';
+import { ZsErrorBoundary } from './components/common/ZsErrorBoundary';
 import { MemphisDecor } from './components/MemphisDecor';
 import { FluidBackground } from './components/FluidBackground';
 import { useTheme } from './lib/theme/ThemeProvider';
@@ -206,6 +207,7 @@ export default function App() {
           animate="animate"
           className="flex-1 min-h-0 flex flex-col"
         >
+        <ZsErrorBoundary resetKey={`${activeCenter}:${activeTool}`}>
         {activeCenter === 'redact' && activeTool === 'home-nav' ? (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
             <HomeNavView
@@ -280,6 +282,7 @@ export default function App() {
         )}
         </>
         )}
+        </ZsErrorBoundary>
         </motion.div>
       </main>
 

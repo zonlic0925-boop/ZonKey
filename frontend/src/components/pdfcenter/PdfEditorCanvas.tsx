@@ -68,6 +68,21 @@ export const PdfEditorCanvas: React.FC<PdfEditorCanvasProps> = ({
   const editSessionRef = useRef<{ id: string; mode: 'drag'|'resize'; handle?: ResizeHandle, startBbox: any, startPt: any } | null>(null);
   const [liveBox, setLiveBox] = useState<any | null>(null);
 
+  // 文字元素 DOM 引用表：onBlur 回写不能读 e.currentTarget——React 18 批处理
+  // 在事件处理器返回后才执行 setElements 的 updater，那时事件对象已被回收
+  // （currentTarget=null），读它必抛 TypeError，且发生在渲染器 reducer 阶段，
+  // 直接把整棵 React 树卸掉 = 白屏卡死（round-10 用户实测根因）。
+  const textRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // 元素拖动/缩放手势期间标记 <html data-canvas-gesture>，Header 拖拽行
+  // 整体转 no-drag（与 CanvasViewport 同款纵深防御：拖到标题栏区域不劫持成移窗口）。
+  useEffect(() => {
+    if (editingElementId) {
+      document.documentElement.setAttribute('data-canvas-gesture', '1');
+      return () => document.documentElement.removeAttribute('data-canvas-gesture');
+    }
+  }, [editingElementId]);
+
   const clampUserScale = useCallback((value: number) => Math.min(MAX_USER_ZOOM, Math.max(MIN_USER_ZOOM, value)), []);
 
   const updateViewport = useCallback(() => {
@@ -370,11 +385,15 @@ export const PdfEditorCanvas: React.FC<PdfEditorCanvasProps> = ({
                               )}
                               {el.type === 'text' && (
                                   <div className="w-full h-full leading-none whitespace-pre-wrap outline-none" 
-                                       style={{ color: el.color, fontSize: (el.fontSize||12)*userScale*imageMetrics.scale }}
+                                       style={{ color: el.color, fontSize: Math.max(1, (el.fontSize || 12) * userScale * (imageMetrics.scaleY || 1)) }}
                                        contentEditable={isSelected}
                                        suppressContentEditableWarning
-                                       onBlur={(e) => {
-                                           setElements(els => els.map(e_ => e_.id === el.id ? {...e_, text: e.currentTarget.innerText} : e_));
+                                       ref={(node) => { textRefs.current[el.id] = node; }}
+                                       onBlur={() => {
+                                           // 从 ref 表读当前节点文本（安全：读不到则保留原文本，绝不抛异常）
+                                           const node = textRefs.current[el.id];
+                                           const text = node ? node.innerText : el.text;
+                                           setElements(els => els.map(e_ => e_.id === el.id ? {...e_, text} : e_));
                                        }}
                                        onPointerDown={e => e.stopPropagation()} // Let contenteditable handle clicks
                                   >
