@@ -88,12 +88,12 @@ def test_image_pixelated_after_erase(synthetic_pdf: str, tmp_path) -> None:
 
 
 def test_ccitt_scan_pixelated_after_erase(tmp_path) -> None:
-    """CCITT G4 整页扫描图脱敏（回归：TiffImageFile.fromarray 曾使像素化必败）。
+    """CCITT G4 整页扫描图脱敏（回归链：fromarray 必败 → 极性反转致全黑页）。
 
-    pikepdf 对 CCITTFaxDecode 图像经 TIFF 包装解码，返回 TiffImageFile；
-    修复前 _write_image_stream 反转极性时调 pil.__class__.fromarray →
-    AttributeError → 「图像像素化失败（拒绝静默保留敏感图像内容）」，
-    系统识别与手动框选全部无法执行。"""
+    pikepdf 对 CCITTFaxDecode 图像经 TIFF 包装解码，返回 TiffImageFile。
+    round-7 曾因坏极性夹具诱导引擎整体反转，真实扫描件白底被反成黑底
+    （round-8 全黑页）——本测试同时锁死两个方向：框内敏感内容抹白 +
+    框外背景保持白/框外墨线保留。"""
     dark = (60, 25, 140, 75)
     src = str(make_ccitt_scan_pdf(tmp_path / "ccitt_scan.pdf", dark_rect=dark))
     out = str(tmp_path / "ccitt_out.pdf")
@@ -111,11 +111,18 @@ def test_ccitt_scan_pixelated_after_erase(tmp_path) -> None:
     samples = [pil.getpixel((x, y)) for x in range(66, 134, 4) for y in range(31, 69, 4)]
     assert samples
     assert all(c >= (240, 240, 240) for c in samples)
+    # 框外背景必须保持白（round-8 全黑回归：极性反转会整页变黑，旧断言测不出）
+    assert pil.getpixel((5, 5)) >= (240, 240, 240), "框外左上角应变黑为白"
+    assert pil.getpixel((195, 95)) >= (240, 240, 240), "框外右下角应变黑为白"
+    # 框外内容必须保留（防「整图填白」式假修复）
+    assert pil.getpixel((100, 25)) < (64, 64, 64), "dark_rect 上边缘线（框外）应保留墨色"
+    assert pil.getpixel((60, 50)) < (64, 64, 64), "dark_rect 左边缘线（框外）应保留墨色"
 
 
 def test_write_image_stream_accepts_tiff_image_file() -> None:
-    """单测：CCITT 源极性反转必须用模块级 Image.fromarray（TiffImageFile 无此方法）。"""
+    """单测：CCITT（TiffImageFile）1 位回写路径可用且极性保真（禁止整体反转）。"""
     import io
+    import zlib
 
     from PIL import Image
 
@@ -150,6 +157,27 @@ def test_write_image_stream_accepts_tiff_image_file() -> None:
     stub = _StreamStub()
     _write_image_stream(stub, pil, is_mask=False, source_filter="CCITTFaxDecode")
     assert stub.data, "应回写出 Flate 1bpp 样本"
+
+    # 极性保真：回写位流必须与 PIL 像素逐位一致（round-8 教训：整体反转
+    # 会把真实扫描件白底变黑底）。左黑右白图案双向锁定。
+    import numpy as np
+
+    # 构造左半 0 右半 255 的图案重新走一次回写
+    buf2 = io.BytesIO()
+    img2 = Image.new("1", (32, 16), 0)
+    for x in range(16, 32):
+        for y in range(16):
+            img2.putpixel((x, y), 1)
+    img2.save(buf2, format="TIFF", compression="group4")
+    buf2.seek(0)
+    pil2 = Image.open(buf2)
+    stub2 = _StreamStub()
+    _write_image_stream(stub2, pil2, is_mask=False, source_filter="CCITTFaxDecode")
+    raw = zlib.decompress(stub2.data)
+    bits = np.unpackbits(np.frombuffer(raw, dtype=np.uint8)).reshape(-1, 32)[:, :32]
+    # PDF 1bpc：1=白。PIL 右半为 1(白) → 位应为 1；PIL 左半 0(黑) → 位应为 0
+    assert bits[:, :16].mean() < 0.02, "左半（PIL 黑）回写位应≈0，整体反转即此处失败"
+    assert bits[:, 16:].mean() > 0.98, "右半（PIL 白）回写位应≈1"
 
 
 def test_page_index_out_of_range_raises(synthetic_pdf: str, tmp_path) -> None:

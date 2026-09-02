@@ -924,16 +924,27 @@ def _drop_decode_keys(obj: Any) -> None:
             pass
 
 
+def _write_flate(obj: Any, data: bytes) -> None:
+    """原始样本 zlib 压缩后写入并声明 FlateDecode。
+
+    pikepdf 的 stream.write() 存储裸数据、不压缩（filter 参数语义是
+    「数据已按此滤镜编码」）——若写入裸样本后再声明 FlateDecode，
+    声明与数据不符，渲染器解压失败整图作废（round-8 全黑页第二根因，
+    同时损坏 1bpc/L/RGB/CMYK 全部原始样本分支）。"""
+    import zlib
+
+    obj.write(zlib.compress(data, 6))
+    obj.Filter = Name.FlateDecode
+
+
 def _write_image_stream(obj: Any, pil: Any, *, is_mask: bool, source_filter: str, to_gray: bool = False) -> None:
     """PIL 图像 → Flate 原始样本回写（保持/推导 PDF 图像语义）。"""
     import numpy as np
-    from PIL import Image
 
     if is_mask:
         if pil.mode != "1":
             pil = pil.convert("1")
-        obj.write(pil.tobytes())  # 1bpp 按行字节对齐，与 PDF ImageMask 一致
-        obj.Filter = Name.FlateDecode
+        _write_flate(obj, pil.tobytes())  # 1bpp 按行字节对齐，与 PDF ImageMask 一致
         obj.ImageMask = True
         obj.BitsPerComponent = 1
         try:
@@ -945,16 +956,12 @@ def _write_image_stream(obj: Any, pil: Any, *, is_mask: bool, source_filter: str
         return
 
     if pil.mode == "1":
-        # CCITT 源解码出的 1 位图为传真极性（0=白）；DeviceGray 输出约定 1=白，需反转。
-        # pikepdf 对 CCITT 经 TIFF 包装解码，pil 是 TiffImageFile——该类（以及
-        # Image.Image 本身）没有 fromarray，必须走模块级 Image.fromarray。
-        if "CCITTFaxDecode" in source_filter:
-            arr = 255 - np.asarray(pil.convert("L"))
-            pil = Image.fromarray(arr.astype("uint8"), mode="L").convert("1")
+        # 1 位图极性：PIL（0=黑/255=白）与 PDF DeviceGray 1bpc（样本 0=黑/1=白）一致，
+        # pikepdf 解码极性又与 PDF 渲染极性一致（真实扫描件与合成件均实测验证），
+        # 因此直接重打包即可保真——任何整体反转都会把扫描白底变黑底（round-8 全黑回归教训）。
         arr = np.asarray(pil, dtype=np.uint8)
         packed = np.packbits(arr > 0, axis=1)
-        obj.write(packed.tobytes())
-        obj.Filter = Name.FlateDecode
+        _write_flate(obj, packed.tobytes())
         obj.ColorSpace = Name.DeviceGray
         obj.BitsPerComponent = 1
         _drop_decode_keys(obj)
@@ -962,23 +969,20 @@ def _write_image_stream(obj: Any, pil: Any, *, is_mask: bool, source_filter: str
     if pil.mode in ("L", "I", "I;16") or to_gray:
         if pil.mode != "L":
             pil = pil.convert("L")
-        obj.write(pil.tobytes())
-        obj.Filter = Name.FlateDecode
+        _write_flate(obj, pil.tobytes())
         obj.ColorSpace = Name.DeviceGray
         obj.BitsPerComponent = 8
         _drop_decode_keys(obj)
         return
     if pil.mode == "CMYK":
-        obj.write(pil.tobytes())
-        obj.Filter = Name.FlateDecode
+        _write_flate(obj, pil.tobytes())
         obj.ColorSpace = Name.DeviceCMYK
         obj.BitsPerComponent = 8
         _drop_decode_keys(obj)
         return
     if pil.mode != "RGB":
         pil = pil.convert("RGB")
-    obj.write(pil.tobytes())
-    obj.Filter = Name.FlateDecode
+    _write_flate(obj, pil.tobytes())
     obj.ColorSpace = Name.DeviceRGB
     obj.BitsPerComponent = 8
     _drop_decode_keys(obj)

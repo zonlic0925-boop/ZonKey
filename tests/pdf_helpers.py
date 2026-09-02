@@ -208,6 +208,12 @@ def make_ccitt_scan_pdf(
 
     pikepdf 对 CCITT 图像走 TIFF 包装解码（返回 TiffImageFile）——
     像素化回写路径的专属回归样本，普通 Flate RGB 图触发不了该分支。
+
+    极性陷阱（round-8 教训）：PIL mode "1" 是 0=黑，而 G4 TIFF 按 min-is-white
+    （0=白）编码，存盘时位流整体翻转。若按直觉填 PIL 白底(1)+黑块(0)，嵌入 PDF
+    （BlackIs1=False，0=黑）后渲染成黑底白块，还会反过来诱导引擎「补偿反转」、
+    把真实扫描件整页变黑。这里按「编码后位流 = PDF 约定白底」填 PIL 0 底 + 1 矩形，
+    使 PDF 渲染与真实扫描件一致（白底黑块，样本 1=白）。
     """
     import io
 
@@ -216,8 +222,10 @@ def make_ccitt_scan_pdf(
     from pikepdf import Name
 
     buf = io.BytesIO()
-    img = Image.new("1", (width, height), 1)  # 1 = 白
-    ImageDraw.Draw(img).rectangle(dark_rect, fill=0)  # 0 = 黑
+    # PIL 0(黑) 经 G4 min-is-white 编码为位 1 → PDF 1=白：背景渲染为白
+    img = Image.new("1", (width, height), 0)
+    # PIL 1(白) 编码为位 0 → PDF 0=黑：矩形渲染为黑（敏感内容）
+    ImageDraw.Draw(img).rectangle(dark_rect, fill=1)
     img.save(buf, format="TIFF", compression="group4")
     strip, cols, rows = _ccitt_strip_from_g4_tiff(buf.getvalue())
 
