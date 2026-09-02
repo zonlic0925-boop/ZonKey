@@ -28,8 +28,10 @@ const ok = (name, cond, detail = '') => {
 
 // ---------- 0. 源码级断言 ----------
 const engineSrc = readFileSync(join(ROOT, 'core/redact/pikepdf_engine.py'), 'utf-8');
-ok('引擎极性反转用模块级 Image.fromarray', /Image\.fromarray\(arr/.test(engineSrc));
-ok('引擎不再调 pil.__class__.fromarray', !/__class__\.fromarray/.test(engineSrc));
+// round-8 订正：极性反转本身是错的（round-7 夹具极性反了诱导出的补偿修复），
+// 已整体移除；fromarray 断言改为「无任何反转残留」。
+ok('引擎无极性反转（round-8 移除，直接回写保真）', !/255\s*-\s*np\.asarray\(pil/.test(engineSrc) && !/__class__\.fromarray/.test(engineSrc));
+ok('引擎 _write_flate zlib 压缩回写（round-8）', engineSrc.includes('def _write_flate') && engineSrc.includes('zlib.compress'));
 
 const modalSrc = readFileSync(join(ROOT, 'frontend/src/components/AppearanceModal.tsx'), 'utf-8');
 ok('外观预览块不再复用 .zs-texture 定位类', !/zs-texture\s+zs-texture-(grid|dots|paper|fluid-preview)/.test(modalSrc));
