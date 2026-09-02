@@ -7,7 +7,7 @@
   #define MyAppVersion "1.0.0"
 #endif
 #define MyAppPublisher "zonlic"
-#define MyAppURL "https://gitee.com/zonlic0925/ZonKey"
+#define MyAppURL "https://github.com/zonlic0925-boop/ZonKey"
 #define MyAppExeName "ZonKey.exe"
 
 [Setup]
@@ -54,4 +54,8 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFile
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\zonkey.ico"; Tasks: desktopicon
 
 [Run]
+; 升级安装时 .lnk 与 EXE 的图标路径不变、内容已换，资源管理器图标缓存不会
+; 自动失效——桌面/开始菜单快捷方式继续显示旧图标（用户视角「图标还是白底」）。
+; ie4uinit -show 通知 shell 刷新图标缓存（Win10/11 官方口令，静默执行）。
+Filename: "{sys}\ie4uinit.exe"; Parameters: "-show"; Flags: runhidden
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent

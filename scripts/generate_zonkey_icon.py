@@ -82,13 +82,35 @@ def _overlay_vertical_gradient(
     alpha: int,
     size: int,
 ) -> Image.Image:
-    """在 mask 内叠加一层半透明竖直渐变（受光/背光带），不破坏底下的主渐变。"""
+    """在 mask 内叠加一层半透明竖直渐变（受光/背光带），不破坏底下的主渐变。
+
+    round-16 修正：此前用 Image.composite(grad, base, mask) 是「整像素替换」，
+    半透明叠加层会把它覆盖到的皇冠面像素 alpha 直接改写成叠加层的 alpha
+    （暗带 150 / 冠带暗带 90），小尺寸帧（16/32px——桌面与资源管理器的
+    实际渲染尺寸）冠面因此出现成片半透明像素，白桌面上看就是「图标发白/
+    有白底」。必须走 alpha_composite：不透明底叠半透明层后 alpha 仍为 255。
+    """
     grad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     gd = ImageDraw.Draw(grad)
     for y in range(max(top, 0), min(bottom, size - 1) + 1):
         t = (y - top) / max(bottom - top, 1)
         gd.line([(0, y), (size, y)], fill=_grad_color(stops, t) + (alpha,), width=1)
-    return Image.composite(grad, base, mask)
+    masked = Image.composite(grad, Image.new("RGBA", (size, size), (0, 0, 0, 0)), mask)
+    return Image.alpha_composite(base, masked)
+
+
+def _overlay_draw(
+    img: Image.Image, size: int, fn: "callable[[ImageDraw.ImageDraw], None]"
+) -> Image.Image:
+    """半透明装饰的合规画法：画到独立图层再 alpha_composite。
+
+    直接在底图 draw 半透明 fill 是「替换像素」语义（ImageDraw 不做混合），
+    会把已不透明的皇冠/冠带像素 alpha 改写成 fill 的 alpha（90/56/60/140），
+    违反「本图 alpha 非 0 即 255」的 ICO 帧约定（见 _ico_frame_rgba）。
+    """
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    fn(ImageDraw.Draw(layer))
+    return Image.alpha_composite(img, layer)
 
 
 def _poly_pts(pts: list[tuple[float, float]], s: float) -> list[tuple[float, float]]:
@@ -172,8 +194,7 @@ def render_icon(size: int) -> Image.Image:
     ImageDraw.Draw(band_dark_mask).polygon(band_dark_shape, fill=255)
     img = _overlay_vertical_gradient(img, band_dark_mask, int(41.5 * s), int(51 * s), GRAD_DARK, 90, size)
     if size >= 48:
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([pt(8.5, 42.5), pt(55.5, 45)], fill=(255, 255, 255, 90))
+        img = _overlay_draw(img, size, lambda d: d.rectangle([pt(8.5, 42.5), pt(55.5, 45)], fill=(255, 255, 255, 90)))
 
     # ---- 冠面顶部釉面高光（右侧小三角透白）----
     if size >= 48:
@@ -187,7 +208,8 @@ def render_icon(size: int) -> Image.Image:
         for y in range(int(7.5 * s), int(28 * s)):
             t = (y - 7.5 * s) / (28 * s - 7.5 * s)
             hd.line([(0, y), (size, y)], fill=(255, 255, 255, int(128 * (1 - t))), width=1)
-        img = Image.composite(white_grad, img, hi_mask)
+        masked_hi = Image.composite(white_grad, Image.new("RGBA", (size, size), (0, 0, 0, 0)), hi_mask)
+        img = Image.alpha_composite(img, masked_hi)
 
     # ---- 外描边（透明底下唯一保形手段，替代原奶油底衬）----
     halo_w = max(2, round(3.6 * s))
@@ -200,7 +222,11 @@ def render_icon(size: int) -> Image.Image:
     )
     draw.polygon(crown_shape, outline=STROKE, width=stroke_w)
     if size >= 48:
-        draw.line([pt(6, 43), pt(58, 43)], fill=(26, 26, 46, 60), width=max(1, round(0.7 * s)))
+        img = _overlay_draw(
+            img, size,
+            lambda d: d.line([pt(6, 43), pt(58, 43)], fill=(26, 26, 46, 60), width=max(1, round(0.7 * s))),
+        )
+        draw = ImageDraw.Draw(img)  # _overlay_draw 返回新对象，句柄必须刷新
 
     # ---- 三冠珠：白珠心 + 暗色月牙 ----
     for cx, cy in [(18, 21), (32, 8.5), (46, 21)]:
@@ -211,12 +237,16 @@ def render_icon(size: int) -> Image.Image:
             width=ball_w,
         )
         if size >= 48:
-            draw.pieslice(
-                [pt(cx - 2.4, cy - 2.4), pt(cx + 2.4, cy + 2.4)],
-                start=210,
-                end=330,
-                fill=(26, 26, 46, 56),
+            img = _overlay_draw(
+                img, size,
+                lambda d, _cx=cx, _cy=cy: d.pieslice(
+                    [pt(_cx - 2.4, _cy - 2.4), pt(_cx + 2.4, _cy + 2.4)],
+                    start=210,
+                    end=330,
+                    fill=(26, 26, 46, 56),
+                ),
             )
+            draw = ImageDraw.Draw(img)  # 合成返回新对象，下一颗珠前必须刷新
 
     # ---- 冠带中央菱形宝石（Key 之「眼」）----
     diamond = [pt(32, 43.2), pt(36, 46.4), pt(32, 49.6), pt(28, 46.4)]
@@ -232,8 +262,11 @@ def render_icon(size: int) -> Image.Image:
 
     # ---- 冠带高光斜纹（拉丝金）----
     if size >= 32:
-        for x0, x1 in [(13, 19.5), (21.5, 28), (38, 44.5), (46.5, 53)]:
-            draw.line([pt(x0, 44.6), pt(x1, 44.6)], fill=(255, 249, 240, 140), width=max(1, round(1 * s)))
+        def _draw_streaks(d: "ImageDraw.ImageDraw") -> None:
+            for x0, x1 in [(13, 19.5), (21.5, 28), (38, 44.5), (46.5, 53)]:
+                d.line([pt(x0, 44.6), pt(x1, 44.6)], fill=(255, 249, 240, 140), width=max(1, round(1 * s)))
+
+        img = _overlay_draw(img, size, _draw_streaks)
 
     # 小尺寸不再回退白底：ICO 帧自带 32 位 alpha，白底是用户反复投诉的
     # 「图标有白底」直接来源。小尺寸靠外描边 + 已加粗的笔画保形。
@@ -245,9 +278,9 @@ def _ico_frame_rgba(img: Image.Image) -> tuple[Image.Image, bytes]:
 
     Windows Vista+ 的 ICO 支持真透明（32 位 BMP 帧带 alpha 通道，PNG 帧
     亦支持）；此前 _to_ico_rgb 白底合成是「图标有白底」的直接根因。
-    只支持 BGRA 直通编码：本图 alpha 非 0 即 255（外描边/渐变全不透明、
-    底全透明），无需预乘与阈值化；若未来引入半透明像素，须先改这里为
-    预乘 + 阈值二值化，否则资源管理器渲染会发黑。
+    alpha 二值化（≥128 → 255，否则 0）：所有渲染层已改为 alpha_composite，
+    正常不会产生中间 alpha；这里仍按承诺做阈值兜底，半透明像素混进 DIB
+    时资源管理器渲染会发黑/发白（PIL 绘制无抗锯齿，二值化不损边缘）。
     """
     w = h = img.width
     row_bytes = w * 4
@@ -257,6 +290,8 @@ def _ico_frame_rgba(img: Image.Image) -> tuple[Image.Image, bytes]:
         src_y = h - 1 - y  # DIB 自下而上
         for x in range(w):
             r, g, b, a = px[x, src_y]
+            if 0 < a < 255:
+                a = 255 if a >= 128 else 0
             # 注意：bytearray 切片是副本，必须直接按索引写 data
             base = y * row_bytes + x * 4
             data[base] = b
