@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>本地离线 · 日用百宝箱</strong><br/>
-  <em>工程图纸脱敏为核心 · PDF / PPT / 图像 / 音视频 / 文本 / 计算 / 系统工具一站处理 · by zonlic</em>
+  <em>智能脱敏为核心 · PDF / PPT / 图像 / 音视频 / 文本 / 计算 / 系统 8 大中心 70+ 工具 · by zonlic</em>
 </p>
 
 <p align="center">
@@ -17,6 +17,7 @@
   <img src="https://img.shields.io/badge/PDF-PyMuPDF%201.27-E63946?style=flat-square" alt="PyMuPDF" />
   <img src="https://img.shields.io/badge/OCR-RapidOCR%20ONNX-7C3AED?style=flat-square" alt="RapidOCR" />
   <img src="https://img.shields.io/badge/Network-100%25%20Offline-059669?style=flat-square" alt="Offline" />
+  <img src="https://img.shields.io/badge/License-MIT-059669?style=flat-square" alt="MIT" />
 </p>
 
 <p align="center">
@@ -24,6 +25,62 @@
   同一工作台还集成了 PDF、PPT、图像、音视频、文本、计算与系统硬件工具——<strong>70+ 项全部本地离线运行</strong>。<br/>
   文件不出本机，不修改原始文件，脱敏输出 <code>原名_desensitized</code> 后缀副本。
 </p>
+
+---
+
+## 系统架构
+
+ZonKey 是一个**三端一体**的离线应用：桌面壳（pywebview）、Web 前端（React）、Python 后端引擎（FastAPI），三者在同一本机进程内协同工作。
+
+```mermaid
+flowchart TB
+  subgraph Desktop["🖥️ 桌面壳（Windows EXE）"]
+    Shell["PyWebView 无边框窗口<br/>app-region 拖拽 · 注册表隔离 · 本地存储"]
+    WebView["Edge WebView2 渲染引擎<br/>离线字体 · 主题持久化 · 窗口控制"]
+  end
+
+  subgraph Frontend["🎨 React 前端（TypeScript · Tailwind · Vite）"]
+    direction LR
+    UI["8 大中心路由"]
+    BrowserEngine["浏览器引擎降级<br/>pdf-lib · PDF.js · SheetJS · pptxgenjs<br/>〈后端离线时纯前端兜底〉"]
+  end
+
+  subgraph Bridge["🔗 FastAPI 桥接（Uvicorn · 127.0.0.1:8765）"]
+    API["REST API 网关<br/>文件上传 · Job 轮询 · 导出交付"]
+    BridgeLog["引擎日志 · 错误留痕 · 写探针"]
+  end
+
+  subgraph Backend["⚙️ Python 后端引擎"]
+    direction LR
+    Redact["智能脱敏引擎<br/>三通道检测 · 框线归位 · 字形级抹除"]
+    Tools["工坊工具集<br/>PDF 24项 · PPT 7项 · 转换 · OCR<br/>图像 · 音视频 · 系统硬件"]
+    Office["Office COM 桥<br/>Word · Excel · PowerPoint<br/>〈Windows 原生 COM 互操作〉"]
+  end
+
+  subgraph Core["🧠 Core 引擎层"]
+    direction LR
+    PdfIO["pdfio.py<br/>pypdfium2 渲染 · pdfplumber 抽取<br/>pikepdf 读写 · 坐标合同"]
+    Detector["detector/<br/>vector_channel · ocr_channel<br/>image_verify · seal_detector<br/>logo_matcher · box_finder"]
+    RedactEngine["redact/<br/>pikepdf_engine.py<br/>字形级删除 · 图像像素化<br/>线画三模式 · 内容流走查"]
+  end
+
+  Shell --> WebView
+  WebView --> Frontend
+  Frontend <--> Bridge
+  Bridge <--> Backend
+  Backend --> Core
+  BrowserEngine -.->|"后端离线时"| UI
+```
+
+### 三层递进理解
+
+| 层级 | 运行位置 | 核心职责 |
+| --- | --- | --- |
+| **桌面壳** | 本机 EXE 进程 | 窗口管理、WebView2 宿主、注册表隔离、闪屏联动 |
+| **Web 前端** | 壳内 WebView2 / 手机浏览器 | 8 中心 UI、浏览器引擎降级、主题/字号/收藏持久化 |
+| **Python 后端** | 本机 FastAPI 进程 | 脱敏引擎、PDF 工坊、Office 转换、系统硬件探针 |
+
+> **手机网页版**（[zonkey.pages.dev](https://zonkey.pages.dev)）剥离了 Python 后端，所有工具走浏览器引擎降级——文件仅在浏览器内处理，不上传任何服务器。需要本机引擎的功能（脱敏、OCR、Office 转换）会提示改用桌面版。
 
 ---
 
@@ -67,45 +124,11 @@
 
 ---
 
-## 系统架构
-
-```mermaid
-flowchart LR
-  subgraph Input["输入"]
-    A[工程图纸 PDF]
-    B[行政 PDF]
-    C[Word 文档]
-  end
-
-  subgraph Core["ZonKey Core · 本地离线"]
-    D[规则引擎]
-    E[三通道检测]
-    F[框线归位 BoxFinder]
-    G[抹除执行 ERASE / COVER]
-  end
-
-  subgraph UI["现代化工作台"]
-    H[React 前端]
-    I[FastAPI Bridge]
-    J[PyWebView 桌面壳]
-  end
-
-  A --> E
-  B --> E
-  C --> D
-  E --> D --> F --> G
-  H <--> I <--> Core
-  J --> H
-  G --> K[输出 *_desensitized.*]
-```
-
----
-
 ## 快速开始
 
 ### 方式一 · Windows 可执行文件（推荐）
 
-1. 从 GitHub Releases 下载最新 EXE 压缩包，或本机运行 `build_zonkey_exe.bat` 构建
+1. 从 [Gitee Releases](https://gitee.com/zonlic/ZonKey/releases) 下载最新 EXE 压缩包，或本机运行 `build_zonkey_exe.bat` 构建
 2. 双击 **启动现代化脱敏工作台.bat** 或直接运行 exe
 3. 浏览器 / 内嵌窗口访问 `http://127.0.0.1:8765`
 
@@ -113,11 +136,14 @@ flowchart LR
 
 - 局域网：电脑运行「启动局域网手机访问.bat」，手机同 WiFi 打开提示地址
 - 公网：电脑运行「启动公网手机访问.bat」（Cloudflare 隧道），任何网络可用
+- 或直接访问 **[zonkey.pages.dev](https://zonkey.pages.dev)**
 
 ### 方式三 · 源码开发模式
 
 ```powershell
-# 克隆（需仓库访问权限）
+# 克隆（Gitee 公开仓库）
+git clone https://gitee.com/zonlic/ZonKey.git
+# 或 GitHub 镜像
 git clone https://github.com/zonlic0925-boop/ZonKey.git
 cd ZonKey
 
@@ -143,29 +169,39 @@ python run_modern_app.py
 | 层级 | 选型 |
 | --- | --- |
 | 前端 | React · TypeScript · Tailwind CSS · Vite |
-| 前端离线引擎 | pdf-lib · PDF.js · Web Crypto · Office JS（浏览器内处理，零上传） |
+| 前端离线引擎 | pdf-lib · PDF.js · Web Crypto · SheetJS · pptxgenjs · mammoth · html2canvas（浏览器内处理，零上传） |
 | 桥接 | FastAPI · Uvicorn |
 | 桌面 | PyWebView · PyInstaller |
-| PDF | PyMuPDF 1.27 · OpenCV |
+| PDF | pypdfium2 · pikepdf · pdfplumber · reportlab |
 | OCR | RapidOCR ONNX Runtime |
-| 文档 | python-docx · python-pptx |
+| 文档 | python-docx · python-pptx · openpyxl |
 | 测试 | pytest · Playwright |
 
 ---
 
-## 目录结构（节选）
+## 目录结构
 
 ```
 ZonKey/
-├── core/                 # 脱敏核心：检测 · 归位 · 执行 · 管道
-├── frontend/             # React 现代化 UI（8 大中心）
-├── server_bridge.py      # FastAPI 本地桥接
-├── desktop_app.py        # PyWebView 桌面入口
-├── rules/                # 敏感词表与 Logo 模板（可配置）
-├── packaging/            # Windows / macOS 打包脚本
-├── scripts/              # 发布验收 · 公网隧道 · 干净导出
-├── tests/                # 单元测试与发布契约
-└── run_modern_app.py     # 开发模式启动器
+├── core/                    # 脱敏引擎核心
+│   ├── pdfio.py             #   统一 PDF 读写层（pypdfium2/pikepdf/pdfplumber）
+│   ├── detector/            #   检测通道（矢量/OCR/视觉/印章/Logo）
+│   ├── redact/              #   抹除执行（pikepdf 字形级删除 + 图像像素化）
+│   └── pipeline.py          #   脱敏流水线编排
+├── frontend/                # React 现代化 UI
+│   ├── src/
+│   │   ├── components/      #   视图组件（8 大中心 + 通用组件）
+│   │   ├── lib/zonkey/      #   纯前端工具引擎（15+ 模块）
+│   │   └── i18n/            #   三语国际化（zh-CN / zh-TW / en）
+│   └── public/              #   静态资产（图标 · 字体 · PWA manifest）
+├── server_bridge.py         # FastAPI 本地桥接（REST API + Job 轮询）
+├── desktop_app.py           # PyWebView 桌面壳入口（无边框窗口 + WebView2）
+├── backend_*.py             # 后端工具集（convert / media / ppt / system / p3）
+├── rules/                   # 敏感词表与 Logo 模板（用户可配置）
+├── packaging/               # Windows / macOS 打包脚本与配置
+├── scripts/                 # 发布验收 · 图标生成 · 公网隧道 · 干净导出
+├── tests/                   # 单元测试与发布契约
+└── run_modern_app.py        # 开发模式启动器
 ```
 
 ---
