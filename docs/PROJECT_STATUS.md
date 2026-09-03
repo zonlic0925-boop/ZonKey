@@ -1,14 +1,14 @@
-> 更新于：2026-09-03（第十七轮：启动加载提示层 + 下载弹窗动态资产/加速线路 + favicon 版本击穿 + 朋友圈物料包）。
+> 更新于：2026-09-03（第十八轮：PPT 工坊首页 + 手机顶栏语言开关溢出修复 + 下载次数/访问计数）。
 
-## 2026-09-03 第十七轮进度（四项用户反馈，本轮）
+## 2026-09-03 第十八轮进度（四项任务，本轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| ① 白屏等待提示 | ✅ | `index.html` 纯 CSS 启动层 `#zs-boot`（无 JS 也可渲染）：皇冠标 + ZONKEY + 三色进度条 + 「正在加载中，请勿离开…」，底色随 data-theme 四主题联动；main.tsx 双 rAF 首帧绘制后淡出移除（600ms 兜底），挂载失败时保持可见——白屏卡死窗口期用户看到提示而非纯白，watchdog 自愈重启后层复现。Playwright 实证 commit 可见 → mount 后 detached |
-| ② 下载加速 + 资产标注 | ✅ | `DownloadPromo.tsx` 重写：LatestReleasePanel 动态拉 GitHub API latest（sessionStorage 缓存 10min、8s 超时、失败回退双通道），资产按 win-setup/win-portable/mac-dmg/mac-zip 分类（滤 .sha256 与 build_kit），每行「是什么+多大+原始文件名 + 复制 + 直连/加速下载」双按钮；加速 = ghfast.top 前缀（三代理实测后选用）。i18n 新增 18 键中英 |
-| ③ favicon 未更新 | ✅ | 真因 = 浏览器 favicon 缓存不失效（文件 9/2 已更新）；三 icon link 全加 `?v=20260903` 击穿 |
-| ④ 朋友圈物料包 | ✅ | `docs/MOMENTS_KIT.md`（A 故事/B 简短/C 痛点三版文案 + 发布建议）+ `docs/screenshots/round17/moments/moments-01~09.png`（1080×1440，Memphis 包装：标题条+描边截图+卖点 bullets+品牌条；封面带 zonkey.pages.dev 二维码）。截图含脱敏画布有内容演示（合成图纸 CONFIDENTIAL/SECRET 识别高亮）、暗色主题、下载弹窗 |
-| 回归验证 | ✅ | pytest 141 passed；release_acceptance 全过；EXE 重打包（Setup/zip/7z 20260903）+ 静默实装验证内嵌前端=新构建（zs-boot/ghfast/C8XTVcgw）；sha256 三件对齐（发现 zip/7z sidecar 陈旧坑并重生成）；Pages 线上 bundle=本地（部署与打包并发曾撞车一次，重部署解决） |
+| ① PPT 工坊首页宫格 | ✅ | 新 `frontend/src/components/pptcenter/PptToolHome.tsx`：三组（转换/提取与优化/生成）工具卡网格 + 右上收藏星标，对齐 PdfToolHome。navigation.tsx ppt_center 首位 `ppt-home`（三语 `tools.pptHome`），7 工具加 group；`ToolMeta.group` 扩 extract/create；App.tsx SubNav 分组键按中心分流（pdfGroups/pptGroups，i18n `pptGroups.*` 三语）+ activeTool==='ppt-home' 渲染首页；PptCenter 加 'ppt-home' 兜底 |
+| ② 手机顶栏语言开关溢出（真 bug，实测发现） | ✅ | 390px 视口顶栏内容总宽 527px：语言开关按钮被推出视口（left=429 不可点），菜单 right 锚到不可见按钮=整组消失（用户视角「切语言不见了/顶栏溢出」）。修复：语言开关移出顶栏，挂手机中心 Tab 行行尾（滚动区+固定位，44px 触控 + 菜单 right-0）；顶栏「支持作者」改纯图标（文字入口在手机底部「更多」弹层）。桌面零改动。冒烟实证：按钮 right=382 ∈ 视口、菜单 right=382、零主布局溢出 |
+| ③ 下载次数显示 | ✅ | `DownloadPromo.tsx` 每资产行展示 GitHub 官方 `download_count`（`promo.downloadCount` 三语）+ 底部汇总（`promo.totalDownloads`，口径=GitHub 官方计数如实标注）；zh-TW round-17 遗漏键同轮补齐 |
+| ④ 访问计数（隐私合规） | ✅ | `main.tsx` 启动 `localStorage zonkey.visits.v1` +1：只存本机、零上传（零联网口径下「访问统计」=用户自见），壳/浏览器 UDF 各自隔离，隐私模式 try/catch 跳过 |
+| 回归验证 | ✅ | Playwright `r18_smoke.py` **20/20**（PPT 首页 7 卡三组归属/卡跳转/SubNav pill+分隔条/收藏 aria-pressed/三语标题组名/桌面手机溢出口径断言/44px 触控/菜单不溢视口/mock GitHub 下载计数 42+累计 52+sha256 过滤/API 失败回退+双通道/零 pageerror）；pytest **141 passed**（--ignore native dialog）；release_acceptance 全过；npm build 成功 |
 
 ## 2026-09-03 第十六轮进度（六项用户反馈，上轮）
 

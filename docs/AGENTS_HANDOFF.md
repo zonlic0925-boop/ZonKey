@@ -1,7 +1,17 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十七轮：启动加载提示层 + 下载弹窗动态资产/加速线路 + favicon 版本击穿 + 朋友圈物料包）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十八轮：PPT 工坊首页 + 语言切换手机端溢出修复 + 下载次数显示 + 访问计数）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
+## 〇、2026-09-03 第十八轮（PPT 工坊首页 + 手机顶栏溢出修复 + 下载/访问统计，本轮）
+
+- **任务**：① PPT 工坊加首页宫格（对齐 PDF 工坊）；② 语言切换修复；③ 下载弹窗加下载次数；④ 访问计数（隐私合规口径）；收尾=回归+EXE+Pages+git。
+- **① PPT 工坊首页**：新 `frontend/src/components/pptcenter/PptToolHome.tsx`（三组网格：转换/提取与优化/生成；卡片右上角 FavoriteStar 收藏，对齐 PdfToolHome）。`navigation.tsx` ppt_center 首位插入虚拟工具 `ppt-home`（labelKey `tools.pptHome` 三语），7 工具加 `group`（convert×2/extract×3/create×2），`ToolMeta.group` 类型扩 `extract|create`；`App.tsx` SubNav 分组键按中心分流（`pdfGroups.*`/`pptGroups.*`，i18n 新增 `pptGroups.*` 三语 5 键）且 `activeTool==='ppt-home'` 渲染 PptToolHome 而非 PptCenter（App.tsx:282-290）；PptCenter switch 兜底 `case 'ppt-home'` 防御。注意：切回 PPT 中心靠「全部工具」pill（同中心点中心按钮不切换）。
+- **② 手机顶栏溢出修复（本轮实测发现并修复，真 bug）**：390px 视口下手机顶栏内容总宽 527px——语言开关等按钮组被推出视口右缘（按钮 left=429 不可见，其 right 对齐菜单在 527px 处全在视口外=用户视角「菜单没了/溢出」）。修复：语言开关移出顶栏、挂到手机中心 Tab 行行尾（nav 内滚动区 + 非滚动右固定位，44px 触控保留，菜单 right-0 锚定）；顶栏「支持作者」改纯图标（title 保留，文字入口在手机底部导航「更多」弹层）。desktop 布局零改动。
+- **③ 下载次数**：`DownloadPromo.tsx` LatestReleasePanel 每资产行展示 GitHub 官方 `download_count`（i18n `promo.downloadCount`）+ 底部汇总（`promo.totalDownloads`，gitHub 官方计数口径如实标注）。i18n 三语各 +2 键（zh-TW 同轮补齐，含 round-17 遗漏键）。
+- **④ 访问计数（隐私合规）**：`main.tsx` 启动 `localStorage zonkey.visits.v1` +1（只存本机不上传，零联网口径；壳与浏览器各自隔离；隐私模式 try/catch 跳过）。
+- **验证汇总**：npm build 成功；Playwright `temp_ui_test/r18_smoke.py` **20/20**（PPT 首页三组 7 卡/组归属/卡跳转/SubNav pill+分隔条/收藏 aria-pressed/三语切换标题组名/桌面 1440+手机 390 溢出（口径=主布局容器右缘+滚动容器豁免）/语言开关 44px+菜单不溢视口/mock GitHub API 下载计数 42+累计 52+sha256/build_kit 过滤/API 失败回退文案+通道/零 pageerror）；pytest **141 passed**（--ignore native dialog）；release_acceptance 全过。
+- **接手注意**：① 手机顶栏塞内容超过 ~390px 必溢出（按钮本体出视口+菜单锚到不可见按钮）——顶栏只放品牌+≤4 图标，语言开关固定挂中心 Tab 行尾；② `DownloadPromo` LatestReleasePanel 走 sessionStorage 缓存 10min（`zonkey.latestRelease.v1`）——Playwright 测失败路径须**独立 context**（同 context 新页面会命中 mock 缓存，不发请求）；③ 断言用简体/繁体/英文文案时注意当前 locale（语言切换后文案跟随）——先用正则跨语或先切回；④ SubNav 分组 pill 语义=组间分隔条（`w-0.5`），不是组名文本；⑤ 收藏星标断言用 `aria-pressed` 翻转（pressed=true/false），aria-label 随收藏态变化；⑥ banner 文案「下载桌面版」随 locale 变化（zh-TW=下載桌面版）——多语言测试先切回 zh-CN 或按 locale 选择器。
 
 ## 〇、2026-09-03 第十七轮（白屏等待提示 + 下载加速与资产标注 + favicon 击穿 + 朋友圈物料，本轮）
 
