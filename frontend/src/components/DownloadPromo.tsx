@@ -1,5 +1,20 @@
-import React, { useState } from 'react';
-import { MonitorDown, X, Download, Shield, FileText, Lock, ExternalLink, HardDrive } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  MonitorDown,
+  X,
+  Download,
+  Shield,
+  FileText,
+  Lock,
+  ExternalLink,
+  HardDrive,
+  Copy,
+  Check,
+  Loader2,
+  Package,
+  Archive,
+  Laptop,
+} from 'lucide-react';
 import { APP_NAME, PROJECT_REPO_URL, PROJECT_GITEE_URL } from '../lib/brand';
 import { useShellMode } from '../lib/deliver';
 import { useI18n } from '../i18n';
@@ -24,6 +39,257 @@ function dismiss(): void {
 
 /** 桌面版独有能力（网页版做不到或保真度更低的能力，如实标注） */
 const DESKTOP_ONLY_ICONS = { Shield, FileText, Lock } as const;
+
+/* ------------------------------------------------------------------ */
+/* 最新版本资产动态解析（round-17）                                      */
+/* Release 资产名带日期（如 ZonKey_Setup_x64_20260903.exe），无法静态拼  */
+/* 直链，只能走 GitHub API 解析 latest release。仓库公开 → API 匿名可    */
+/* 访问；资产下载链接可加公共镜像前缀（ghfast.top 等）加速国内下载。      */
+/* ------------------------------------------------------------------ */
+
+type GhAsset = { name: string; browser_download_url: string; size: number };
+type GhRelease = { tag_name: string; assets: GhAsset[] };
+
+const GH_API_LATEST = 'https://api.github.com/repos/zonlic0925-boop/ZonKey/releases/latest';
+const MIRROR_PREFIX = 'https://ghfast.top/';
+const RELEASE_CACHE_KEY = 'zonkey.latestRelease.v1';
+const RELEASE_CACHE_TTL_MS = 10 * 60 * 1000;
+
+type AssetGroup = 'win-setup' | 'win-portable' | 'mac-dmg' | 'mac-zip';
+
+type AssetRow = {
+  name: string;
+  url: string;
+  size: number;
+  group: AssetGroup;
+  arch: '' | 'arm64' | 'x64';
+};
+
+const GROUP_ORDER: Record<AssetGroup, number> = {
+  'win-setup': 0,
+  'win-portable': 1,
+  'mac-dmg': 2,
+  'mac-zip': 3,
+};
+
+/** sha256 校验文件与开发者构建包（build_kit）不进下载列表 */
+function parseAsset(a: GhAsset): AssetRow | null {
+  const n = a.name;
+  if (n.endsWith('.sha256') || n.includes('build_kit')) return null;
+  const arch: AssetRow['arch'] = n.includes('arm64') ? 'arm64' : n.includes('x86_64') ? 'x64' : '';
+  if (n.startsWith('ZonKey_Setup_') && n.endsWith('.exe')) {
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-setup', arch };
+  }
+  if (n.startsWith('ZonKey_Windows_') && (n.endsWith('.zip') || n.endsWith('.7z'))) {
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-portable', arch };
+  }
+  if (n.startsWith('ZonKey_macOS_') && n.endsWith('.dmg')) {
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-dmg', arch };
+  }
+  if (n.startsWith('ZonKey_macOS_') && n.endsWith('.zip')) {
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-zip', arch };
+  }
+  return null;
+}
+
+function readReleaseCache(): GhRelease | null {
+  try {
+    const raw = sessionStorage.getItem(RELEASE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; release: GhRelease };
+    if (!parsed || typeof parsed.ts !== 'number' || !parsed.release?.assets?.length) return null;
+    if (Date.now() - parsed.ts > RELEASE_CACHE_TTL_MS) return null;
+    return parsed.release;
+  } catch {
+    return null;
+  }
+}
+
+function writeReleaseCache(rel: GhRelease): void {
+  try {
+    sessionStorage.setItem(RELEASE_CACHE_KEY, JSON.stringify({ ts: Date.now(), release: rel }));
+  } catch {
+    /* 隐私模式等场景写入失败不影响主流程 */
+  }
+}
+
+function fmtSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '';
+  return `${Math.round(bytes / 1048576)} MB`;
+}
+
+const GROUP_ICON: Record<AssetGroup, React.ComponentType<{ className?: string }>> = {
+  'win-setup': Package,
+  'win-portable': Archive,
+  'mac-dmg': Laptop,
+  'mac-zip': Laptop,
+};
+
+const GROUP_LABEL_KEY: Record<AssetGroup, string> = {
+  'win-setup': 'promo.winSetupLabel',
+  'win-portable': 'promo.winPortableLabel',
+  'mac-dmg': 'promo.macDmgLabel',
+  'mac-zip': 'promo.macZipLabel',
+};
+
+const GROUP_DESC_KEY: Record<AssetGroup, string> = {
+  'win-setup': 'promo.winSetupDesc',
+  'win-portable': 'promo.winPortableDesc',
+  'mac-dmg': 'promo.macDmgDesc',
+  'mac-zip': 'promo.macZipDesc',
+};
+
+/** 最新版本资产面板：每行「是什么 + 多大 + 叫什么」，直连/加速双通道 */
+const LatestReleasePanel: React.FC = () => {
+  const { t } = useI18n();
+  const [state, setState] = useState<{ status: 'loading' | 'ok' | 'error'; release: GhRelease | null }>({
+    status: 'loading',
+    release: null,
+  });
+  const [copiedUrl, setCopiedUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const cached = readReleaseCache();
+    if (cached) {
+      setState({ status: 'ok', release: cached });
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 8000);
+    fetch(GH_API_LATEST, { signal: ctrl.signal, headers: { Accept: 'application/vnd.github+json' } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((rel: GhRelease) => {
+        if (cancelled) return;
+        if (!rel || !Array.isArray(rel.assets) || rel.assets.length === 0) {
+          throw new Error('empty assets');
+        }
+        setState({ status: 'ok', release: rel });
+        writeReleaseCache(rel);
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: 'error', release: null });
+      });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const copyUrl = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // 非安全上下文/旧内核兜底
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      } catch {
+        /* 放弃 */
+      }
+    }
+    setCopiedUrl(url);
+    window.setTimeout(() => setCopiedUrl(''), 1600);
+  }, []);
+
+  const rows = state.release
+    ? state.release.assets
+        .map(parseAsset)
+        .filter((r): r is AssetRow => r !== null)
+        .sort((a, b) => GROUP_ORDER[a.group] - GROUP_ORDER[b.group] || a.name.localeCompare(b.name))
+    : [];
+
+  return (
+    <div className="rounded-xl border-2 border-mem-ink bg-mem-sky/10 p-4 mb-4">
+      <div className="flex items-center gap-2 mb-1">
+        <Download className="w-4 h-4 text-mem-sky shrink-0" />
+        <h3 className="font-display font-bold text-sm text-mem-ink">
+          {t('promo.latestVersion')}
+          {state.release ? <span className="text-mem-ink/60 font-bold"> · {state.release.tag_name}</span> : null}
+        </h3>
+      </div>
+
+      {state.status === 'loading' && (
+        <p className="flex items-center gap-2 py-2 text-xs text-mem-ink/60">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          {t('promo.loadingAssets')}
+        </p>
+      )}
+      {state.status === 'error' && (
+        <p className="py-2 text-xs text-mem-ink/60">{t('promo.assetsError')}</p>
+      )}
+      {state.status === 'ok' && rows.length === 0 && (
+        <p className="py-2 text-xs text-mem-ink/60">{t('promo.assetsError')}</p>
+      )}
+
+      <div className="space-y-2">
+        {rows.map((row) => {
+          const Icon = GROUP_ICON[row.group];
+          const archSuffix =
+            row.arch === 'arm64'
+              ? ` · ${t('promo.archApple')}`
+              : row.arch === 'x64'
+                ? ` · ${t('promo.archIntel')}`
+                : '';
+          return (
+            <div
+              key={row.name}
+              className="flex items-center gap-2 p-2.5 rounded-lg border border-mem-ink/25 bg-white"
+            >
+              <Icon className="w-4 h-4 text-mem-teal shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black text-mem-ink truncate">
+                  {t(GROUP_LABEL_KEY[row.group])}
+                  {archSuffix}
+                </p>
+                <p className="text-[11px] text-mem-ink/55 truncate" title={row.name}>
+                  {t(GROUP_DESC_KEY[row.group])}
+                  {fmtSize(row.size) ? ` · ${fmtSize(row.size)}` : ''} · {row.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyUrl(row.url)}
+                className="shrink-0 p-1.5 rounded-md text-mem-ink/45 hover:text-mem-ink hover:bg-mem-cream/60 transition-colors"
+                aria-label={t('promo.copyLink')}
+                title={t('promo.copyLink')}
+              >
+                {copiedUrl === row.url ? (
+                  <Check className="w-3.5 h-3.5 text-mem-teal" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+              <a
+                href={row.url}
+                className="shrink-0 px-2 py-1 rounded-md border border-mem-ink/35 bg-white hover:bg-mem-cream/60 text-[11px] font-bold text-mem-ink/75 transition-colors"
+              >
+                {t('promo.direct')}
+              </a>
+              <a
+                href={`${MIRROR_PREFIX}${row.url}`}
+                className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md border-2 border-mem-ink bg-mem-yellow/50 hover:bg-mem-yellow/70 text-[11px] font-black text-mem-ink transition-colors"
+                title={`${MIRROR_PREFIX}${row.url}`}
+              >
+                <Download className="w-3 h-3" />
+                {t('promo.accel')}
+              </a>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-2.5 text-[11px] leading-relaxed text-mem-ink/50">{t('promo.accelHint')}</p>
+    </div>
+  );
+};
 
 export const DownloadPromoModal: React.FC<{ open: boolean; onClose: () => void }> = ({
   open,
@@ -76,16 +342,19 @@ export const DownloadPromoModal: React.FC<{ open: boolean; onClose: () => void }
           </div>
         </div>
 
-        {/* 下载通道：GitHub 主仓库 + Gitee 国内镜像 */}
-        <div className="rounded-xl border-2 border-mem-ink bg-mem-sky/10 p-4 mb-4 space-y-3">
+        {/* 最新版本资产：动态解析 + 镜像加速（round-17） */}
+        <LatestReleasePanel />
+
+        {/* 兜底通道：Release 页 + Gitee 镜像 */}
+        <div className="rounded-xl border-2 border-mem-ink bg-white p-4 mb-4 space-y-3">
           <a
-            href={`${PROJECT_REPO_URL}/releases/latest`}
+            href={`${PROJECT_REPO_URL}/releases`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border-2 border-mem-ink bg-mem-yellow/40 hover:bg-mem-yellow/60 transition-colors"
+            className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-mem-ink/30 bg-white hover:bg-mem-yellow/30 transition-colors"
           >
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-xs font-black text-mem-ink">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-mem-ink">
                 <Download className="w-3.5 h-3.5" />
                 {t('promo.mainChannel')}
               </span>
