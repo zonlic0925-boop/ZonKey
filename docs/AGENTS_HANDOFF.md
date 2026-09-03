@@ -1,9 +1,17 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十八轮：PPT 工坊首页 + 语言切换手机端溢出修复 + 下载次数显示 + 访问计数）。
-> 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十九轮：支持作者文案随产品定位刷新，收尾=回归+EXE+Pages+git）。
 
-## 〇、2026-09-03 第十八轮（PPT 工坊首页 + 手机顶栏溢出修复 + 下载/访问统计，本轮）
+## 〇、2026-09-03 第十九轮（支持作者文案刷新，本轮）
+
+- **任务**：支持作者弹窗第一段（`support.description`）随产品定位刷新——ZonKey 已不是单纯打码工具，改为多工具口径。
+- **文案（三语同步，各改 1 行）**：zh-CN「…它早已不只是『打码工具』：图纸公文脱敏、PDF 工坊、图像音视频、计算开发……这箱日用百宝箱还在持续上新…」（en 对应 "It is no longer just a redaction tool…"；zh-TW 繁中同口径）。保留免费/开源/本地离线/非付费解锁承诺。入口文件 `frontend/src/components/SupportAuthorModal.tsx` 正文即 `t('support.description')`。
+- **Pages 部署教训（本轮实证）**：**wrangler pages deploy 必须显式带 `--branch main`**——round-19 首次漏写，git 分支 master 被当作 Preview 分支名 → 部署落 **Preview**（Environment=Preview），主域 zonkey.pages.dev 不更新（仍指旧 Production）。判定：`npx wrangler pages deployment list --project-name zonkey` 看最新行 Environment；修复=带 `--branch main` 重跑。生产部署 `89aecb05`，主域 bundle `index-DTCGwJZ-.js` = 本地 md5。
+- **sha256 sidecar 根治（本轮发现）**：`scripts/package_release.py` 原逻辑只给 setup 写一个 `.sha256`（`primary = setup or 7z or zip`），7z/zip 的 sidecar 是旧构建残留 → round-17 记录的「重生成对齐」只在当时手工做，未根治。本轮改脚本：**setup/7z/zip 每个产物各写自己的 sidecar**。以后打包完成应三件 sidecar mtime 同批。
+- **验证汇总**：pytest **141 passed**（--ignore native dialog）；npm build 成功（主 chunk `index-DTCGwJZ-.js`）；Playwright `temp_ui_test/r19_support_copy.py` **5/5**（支持弹窗三语文案各自断言+旧口径零残留+零 pageerror）；EXE 重打包（Setup 195MB 17:19 + zip/7z 17:21）zip 内嵌新文案×2/旧×0（对照组 20260902 zip 新×0/旧×6）；sha256 三件全 match；Pages 线上 bundle=本地 md5 + 三语新文案 + 旧文案零命中 + zs-boot 在位。
+- **接手注意**：① 部署 Pages 永远显式 `--branch main`（见上），部署后查 `wrangler pages deployment list` 确认 Environment=Production；② dist_web 里 `index-B8azPOY6.js`/`index-C6hPSbMI.js`/`index-legacy-7-YtNKYU.js`/`index-legacy-FuFuF2Js.js` 是**活跃动态 import chunk**（主 chunk 引用），不是残留，勿删；③ sha256 验证口径：sidecar mtime 应 ≥ 包 mtime（脚本已修，若再遇旧哈希先查 sidecar mtime）；④ 弹窗正文改 i18n 键三语必须同轮（zh-TW 别漏）；⑤ 文案断言脚本可复用 `temp_ui_test/r19_support_copy.py`（LanguageSwitcher 是 header 外独立组件，选择器按 aria-haspopup=menu）。
+
+## 〇、2026-09-03 第十八轮（PPT 工坊首页 + 语言切换手机端溢出修复 + 下载次数显示 + 访问计数，上轮）
 
 - **任务**：① PPT 工坊加首页宫格（对齐 PDF 工坊）；② 语言切换修复；③ 下载弹窗加下载次数；④ 访问计数（隐私合规口径）；收尾=回归+EXE+Pages+git。
 - **① PPT 工坊首页**：新 `frontend/src/components/pptcenter/PptToolHome.tsx`（三组网格：转换/提取与优化/生成；卡片右上角 FavoriteStar 收藏，对齐 PdfToolHome）。`navigation.tsx` ppt_center 首位插入虚拟工具 `ppt-home`（labelKey `tools.pptHome` 三语），7 工具加 `group`（convert×2/extract×3/create×2），`ToolMeta.group` 类型扩 `extract|create`；`App.tsx` SubNav 分组键按中心分流（`pdfGroups.*`/`pptGroups.*`，i18n 新增 `pptGroups.*` 三语 5 键）且 `activeTool==='ppt-home'` 渲染 PptToolHome 而非 PptCenter（App.tsx:282-290）；PptCenter switch 兜底 `case 'ppt-home'` 防御。注意：切回 PPT 中心靠「全部工具」pill（同中心点中心按钮不切换）。

@@ -1,6 +1,16 @@
-> 更新于：2026-09-03（第十八轮：PPT 工坊首页 + 手机顶栏语言开关溢出修复 + 下载次数/访问计数）。
+> 更新于：2026-09-03（第十九轮：支持作者文案随产品定位刷新 + EXE/Pages 收尾，含 sha256 全产物修复与 Pages 生产分支教训）。
 
-## 2026-09-03 第十八轮进度（四项任务，本轮）
+## 2026-09-03 第十九轮进度（文案优化 + 收尾，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 支持作者文案刷新 | ✅ | `support.description` 三语同步更新：不再单一看图打码用例，改为多工具定位口径——「早已不只是打码工具：图纸公文脱敏、PDF 工坊、图像音视频、计算开发……这箱日用百宝箱还在持续上新」，保留免费/开源/本地离线/非付费解锁承诺。zh-CN/zh-TW/en 三个 locale 文件各改 1 行 |
+| EXE 重打包 | ✅ | `build_zonkey_exe.bat` 全链通过（clean rules OK + PyInstaller + release_acceptance + apply icon + Inno Setup）；产物 `dist_release/ZonKey_Setup_x64_20260903.exe`(195MB) + zip + 7z（17:19-17:21）；zip 内嵌 dist_web 主 chunk `index-DTCGwJZ-.js`：新文案命中×2（zh/en 各）、旧文案零命中；对照组 20260902 旧 zip：新文案 0/旧文案×6 |
+| sha256 sidecar 根治（本轮发现） | ✅ | `package_release.py` 原只给 setup 写一个 sidecar，zip/7z sidecar 停留旧哈希（round-17 记录为「手工重生成」未根治）。本轮改脚本：setup/7z/zip **每个产物各写 sidecar**；已重生成三件并与实际哈希全 match |
+| Pages 部署（生产） | ✅ | 首跑漏 `--branch main` → 落 Preview（主域未更新），`wrangler pages deployment list` 定位后带 `--branch main` 重跑 → 生产部署 `89aecb05`。主域 bundle = `index-DTCGwJZ-.js` = 本地 md5 一致；线上含三语新文案、旧文案零命中、zs-boot 在位 |
+| 冒烟验证 | ✅ | Playwright `temp_ui_test/r19_support_copy.py` **5/5**（支持弹窗 zh-CN/en/zh-TW 三语文案各自断言 + 旧口径零残留 + 零 pageerror）；pytest **141 passed**（--ignore native dialog）；npm build 成功 |
+
+## 2026-09-03 第十八轮进度（四项任务，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

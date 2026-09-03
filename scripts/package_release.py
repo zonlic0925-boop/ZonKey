@@ -155,13 +155,13 @@ def package(version: str | None = None) -> dict[str, Path]:
     except Exception as exc:
         print(f"[WARN] zip 打包失败（非致命）: {exc}")
 
-    # ---------- SHA256 ----------
-    primary = result.get("setup") or result.get("7z") or result.get("zip")
-    if primary:
-        sha_path = primary.with_suffix(primary.suffix + ".sha256")
-        sha_path.write_text(f"{_sha256(primary)}  {primary.name}\n", encoding="utf-8")
-        result["sha256"] = sha_path
-        print(f"[OK] SHA256: {sha_path}")
+    # ---------- SHA256（round-19：每个产物各写 sidecar，防旧包配旧哈希）----------
+    for name in ("setup", "7z", "zip"):
+        p = result.get(name)
+        if p and p.is_file():
+            sha_path = Path(str(p) + ".sha256")
+            sha_path.write_text(f"{_sha256(p)}  {p.name}\n", encoding="utf-8")
+            print(f"[OK] SHA256: {sha_path}")
 
     return result
 
