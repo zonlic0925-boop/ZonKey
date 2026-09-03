@@ -1,6 +1,16 @@
-> 更新于：2026-09-03（第十六轮：壳内另存对话框根治 + IME 打字修复 + 图标 overlay 半透明修复 + 窗口不可见自愈 + 网页版下载提示 + GitHub 主仓库口径 + Actions DMG）。
+> 更新于：2026-09-03（第十七轮：启动加载提示层 + 下载弹窗动态资产/加速线路 + favicon 版本击穿 + 朋友圈物料包）。
 
-## 2026-09-03 第十六轮进度（六项用户反馈，本轮）
+## 2026-09-03 第十七轮进度（四项用户反馈，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| ① 白屏等待提示 | ✅ | `index.html` 纯 CSS 启动层 `#zs-boot`（无 JS 也可渲染）：皇冠标 + ZONKEY + 三色进度条 + 「正在加载中，请勿离开…」，底色随 data-theme 四主题联动；main.tsx 双 rAF 首帧绘制后淡出移除（600ms 兜底），挂载失败时保持可见——白屏卡死窗口期用户看到提示而非纯白，watchdog 自愈重启后层复现。Playwright 实证 commit 可见 → mount 后 detached |
+| ② 下载加速 + 资产标注 | ✅ | `DownloadPromo.tsx` 重写：LatestReleasePanel 动态拉 GitHub API latest（sessionStorage 缓存 10min、8s 超时、失败回退双通道），资产按 win-setup/win-portable/mac-dmg/mac-zip 分类（滤 .sha256 与 build_kit），每行「是什么+多大+原始文件名 + 复制 + 直连/加速下载」双按钮；加速 = ghfast.top 前缀（三代理实测后选用）。i18n 新增 18 键中英 |
+| ③ favicon 未更新 | ✅ | 真因 = 浏览器 favicon 缓存不失效（文件 9/2 已更新）；三 icon link 全加 `?v=20260903` 击穿 |
+| ④ 朋友圈物料包 | ✅ | `docs/MOMENTS_KIT.md`（A 故事/B 简短/C 痛点三版文案 + 发布建议）+ `docs/screenshots/round17/moments/moments-01~09.png`（1080×1440，Memphis 包装：标题条+描边截图+卖点 bullets+品牌条；封面带 zonkey.pages.dev 二维码）。截图含脱敏画布有内容演示（合成图纸 CONFIDENTIAL/SECRET 识别高亮）、暗色主题、下载弹窗 |
+| 回归验证 | ✅ | pytest 141 passed；release_acceptance 全过；EXE 重打包（Setup/zip/7z 20260903）+ 静默实装验证内嵌前端=新构建（zs-boot/ghfast/C8XTVcgw）；sha256 三件对齐（发现 zip/7z sidecar 陈旧坑并重生成）；Pages 线上 bundle=本地（部署与打包并发曾撞车一次，重部署解决） |
+
+## 2026-09-03 第十六轮进度（六项用户反馈，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

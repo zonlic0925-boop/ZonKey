@@ -1,9 +1,22 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十六轮：壳内另存对话框根治 + IME 打字 + 图标半透明 + 窗口不可见自愈 + 网页版下载提示 + 术语对调 + Actions DMG）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十七轮：启动加载提示层 + 下载弹窗动态资产/加速线路 + favicon 版本击穿 + 朋友圈物料包）。
 > 配套进度细节见 [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
-## 〇、2026-09-03 第十六轮（三项实测 bug 真根因 + 三项新功能，本轮）
+## 〇、2026-09-03 第十七轮（白屏等待提示 + 下载加速与资产标注 + favicon 击穿 + 朋友圈物料，本轮）
+
+- **任务（用户 4 项）**：① 桌面版偶发白屏卡死期间加「正在加载中，请勿离开」提示；② 网页版下载走 ghproxy 类镜像加速 + 每个链接标注「下载的是什么」（用户补充）；③ 网页版标题栏 favicon 未更新；④ 朋友圈发布文案 + 九宫格配图物料。
+- **① 启动加载提示层**：`index.html` 内联纯 CSS 层 `#zs-boot`（无 JS 也能渲染——JS 卡死场景必须不依赖 JS）——皇冠 SVG + ZONKEY 字标 + Memphis 三色滑动进度条 + 「正在加载中，请勿离开…」。底色随内联主题脚本 `data-theme` 联动（四主题各配背景色）。退场契约：`main.tsx` 挂载后**双 rAF**（首帧真实绘制完才退场，防白屏一闪）加 `.zs-boot-done` 淡出 450ms 后 remove，600ms 定时兜底；挂载失败/JS 卡死时层保持可见，壳层 watchdog（15s 判定 + 20s 宽限 + 可见性自愈）完成重启后该层重新出现——用户从「纯白卡死」变为「有提示的加载中」。Playwright 实证：commit 时层可见 → mount 后 detached。**接手注意**：boot 层 `<img src>` 与 favicon 都带 `?v=20260903` 缓存击穿参数，改图标时同步 bump。
+- **② 下载弹窗动态资产 + 加速线路**：`DownloadPromo.tsx` 重写。新增 `LatestReleasePanel`——`fetch api.github.com/repos/zonlic0925-boop/ZonKey/releases/latest`（公开仓库匿名可访问）动态解析资产名（带日期，无法静态拼直链），按组分类：win-setup（Package 图标，推荐）/ win-portable（Archive）/ mac-dmg / mac-zip（Laptop）；**过滤 `.sha256` 与 `build_kit` 不进列表**。每行展示「是什么（i18n 标签 + Apple/Intel 芯片标注）+ 多大（MB）+ 原始文件名」+ 复制原始链接按钮 + **直连/加速下载双按钮**——加速走 `https://ghfast.top/` 前缀转发（三代理实测：ghfast.top、gh-proxy.com 均 200，ghproxy.link 307，选了第一个）。sessionStorage 缓存 10 分钟（`zonkey.latestRelease.v1`），8s 超时 AbortController，失败回退「从下方 GitHub/Gitee 通道进入下载页」。兜底区保留 Release 页 + Gitee 两个入口。i18n `promo.*` 新增 18 键中英齐（zh-CN/en）。Playwright mock API 实证：3 资产正确分类、ghfast 前缀 3 条、build_kit/sha256 被滤。
+- **③ favicon 未更新真因 + 击穿**：图标文件本身早已更新（9/2-9/3），用户看到旧图 = **浏览器 favicon 缓存长期不失效**。修复：`index.html` 三个 icon link 全加 `?v=20260903`（svg + 192png + apple-touch 180png）——URL 变了缓存必失效。
+- **④ 朋友圈物料包**：`docs/MOMENTS_KIT.md`（3 版文案 A 故障型/B 简短型/C 痛点型 + 发布建议）+ `docs/screenshots/round17/moments/moments-01~09.png`（1080×1440 3:4 九宫格，Pillow Memphis 风格包装：标题条 + 粗描边截图 + 卖点 bullets + 品牌条；封面卡带 `zonkey.pages.dev` 二维码）。截图采集 Playwright 已知坑复用：`text= >> visible=true` 过滤隐藏元素、`dispatch_event('click')` 绕导航层（记忆里登记过的两个）。脱敏演示图用 `set_input_files` 注入合成图纸 `temp_ui_test/moments_demo.pdf`（CONFIDENTIAL/SECRET 块识别高亮，空态无说服力）。
+- **⑤ Pages 部署并发坑（新发现）**：wrangler 部署与后台 EXE 打包**并发跑**时，第一次部署只上传 9 个文件（81 个里）且部署 URL 404——打包脚本搬运 dist_web 与 wrangler 扫描撞车。第二次部署（打包结束后）73+8 全量成功。**验证口径**：`curl zonkey.pages.dev` 比对 bundle 名 `index-C8XTVcgw.js` + `grep -c zs-boot` = 23。
+- **⑥ sha256 sidecar 陈旧坑（新发现）**：`build_zonkey_exe.bat` 重新生成 zip/7z 但**不重新生成对应 `.sha256`**（09:23 新包配 00:44 旧哈希）——已手工重生成三件并对齐。接手时若验哈希 False 先查 sidecar mtime 是否早于包。
+- **⑦ Setup 实装验证法**：Inno Setup 压缩体明文 grep 特征串恒 False（连 `Inno Setup` 头也在中部）——验证 Setup 内嵌前端用**静默实装**：`Setup.exe /VERYSILENT /DIR=<temp>` 装完 grep `_internal/dist_web`，装完即删。本轮实装验证：zs-boot=35 + ghfast.top=True + index-C8XTVcgw 存在。
+- **验证汇总**：pytest **141 passed**；release_acceptance 全过；EXE 重打包（`dist_release/ZonKey_Setup_x64_20260903.exe` 195MB + zip/7z，09:22-09:24）+ sha256 三件全 match；Pages 线上 bundle = 本地（C8XTVcgw）+ 加载层 + 版本化 favicon；九宫格 9 张目检通过。
+- **接手注意**：① boot 层退场靠 main.tsx 双 rAF——改挂载流程时勿删；加速代理 ghfast.top 是第三方公益服务，失效时用户按弹窗提示换直连，代码里改 `MIRROR_PREFIX` 一个常量即可；② GitHub API 匿名限额 60次/时/IP——sessionStorage 缓存 10 分钟已够，若要更长需处理 403；③ 九宫格源截图在 `docs/screenshots/round17/`，moments 脚本是一次性内联 Python 未存档，重生成需从 handoff 或 git log 找（本轮提交含产物不含脚本）。
+
+## 〇、2026-09-03 第十六轮（三项实测 bug 真根因 + 三项新功能，上轮）
 
 - **任务（用户 6 项）**：① 图标白底（验证渲染链+ICO 缓存）② 裁切后无法下载导出 ③ 打字测试无法开始 ④ 网页版加桌面版下载提示区+弹窗 ⑤ 术语：GitHub=主仓库/Gitee=国内镜像 ⑥ GitHub Actions macOS DMG；收尾=回归+EXE+Pages+git。
 - **关键教训（本轮方法论）**：round-15 三项「修复+Playwright 全绿」为何用户实测仍坏——**浏览器自动化绕过了三个真实环境要素**：① PIL 半透明 overlay 的像素级缺陷（自动化只断言 corner/center alpha）；② Win32 对话框创建路径（Playwright mock 掉了）；③ 真 IME 组合事件（page.keyboard.type 不产生 composition）。**收尾验收必须含真实环境探针**。
