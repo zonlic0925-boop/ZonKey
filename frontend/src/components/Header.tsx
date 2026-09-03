@@ -134,11 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="zs-touch-target flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-mem-coral/30 border-2 border-mem-ink"
+              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-coral/30 border-2 border-mem-ink"
               title={t('header.supportTitle')}
             >
               <Coffee className="w-4 h-4 text-mem-coral" />
-              <span className="text-[11px] font-bold text-mem-ink">{t('header.supportAuthor')}</span>
             </button>
             <button
               type="button"
@@ -148,16 +147,24 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <HelpCircle className="w-4 h-4 text-mem-sky" />
             </button>
-            <LanguageSwitcher />
+            {/* 语言开关不在顶栏（顶栏内容最宽处已到视口边缘，再放会把
+                按钮推出视口）；挂在下方可横向滚动的中心 Tab 行末尾，
+                支持作者文案入口由手机底部导航「更多」弹层承担。 */}
           </div>
         </div>
 
-        {/* 手机：横向中心 Tab（图标 + 可横向滚动，非标题栏不加 drag） */}
+        {/* 手机：横向中心 Tab（图标 + 可横向滚动，非标题栏不加 drag）。
+            行尾固定语言开关（44px 触控，菜单右侧锚定视口右缘，不随行滚动）。 */}
         <nav
-          className="md:hidden zs-mobile-scroll-x flex items-center gap-1.5 px-2 py-2 border-t border-mem-ink/10"
+          className="md:hidden relative flex items-center gap-1.5 px-2 py-2 border-t border-mem-ink/10"
           aria-label={t('lang.label')}
         >
-          {CENTERS.map((center) => centerButton(center, true))}
+          <div className="zs-mobile-scroll-x flex items-center gap-1.5 pr-2">
+            {CENTERS.map((center) => centerButton(center, true))}
+          </div>
+          <div className="ml-auto pl-2 shrink-0 no-drag">
+            <LanguageSwitcher align="right" largeTouch />
+          </div>
         </nav>
 
         {/* 桌面：品牌行自身可拖（h-20 标题栏），三组交互区 no-drag 豁免。

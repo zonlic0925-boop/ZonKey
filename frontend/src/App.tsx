@@ -8,6 +8,7 @@ import { CalcDevCenter } from './components/calcdev/CalcDevCenter';
 import { TextCenter } from './components/textcenter/TextCenter';
 import { PdfCenter } from './components/pdfcenter/PdfCenter';
 import { PdfToolHome } from './components/pdfcenter/PdfToolHome';
+import { PptToolHome } from './components/pptcenter/PptToolHome';
 import { ImageCenter } from './components/imagecenter/ImageCenter';
 import { PptCenter } from './components/pptcenter/PptCenter';
 import { MediaCenter } from './components/mediacenter/MediaCenter';
@@ -182,8 +183,8 @@ export default function App() {
               id: tool.id,
               label: t(tool.labelKey),
               group:
-                activeCenter === 'pdf_center' && tool.group
-                  ? t(`pdfGroups.${tool.group}`)
+                tool.group && (activeCenter === 'pdf_center' || activeCenter === 'ppt_center')
+                  ? t(`${activeCenter === 'pdf_center' ? 'pdfGroups' : 'pptGroups'}.${tool.group}`)
                   : undefined,
             }))}
             activeId={activeTool}
@@ -281,7 +282,11 @@ export default function App() {
         )}
         {activeCenter === 'ppt_center' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-            <PptCenter tool={activeTool} />
+            {activeTool === 'ppt-home' ? (
+              <PptToolHome onSelect={handleToolChange} onNotify={showNotify} />
+            ) : (
+              <PptCenter tool={activeTool} />
+            )}
           </div>
         )}
         {activeCenter === 'media_center' && (

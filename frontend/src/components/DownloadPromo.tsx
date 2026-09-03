@@ -47,7 +47,7 @@ const DESKTOP_ONLY_ICONS = { Shield, FileText, Lock } as const;
 /* 访问；资产下载链接可加公共镜像前缀（ghfast.top 等）加速国内下载。      */
 /* ------------------------------------------------------------------ */
 
-type GhAsset = { name: string; browser_download_url: string; size: number };
+type GhAsset = { name: string; browser_download_url: string; size: number; download_count?: number };
 type GhRelease = { tag_name: string; assets: GhAsset[] };
 
 const GH_API_LATEST = 'https://api.github.com/repos/zonlic0925-boop/ZonKey/releases/latest';
@@ -63,6 +63,8 @@ type AssetRow = {
   size: number;
   group: AssetGroup;
   arch: '' | 'arm64' | 'x64';
+  /** GitHub Release 官方下载计数（真实统计，零自建设施） */
+  downloads: number;
 };
 
 const GROUP_ORDER: Record<AssetGroup, number> = {
@@ -78,16 +80,16 @@ function parseAsset(a: GhAsset): AssetRow | null {
   if (n.endsWith('.sha256') || n.includes('build_kit')) return null;
   const arch: AssetRow['arch'] = n.includes('arm64') ? 'arm64' : n.includes('x86_64') ? 'x64' : '';
   if (n.startsWith('ZonKey_Setup_') && n.endsWith('.exe')) {
-    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-setup', arch };
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-setup', arch, downloads: a.download_count ?? 0 };
   }
   if (n.startsWith('ZonKey_Windows_') && (n.endsWith('.zip') || n.endsWith('.7z'))) {
-    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-portable', arch };
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'win-portable', arch, downloads: a.download_count ?? 0 };
   }
   if (n.startsWith('ZonKey_macOS_') && n.endsWith('.dmg')) {
-    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-dmg', arch };
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-dmg', arch, downloads: a.download_count ?? 0 };
   }
   if (n.startsWith('ZonKey_macOS_') && n.endsWith('.zip')) {
-    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-zip', arch };
+    return { name: n, url: a.browser_download_url, size: a.size, group: 'mac-zip', arch, downloads: a.download_count ?? 0 };
   }
   return null;
 }
@@ -205,6 +207,7 @@ const LatestReleasePanel: React.FC = () => {
         .filter((r): r is AssetRow => r !== null)
         .sort((a, b) => GROUP_ORDER[a.group] - GROUP_ORDER[b.group] || a.name.localeCompare(b.name))
     : [];
+  const totalDownloads = rows.reduce((sum, r) => sum + r.downloads, 0);
 
   return (
     <div className="rounded-xl border-2 border-mem-ink bg-mem-sky/10 p-4 mb-4">
@@ -248,6 +251,11 @@ const LatestReleasePanel: React.FC = () => {
                 <p className="text-xs font-black text-mem-ink truncate">
                   {t(GROUP_LABEL_KEY[row.group])}
                   {archSuffix}
+                  {row.downloads > 0 && (
+                    <span className="ml-1.5 font-bold text-mem-ink/45 font-sans">
+                      {t('promo.downloadCount', { count: row.downloads })}
+                    </span>
+                  )}
                 </p>
                 <p className="text-[11px] text-mem-ink/55 truncate" title={row.name}>
                   {t(GROUP_DESC_KEY[row.group])}
@@ -286,6 +294,12 @@ const LatestReleasePanel: React.FC = () => {
         })}
       </div>
 
+      {totalDownloads > 0 && (
+        <p className="mt-2 text-[11px] font-bold text-mem-ink/50 flex items-center gap-1">
+          <Download className="w-3 h-3" />
+          {t('promo.totalDownloads', { count: totalDownloads })}
+        </p>
+      )}
       <p className="mt-2.5 text-[11px] leading-relaxed text-mem-ink/50">{t('promo.accelHint')}</p>
     </div>
   );

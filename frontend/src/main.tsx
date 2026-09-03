@@ -23,6 +23,16 @@ setInterval(() => {
   window.__zsHeartbeat = (window.__zsHeartbeat || 0) + 1
 }, 2000)
 
+// 本地访问计数（zonkey.visits.v1）：每次打开 +1，只存本机 localStorage，
+// 不上传任何数据——ZonKey 零联网承诺下的「访问统计」口径（用户自见）。
+// 桌面壳与浏览器各算各的（不同 UDF/浏览器存储天然隔离）。
+try {
+  const visits = Number(localStorage.getItem('zonkey.visits.v1') ?? '0') + 1
+  localStorage.setItem('zonkey.visits.v1', String(visits))
+} catch {
+  /* 隐私模式等场景无 localStorage，跳过即可 */
+}
+
 // 启动加载层退场（index.html #zs-boot）：React 已挂载，把「正在加载中，
 // 请勿离开」提示层淡出移除。找不到层（缓存旧 index.html）或移除失败都
 // 不影响挂载流程。淡出时长与 index.css 内 transition 对齐（450ms）。

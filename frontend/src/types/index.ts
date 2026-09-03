@@ -47,6 +47,7 @@ export type PdfToolId =
 
 /** PPT 工坊 */
 export type PptToolId =
+  | 'ppt-home'
   | 'ppt-to-pdf'
   | 'ppt-to-image'
   | 'ppt-images'

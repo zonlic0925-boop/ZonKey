@@ -120,7 +120,7 @@ export const PptTextView: React.FC = () => {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="font-display font-black text-mem-ink">{t('tools.pptText')}</h3>
         {slides.length > 0 && (
-          <MemphisButton size="sm" variant="orange" onClick={downloadText}>{t('calcdev.copy') === 'Copy' ? 'Export .txt' : '导出 .txt'}</MemphisButton>
+          <MemphisButton size="sm" variant="orange" onClick={downloadText}>{t('pptcenter.exportTxt')}</MemphisButton>
         )}
       </div>
       <PptPicker onFile={run} disabled={busy} />

@@ -47,8 +47,16 @@ export const zhCN: MessageTree = {
     edit: '编辑',
     security: '安全',
   },
+  pptGroups: {
+    homeTitle: 'PPT 工坊',
+    homeHint: '按类别选择工具，全部在本地离线处理。',
+    convert: '转换',
+    extract: '提取与优化',
+    create: '生成',
+  },
   tools: {
     pdfHome: '全部工具',
+    pptHome: '全部工具',
     pdfOrganize: '页面整理',
     pdfEditor: 'PDF 编辑器',
     pdfMerge: 'PDF 合并',
@@ -464,6 +472,7 @@ export const zhCN: MessageTree = {
     draftSample: '填入示例',
     draftNow: '生成 PPTX 草稿',
     draftDone: '已生成 {count} 页 PPTX 草稿（已开始下载）',
+    exportTxt: '导出 .txt',
   },
   mediacenter: {
     bpmNotFound: '未能稳定检测到节拍，请尝试节奏更明显的音频',
@@ -980,6 +989,8 @@ export const zhCN: MessageTree = {
     accel: '加速下载',
     accelHint: '「加速下载」走公共镜像代理（ghfast.top）转发 GitHub 文件，国内一般可跑满宽带；如失效请换「直连」或到 Release 页换其他镜像前缀。',
     copyLink: '复制原始下载链接',
+    downloadCount: '{count} 次下载',
+    totalDownloads: '本版本累计 {count} 次下载（GitHub 官方计数）',
     footer: 'ZonKey · 本地离线日用百宝箱 · by zonlic',
   },
 

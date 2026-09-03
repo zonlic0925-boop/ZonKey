@@ -47,8 +47,16 @@ export const en: MessageTree = {
     edit: 'Edit',
     security: 'Security',
   },
+  pptGroups: {
+    homeTitle: 'PPT Studio',
+    homeHint: 'Pick a tool by category — all processing stays offline on this device.',
+    convert: 'Convert',
+    extract: 'Extract & Optimize',
+    create: 'Create',
+  },
   tools: {
     pdfHome: 'All Tools',
+    pptHome: 'All Tools',
     pdfEditor: 'Page Editor',
     pdfMerge: 'Merge PDFs',
     pdfSplit: 'Split PDF',
@@ -461,6 +469,7 @@ export const en: MessageTree = {
     draftSample: 'Load sample',
     draftNow: 'Build PPTX draft',
     draftDone: 'Built a {count}-slide PPTX draft (download started)',
+    exportTxt: 'Export .txt',
   },
   mediacenter: {
     bpmNotFound: 'No stable beat detected — try audio with a clearer rhythm',
@@ -970,6 +979,8 @@ export const en: MessageTree = {
     accel: 'Accelerated',
     accelHint: '"Accelerated" routes through a public mirror proxy (ghfast.top) in front of GitHub — typically full-bandwidth in mainland China. If it fails, fall back to "Direct" or grab another mirror prefix from the Release page.',
     copyLink: 'Copy original download link',
+    downloadCount: '{count} downloads',
+    totalDownloads: '{count} downloads for this release (official GitHub count)',
     footer: 'ZonKey · local offline toolbox · by zonlic',
   },
 

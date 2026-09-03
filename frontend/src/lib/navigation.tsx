@@ -38,8 +38,8 @@ export interface ToolMeta {
   /** i18n key，见 locales 的 tools.* */
   labelKey: string;
   availability: ToolAvailability;
-  /** PDF 工坊等：SubNavPills 分组键（见 pdfGroups.*） */
-  group?: 'organize' | 'convert' | 'edit' | 'security';
+  /** 工坊类：SubNavPills 分组键（PDF 走 pdfGroups.*，PPT 走 pptGroups.*） */
+  group?: 'organize' | 'convert' | 'edit' | 'security' | 'extract' | 'create';
 }
 
 /** 8 大中心（顺序即导航顺序） */
@@ -100,13 +100,17 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'pdf-cert-sign', labelKey: 'tools.pdfCertSign', availability: 'ready', group: 'security' },
   ],
   ppt_center: [
-    { id: 'ppt-to-pdf', labelKey: 'tools.pptToPdf', availability: 'ready' },
-    { id: 'ppt-to-image', labelKey: 'tools.pptToImage', availability: 'ready' },
-    { id: 'ppt-images', labelKey: 'tools.pptImages', availability: 'ready' },
-    { id: 'ppt-text', labelKey: 'tools.pptText', availability: 'ready' },
-    { id: 'ppt-compress', labelKey: 'tools.pptCompress', availability: 'ready' },
-    { id: 'ppt-outline', labelKey: 'tools.pptOutline', availability: 'ready' },
-    { id: 'ppt-draft', labelKey: 'tools.pptDraft', availability: 'ready' },
+    { id: 'ppt-home', labelKey: 'tools.pptHome', availability: 'ready' },
+    // 转换
+    { id: 'ppt-to-pdf', labelKey: 'tools.pptToPdf', availability: 'ready', group: 'convert' },
+    { id: 'ppt-to-image', labelKey: 'tools.pptToImage', availability: 'ready', group: 'convert' },
+    // 提取/优化
+    { id: 'ppt-images', labelKey: 'tools.pptImages', availability: 'ready', group: 'extract' },
+    { id: 'ppt-text', labelKey: 'tools.pptText', availability: 'ready', group: 'extract' },
+    { id: 'ppt-compress', labelKey: 'tools.pptCompress', availability: 'ready', group: 'extract' },
+    // 生成
+    { id: 'ppt-outline', labelKey: 'tools.pptOutline', availability: 'ready', group: 'create' },
+    { id: 'ppt-draft', labelKey: 'tools.pptDraft', availability: 'ready', group: 'create' },
   ],
   image_center: [
     { id: 'image-crop', labelKey: 'tools.imageCrop', availability: 'ready' },
