@@ -149,6 +149,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 );
               })}
             </div>
+            {/* 支持作者入口（round-19）：抽屉内通栏按钮，44px 触控，开弹窗并收起抽屉 */}
+            <button
+              type="button"
+              onClick={() => {
+                setMoreOpen(false);
+                setSupportOpen(true);
+              }}
+              className="mt-2 flex w-full items-center justify-center gap-2 min-h-[44px] rounded-xl border-2 border-mem-ink bg-mem-coral/30 text-mem-ink"
+            >
+              <Coffee className="w-4 h-4 text-mem-coral" />
+              <span className="text-xs font-bold">{t('header.supportAuthor')}</span>
+            </button>
           </motion.div>
         </div>
       )}
