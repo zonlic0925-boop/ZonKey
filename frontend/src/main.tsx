@@ -23,6 +23,24 @@ setInterval(() => {
   window.__zsHeartbeat = (window.__zsHeartbeat || 0) + 1
 }, 2000)
 
+// 启动加载层退场（index.html #zs-boot）：React 已挂载，把「正在加载中，
+// 请勿离开」提示层淡出移除。找不到层（缓存旧 index.html）或移除失败都
+// 不影响挂载流程。淡出时长与 index.css 内 transition 对齐（450ms）。
+function dismissBootScreen(): void {
+  try {
+    const boot = document.getElementById('zs-boot')
+    if (!boot) return
+    boot.classList.add('zs-boot-done')
+    window.setTimeout(() => boot.remove(), 500)
+  } catch {
+    /* ignore */
+  }
+}
+// 首帧真实绘制完成后才退场（双 rAF），避免加载层撤得太早露出白屏一闪；
+// 600ms 定时是兜底（rAF 被 GPU 卡死吞掉时也能退场）。
+requestAnimationFrame(() => requestAnimationFrame(dismissBootScreen))
+window.setTimeout(dismissBootScreen, 600)
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>

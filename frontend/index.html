@@ -2,12 +2,80 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/zonkey-icon.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/zonkey-icon-180.png" />
+    <link rel="icon" type="image/svg+xml" href="/zonkey-icon.svg?v=20260903" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/zonkey-icon-192.png?v=20260903" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/zonkey-icon-180.png?v=20260903" />
     <link rel="manifest" href="/zonkey.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="ZonKey" />
     <meta name="theme-color" content="#FFF9F0" />
+    <style>
+      /* 启动加载层（round-17）：纯 CSS，JS 被禁用/挂载失败时也能显示。
+         场景 = 桌面壳偶发白屏卡死的窗口期：pywebview 窗口已显示但 React
+         尚未挂载（或挂载后 JS 卡死触发 watchdog 自愈重启）——用户看到的
+         不再是纯白屏，而是「正在加载中，请勿离开」的提示层。
+         底色跟随 data-theme（与下方内联主题脚本联动），React 挂载成功后
+         main.tsx 会给它加 .zs-boot-done 淡出移除。 */
+      #zs-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #fff9f0;
+        transition: opacity 0.45s ease;
+        font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+        user-select: none;
+      }
+      #zs-boot[data-theme='paper'] { background: #fafaf8; }
+      #zs-boot[data-theme='slate'] { background: #e2e8f0; }
+      #zs-boot[data-theme='dark']  { background: #181826; }
+      #zs-boot .zs-boot-logo { width: 72px; height: 72px; animation: zs-boot-breathe 1.8s ease-in-out infinite; }
+      #zs-boot .zs-boot-title {
+        font-size: 26px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: #1a1a2e;
+      }
+      #zs-boot .zs-boot-tip {
+        font-size: 13px;
+        color: rgba(26, 26, 46, 0.55);
+        animation: zs-boot-breathe 1.8s ease-in-out infinite;
+      }
+      #zs-boot .zs-boot-bar {
+        width: 180px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(26, 26, 46, 0.12);
+        overflow: hidden;
+      }
+      #zs-boot .zs-boot-bar::after {
+        content: '';
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #4ecdc4, #ffe66d, #ff6b6b);
+        animation: zs-boot-slide 1.2s ease-in-out infinite;
+      }
+      #zs-boot.zs-boot-done { opacity: 0; pointer-events: none; }
+      @keyframes zs-boot-breathe {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 1; }
+      }
+      @keyframes zs-boot-slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(350%); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #zs-boot .zs-boot-logo, #zs-boot .zs-boot-tip, #zs-boot .zs-boot-bar::after {
+          animation: none;
+        }
+      }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="author" content="zonlic" />
     <title>ZonKey | 日用百宝箱 · 本地离线 · by zonlic</title>
@@ -24,11 +92,22 @@
             document.documentElement.setAttribute('data-fontsize', f);
             document.documentElement.style.fontSize = scales[f];
           }
+          // 加载层底色与主题同步（React 挂载前唯一可见的界面）
+          var boot = document.getElementById('zs-boot');
+          if (boot && t) boot.setAttribute('data-theme', t);
         } catch (e) { /* ignore */ }
       })();
     </script>
   </head>
   <body class="antialiased overflow-hidden select-none">
+    <!-- 启动加载层：React 挂载成功后由 main.tsx 加 .zs-boot-done 淡出并移除；
+         挂载失败/JS 卡死时保持可见（桌面壳 watchdog 会自愈重启），不再是纯白屏 -->
+    <div id="zs-boot">
+      <img class="zs-boot-logo" src="/zonkey-icon.svg?v=20260903" alt="" draggable="false" />
+      <div class="zs-boot-title">ZONKEY</div>
+      <div class="zs-boot-bar"></div>
+      <div class="zs-boot-tip">正在加载中，请勿离开…</div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
