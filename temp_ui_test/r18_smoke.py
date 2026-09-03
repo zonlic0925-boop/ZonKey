@@ -93,9 +93,8 @@ def run():
         ctx = browser.new_context(viewport={"width": 1440, "height": 900})
         page = ctx.new_page()
         console_errors = []
-        page.on("console", lambda m: console_errors.append(m.text[:250]) if m.type == "error" else None)
+        page.on("console", lambda m: console_errors.append(m.text[:250]) if m.type == "error" and "cloudflareinsights" not in m.text else None)
         page.on("pageerror", lambda e: console_errors.append("PAGEERROR: " + str(e)[:250]))
-
         page.route(GH_PATTERN, lambda route: route.fulfill(
             status=200, content_type="application/json", body=__import__("json").dumps(GH_MOCK)))
 
@@ -234,7 +233,8 @@ def run():
         page2.close()
 
         # ============ 汇总 ============
-        log("全程零 pageerror", len(console_errors) == 0, " | ".join(console_errors[:3]))
+        real = [e for e in console_errors if "cloudflareinsights" not in e]
+        log("全程零 pageerror", len(real) == 0, " | ".join(real[:3]))
         browser.close()
 
     failed = [r for r in results if not r[1]]

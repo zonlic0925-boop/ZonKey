@@ -123,21 +123,16 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Palette className="w-4 h-4 text-mem-lavender" />
             </button>
-            <button
-              type="button"
-              onClick={() => onOpenPrivacy?.()}
-              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-teal/30 border-2 border-mem-ink text-mem-ink/80"
-              title={t('privacy.title')}
-            >
-              <ShieldCheck className="w-4 h-4 text-mem-teal" />
-            </button>
+            {/* 支持作者：图标+文字（round-19 恢复手机端可见入口；
+                为顶栏腾宽度，隐私入口由 App 首访弹窗承担） */}
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="zs-touch-target flex items-center justify-center rounded-xl bg-mem-coral/30 border-2 border-mem-ink"
+              className="zs-touch-target flex items-center gap-1.5 px-2 rounded-xl bg-mem-coral/30 border-2 border-mem-ink"
               title={t('header.supportTitle')}
             >
-              <Coffee className="w-4 h-4 text-mem-coral" />
+              <Coffee className="w-4 h-4 text-mem-coral shrink-0" />
+              <span className="whitespace-nowrap text-[11px] font-bold text-mem-ink">{t('header.supportAuthor')}</span>
             </button>
             <button
               type="button"
@@ -147,9 +142,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <HelpCircle className="w-4 h-4 text-mem-sky" />
             </button>
-            {/* 语言开关不在顶栏（顶栏内容最宽处已到视口边缘，再放会把
-                按钮推出视口）；挂在下方可横向滚动的中心 Tab 行末尾，
-                支持作者文案入口由手机底部导航「更多」弹层承担。 */}
           </div>
         </div>
 
