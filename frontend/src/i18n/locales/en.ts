@@ -687,7 +687,7 @@ export const en: MessageTree = {
     close: 'Close',
     title: 'Buy Zilong a coffee',
     description:
-      '{appName} is free, open-friendly, and fully offline — your files never leave your machine. If it saved you an afternoon of manual redaction, consider buying the author a coffee or milk tea ❤ Your support keeps updates coming, but this is never a paywall.',
+      '{appName} is free, open-friendly, and fully offline — your files never leave your machine. It is no longer just a redaction tool: document redaction, a PDF studio, image & media tools, dev utilities… this everyday toolbox keeps growing. If it saved you precious time, consider buying the author a coffee or milk tea ❤ Your support keeps updates coming, but this is never a paywall.',
     authorName: 'Zonlic 子龍',
     authorBio: '一個在香港生存的普通人',
     qrHint: 'Scan to tip · totally optional · every bit counts',
