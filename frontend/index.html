@@ -98,6 +98,20 @@
         } catch (e) { /* ignore */ }
       })();
     </script>
+    <!-- 网页版匿名访问计数（round-19）：仅统计访问人数（UV），不含任何文件内容。
+         只注入非 pywebview 壳的浏览器形态——桌面 EXE 完全离线，不发任何请求。
+         token 由作者在 Cloudflare Dashboard → Web Analytics 生成后填入。 -->
+    <script>
+      (function () {
+        try {
+          if (window.pywebview) return;
+          var s = document.createElement('script');
+          s.defer = true;
+          s.src = 'https://static.cloudflareinsights.com/beacon.min.js?token=__CF_ANALYTICS_TOKEN__';
+          document.head.appendChild(s);
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
   <body class="antialiased overflow-hidden select-none">
     <!-- 启动加载层：React 挂载成功后由 main.tsx 加 .zs-boot-done 淡出并移除；
