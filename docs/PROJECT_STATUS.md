@@ -13,7 +13,7 @@
 | 打包与依赖 | ✅ | requirements.txt + qrcode>=8.0/zxing-cpp>=2.0（许可 BSD/Apache-2.0，零 AGPL）；ZonKey.spec hiddenimports + backend_toolbox_tools/qrcode/zxingcpp |
 | 回归验证 | ✅ | pytest **141 passed**；release_acceptance 全过；后端 10 端点 TestClient+真服 HTTP 双层冒烟全 200（QR 中英往返/打码三模式块内一致性/证件照 413×579@白底/重复文件三组/书签树往返层级正确/TTS Huihui+Zira 双语 WAV）；Playwright UI 冒烟 **10/10 视图 PASS + 零 pageerror**（`temp_ui_test/toolbox_smoke.mjs`）+ 交互 E2E（进制 255→FF 实时联动 OK） |
 | 测试坑（新） | ✅ | ① **SubNavPills 在 `<main>` 外**（App.tsx 兄弟块）——pill 定位别缩到 main；② np.asarray 只读视图原地写打码会 ValueError，须 np.array；③ pikepdf outline.root 是 list 非 Dictionary，children 也 list；④ 小文件 partial hash 的 seek(-N, END) 会 EINVAL，须先判 size>65536；⑤ TTS MP3 回退路径须先转码判成再删临时 WAV（原写法先删后复制）；⑥ 首启冒烟用 localStorage 预填 `zonkey.privacyNotice.v1='ack'` + `zonkey.whatsNewSeen.v1={seenRound:99,...}` 绕弹窗遮罩最稳（点按钮关弹窗会被滚动容器卡住） |
-| 收尾状态 | ⏳ | EXE 重打包与 Pages 部署进行中（本轮收尾链）；文档与 git 提交随后 |
+| 收尾状态 | ✅ | **git 干净**（7 笔分批提交）；**EXE 重打包**全链通过（Setup **160.9MB** + zip 223.6MB + 7z 379MB，sha256 三件 MATCH，zip/静默实装 chunk `index-tQOpVlzf.js` 特征串全 HIT，zxingcpp pyd 在包，polars 零残留）；**Pages 生产部署 `50e59dd4`**（--branch main，主域 bundle=本地=zip，round-23 特征串 5/5 HIT）。**打包体积事故（本轮）**：venv 被外部装入 gradio→pandas→polars 链 → PyInstaller 捎带 `_polars_runtime_32`(176MB) 致 7z 385MB 膨胀；已卸载链上包 + spec excludes 加 polars/_polars_runtime/gradio 防御 → Setup 196→161MB。**遗留**：用户 EXE 实测 10 新工具（重点：图片打码框选、证件照实照效果、TTS 语音、书签编辑保存）；手机端 QR 识别（zxing-cpp 需引擎在线，纯 Pages 不可用属预期）
 
 ## 2026-09-04 第二十二轮进度（「这次更新了什么」升级弹窗，上轮）
 
