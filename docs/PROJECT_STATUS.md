@@ -10,7 +10,7 @@
 | 隐私顺序协调 | ✅ | App.tsx：首启隐私声明先弹，隐私关闭后接续弹更新（防重复判定）；两键独立 |
 | 维护规则 | ✅ | 改内容 = i18n entries + 升 WHATSNEW_ROUND（否则老用户看不到新条目），组件头注释 + 交接文档双登记 |
 | 回归验证 | ✅ | npm build 成功；`temp_ui_test/r22_whatsnew_smoke.py` **7/7**（顺序/内容 zh-CN/确认落存储/当天不弹/跨天弹/en/zh-TW/390px 零溢出）+ 升级场景（seenRound=20 → 弹一次）手工补验；全程零 pageerror；pytest **141 passed** |
-| 收尾状态 | ⏳ | git 分批提交完成；EXE 重打包 + Pages 部署按固定工作流并入下一轮收尾链 |
+| 收尾状态 | ✅ | git 分批提交完成（4 笔，master 干净）；EXE 重打包全链通过（Setup 195.5MB + zip 282MB + 7z 194MB，sha256 三件 MATCH，zip/实装特征串全命中）；Pages 生产部署 `656b86de`（主域 bundle=本地 md5 fed41c8c，特征串命中） |
 
 ## 2026-09-04 第二十一轮进度（批处理二期，本轮）
 ## 2026-09-04 第二十一轮进度（批处理二期，本轮）

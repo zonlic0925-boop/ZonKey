@@ -1,6 +1,6 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十二轮：新增「这次更新了什么」升级弹窗——内容轮次化 + 当天首次口径 + 升级即看，收尾=回归+git；EXE/Pages 待下一轮收尾链）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十二轮：新增「这次更新了什么」升级弹窗——内容轮次化 + 当天首次口径 + 升级即看，收尾=回归+EXE+Pages+git 全链完成）。
 
 ## 〇、2026-09-04 第二十二轮（新增「这次更新了什么」升级弹窗，本轮）
 
@@ -12,7 +12,8 @@
   - **内容滚动**：弹窗 r22 顶部条目把本次核心变更与上一轮批处理提示放在一起（用户一周以上未开时能看到最近 4 轮）。
 - **内容要点**（r22）：新增弹窗本身（r22）→ 批处理二期（r21 主推：图像/PPT 批处理接入同一引擎 + 手机网页可用）→ PDF 批处理一期（r20）→ 支持作者文案（r19）。
 - **验证汇总**：npm build 成功（`index-BottbVgB.js` 主 chunk，dist_web 已刷新）；Playwright `temp_ui_test/r22_whatsnew_smoke.py` **7/7**（全新首启隐私→更新顺序 + zh-CN 内容断言 + 确认落存储刷新不弹 / X 关也记已读 / 当天已看过不弹 / 昨天看过今天首启弹 / en + zh-TW 本地化内容 + 各自落存储 / 手机 390px 零溢出）+ 升级场景手工补验（seenRound=20 老用户 → r22 弹出一次）；全程零 pageerror；pytest **141 passed**。
-- **接手注意**：① **改弹窗内容 = 改 i18n `whatsnew.entries` + 升 `WHATSNEW_ROUND`**（组件头注释已写）——不升轮则已看过旧内容的用户永远看不到新条目；② 本轮只到前端验证，**EXE 重打包 + Pages 部署 + git 提交尚未执行**（按固定工作流需下一轮收尾链完成；git 已要求分批提交）；③ 触发键与隐私键各自独立（`zonkey.whatsNewSeen.v1` / `zonkey.privacyNotice.v1`），隐私 ack 不代表看过更新；④ i18n 键值带单引号（en `What's New`）改文案时勿破坏 TS 字符串转义（曾致构建红）。
+- **EXE + Pages（收尾链，本轮完成）**：`build_zonkey_exe.bat` 全链通过（用等义 bash 包装跑，6/6 步 exit=0，PyInstaller 用 venv python + PYINSTALLER_CONFIG_DIR）→ `dist_release/ZonKey_Setup_x64_20260904.exe`(195.5MB) + zip(282MB) + 7z(194MB) 于 11:07-11:11 覆盖同日旧包；**sha256 sidecar 三件全 MATCH**；zip 内主 chunk `index-BottbVgB.js` 特征串 9/9 HIT（whatsnew/zonkey.whatsNewSeen.v1/seenRound/三语标题/Round 22/batchEngine）；**Setup 静默实装**（/VERYSILENT 装到 Temp）`index-BottbVgB.js` 内三语命中，装完即删。Pages 生产部署 `656b86de`（--branch main，Environment=Production，deployment list 实证）；主域 bundle=`index-BottbVgB.js`，**线上 md5 fed41c8c = 本地 = zip**，特征串命中（第 22 轮×1/whatsNewSeen×1/What's New×1）。
+- **接手注意**：① **改弹窗内容 = 改 i18n `whatsnew.entries` + 升 `WHATSNEW_ROUND`**（组件头注释已写）——不升轮则已看过旧内容的用户永远看不到新条目；② EXE + Pages 已在本轮收尾链完成（见上）；git 分批提交于功能完成时执行（4 笔，master 干净）；③ 触发键与隐私键各自独立（`zonkey.whatsNewSeen.v1` / `zonkey.privacyNotice.v1`），隐私 ack 不代表看过更新；④ i18n 键值带单引号（en `What's New`）改文案时勿破坏 TS 字符串转义（曾致构建红）。
 
 ## 〇、2026-09-04 第二十一轮（批处理二期
 ## 〇、2026-09-04 第二十一轮（批处理二期 · 图像/PPT 中心接入 + AGPL 门禁口径修正，本轮）
