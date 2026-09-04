@@ -4,7 +4,7 @@ import type { ToolId } from '../../types'
 import { useI18n } from '../../i18n'
 import { FavoriteStar } from '../navigation/FavoriteStar'
 
-const PDF_GROUPS = ['organize', 'convert', 'edit', 'security'] as const
+const PDF_GROUPS = ['batch', 'organize', 'convert', 'edit', 'security'] as const
 
 interface PdfToolHomeProps {
   onSelect: (tool: ToolId) => void

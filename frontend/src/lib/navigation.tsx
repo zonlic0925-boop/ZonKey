@@ -39,7 +39,7 @@ export interface ToolMeta {
   labelKey: string;
   availability: ToolAvailability;
   /** 工坊类：SubNavPills 分组键（PDF 走 pdfGroups.*，PPT 走 pptGroups.*） */
-  group?: 'organize' | 'convert' | 'edit' | 'security' | 'extract' | 'create';
+  group?: 'batch' | 'organize' | 'convert' | 'edit' | 'security' | 'extract' | 'create';
 }
 
 /** 8 大中心（顺序即导航顺序） */
@@ -68,6 +68,8 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
   ],
   pdf_center: [
     { id: 'pdf-home', labelKey: 'tools.pdfHome', availability: 'ready' },
+    // 批处理
+    { id: 'pdf-batch', labelKey: 'tools.pdfBatch', availability: 'ready', group: 'batch' },
     // 整理
     { id: 'pdf-organize', labelKey: 'tools.pdfOrganize', availability: 'ready', group: 'organize' },
     { id: 'pdf-merge', labelKey: 'tools.pdfMerge', availability: 'ready', group: 'organize' },

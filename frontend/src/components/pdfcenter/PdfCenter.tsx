@@ -1,6 +1,7 @@
 import React from 'react'
 import type { ToolId } from '../../types'
 import { PdfMergeView } from './PdfMergeView'
+import { PdfBatchView } from './PdfBatchView'
 import { PdfSplitView } from './PdfSplitView'
 import { PdfExtractView } from './PdfExtractView'
 import { PdfRotateView } from './PdfRotateView'
@@ -27,6 +28,8 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <PdfOrganizeView />
     case 'pdf-editor':
       return <PdfEditorView />
+    case 'pdf-batch':
+      return <PdfBatchView />
     case 'pdf-merge':
       return <PdfMergeView />
     case 'pdf-split':
