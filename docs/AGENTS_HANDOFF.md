@@ -1,7 +1,20 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十一轮：批处理二期·图像/PPT 中心接入同一编排器 + AGPL 门禁改产物口径 + 手机网页版批处理可用性实证，收尾=回归+EXE+Pages+git）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十二轮：新增「这次更新了什么」升级弹窗——内容轮次化 + 当天首次口径 + 升级即看，收尾=回归+git；EXE/Pages 待下一轮收尾链）。
 
+## 〇、2026-09-04 第二十二轮（新增「这次更新了什么」升级弹窗，本轮）
+
+- **任务**：把最近几轮更新内容做成前端「更新内容弹窗」——升级后用户当天第一次打开自动弹出，一次看完不再打扰。
+- **实现**：新 `frontend/src/components/WhatsNewModal.tsx`（round-22 新增，非 review）：
+  - **触发口径**：单键 `zonkey.whatsNewSeen.v1` 存 `{ seenRound, lastSeenDay }`；`shouldShowWhatsNew` = `seenRound < WHATSNEW_ROUND` 且（`seenRound == ROUND-1` 时 `lastSeenDay` 非今天）→ 全新/老版本用户升级后**当天首次**弹出。看过（确认或 X 关）`writeWhatsNewSeen()` 升 `seenRound=22` → 之后任何天不再弹；跨天再次打开也静默（seenRound 已追上）。
+  - **内容与展示**：数据在 i18n `whatsnew.*`（entries.r22/r21/r20/r19 按轮次倒序，缺失键自动跳过，`ROUND_WINDOW=3` + 本轮 = 最多 4 轮）；条目文案嵌入**三语 i18n 键**（无硬编码中文工具名）；内文中文名用 i18n 现有键渲染（图像工坊/批处理等），跨中心一致。标题徽标 = 周口径（r22「本周更新 · 第 22 轮」），r21 起各轮带日期徽标。
+  - **挂载**：`App.tsx` —— `whatsNewOpen` 首启判定；与隐私弹窗顺序协调：首启隐私先弹，隐私关闭后接续弹更新（`handlePrivacyClose` 里再判一次 `shouldShowWhatsNew`，防重复）；确认/X 都写已读。**网页端每启都检查；桌面壳白屏自愈窗口不回放**（心跳双 rAF 即主挂载）。
+  - **内容滚动**：弹窗 r22 顶部条目把本次核心变更与上一轮批处理提示放在一起（用户一周以上未开时能看到最近 4 轮）。
+- **内容要点**（r22）：新增弹窗本身（r22）→ 批处理二期（r21 主推：图像/PPT 批处理接入同一引擎 + 手机网页可用）→ PDF 批处理一期（r20）→ 支持作者文案（r19）。
+- **验证汇总**：npm build 成功（`index-BottbVgB.js` 主 chunk，dist_web 已刷新）；Playwright `temp_ui_test/r22_whatsnew_smoke.py` **7/7**（全新首启隐私→更新顺序 + zh-CN 内容断言 + 确认落存储刷新不弹 / X 关也记已读 / 当天已看过不弹 / 昨天看过今天首启弹 / en + zh-TW 本地化内容 + 各自落存储 / 手机 390px 零溢出）+ 升级场景手工补验（seenRound=20 老用户 → r22 弹出一次）；全程零 pageerror；pytest **141 passed**。
+- **接手注意**：① **改弹窗内容 = 改 i18n `whatsnew.entries` + 升 `WHATSNEW_ROUND`**（组件头注释已写）——不升轮则已看过旧内容的用户永远看不到新条目；② 本轮只到前端验证，**EXE 重打包 + Pages 部署 + git 提交尚未执行**（按固定工作流需下一轮收尾链完成；git 已要求分批提交）；③ 触发键与隐私键各自独立（`zonkey.whatsNewSeen.v1` / `zonkey.privacyNotice.v1`），隐私 ack 不代表看过更新；④ i18n 键值带单引号（en `What's New`）改文案时勿破坏 TS 字符串转义（曾致构建红）。
+
+## 〇、2026-09-04 第二十一轮（批处理二期
 ## 〇、2026-09-04 第二十一轮（批处理二期 · 图像/PPT 中心接入 + AGPL 门禁口径修正，本轮）
 
 - **任务（用户 3 项）**：① 手机网页版（Pages 端）批处理是否可用？② pymupdf 是其他项目引擎勿误删；③ 批处理二期：图像/PPT 中心接入同一编排器（改动面=注册表+分支+i18n）。
