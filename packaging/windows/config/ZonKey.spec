@@ -99,6 +99,9 @@ a = Analysis(
     hiddenimports=[
         "server_bridge",
         "backend_system_tools",
+        "backend_toolbox_tools",
+        "qrcode",
+        "zxingcpp",
         "uvicorn",
         "uvicorn.logging",
         "uvicorn.loops",

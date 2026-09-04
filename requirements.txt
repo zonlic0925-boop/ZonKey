@@ -32,6 +32,10 @@ pywin32>=306; sys_platform == "win32"
 # 语音转写（文字工坊，纯离线；模型首次使用时自动下载）
 faster-whisper>=1.0
 
+# 第三梯队工具箱（二维码/识别；qrcode=BSD、zxing-cpp=Apache-2.0，零 AGPL）
+qrcode>=8.0
+zxing-cpp>=2.0
+
 # 开发与回归
 pytest>=8.0
 psutil>=5.9

@@ -83,6 +83,12 @@ try:
 except Exception as e:
     print(f"Warning: Failed to load p3_tools router: {e}")
 
+try:
+    from backend_toolbox_tools import router as toolbox_tools_router
+    app.include_router(toolbox_tools_router)
+except Exception as e:
+    print(f"Warning: Failed to load toolbox_tools router: {e}")
+
 TEMP_DIR = PROJECT_ROOT / "temp_bridge_files"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
