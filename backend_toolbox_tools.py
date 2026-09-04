@@ -265,10 +265,11 @@ async def id_photo(
     bottom_ratio: float = Form(0.10),
     tolerance: int = Form(40),
 ):
-    """证件照： grabbingcut 抠人像 + 换纯色底 + 标准尺寸裁剪。
+    """证件照：背景色距抠人像 + 换纯色底 + 标准尺寸裁剪。
 
-    诚实边界：纯色彩距离抠图（对纯色/近似纯色底最可靠），不做人像 AI 分割。
-    top_ratio/bottom_ratio 控制头留白与底部裁剪比例（0-0.3）。
+    主通道为色彩距离（对纯色/近似纯色底最可靠）：四角中值估计底色，
+    与底色距离小于 tolerance 的像素判为背景；GrabCut 仅作对比度弱底色的回退。
+    诚实边界：不做人像 AI 分割。top_ratio/bottom_ratio 控制头留白与底部裁剪比例（0-0.3）。
     """
     import cv2
     import numpy as np
@@ -295,28 +296,40 @@ async def id_photo(
     if max(h_img, w_img) < 100:
         raise HTTPException(status_code=400, detail="图片尺寸过小")
 
-    # 1) GrabCut 前景人像提取（以边缘采样估计背景色带）
-    mask = np.zeros((h_img, w_img), np.uint8)
-    bgd = np.zeros((1, 65), np.float64)
-    fgd = np.zeros((1, 65), np.float64)
-    rect = (int(w_img * 0.05), int(h_img * 0.05), int(w_img * 0.9), int(h_img * 0.9))
-    cv2.grabCut(arr, mask, rect, bgd, fgd, 5, cv2.GC_INIT_WITH_RECT)
-    person = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 1, 0).astype("uint8")
+    # 1) 主通道：背景色距离（四角中值色）——纯色/近似纯色底最稳
+    corners = np.concatenate([
+        arr[: max(1, h_img // 20), : max(1, w_img // 20)].reshape(-1, 3),
+        arr[: max(1, h_img // 20), -max(1, w_img // 20):].reshape(-1, 3),
+        arr[-max(1, h_img // 20):, : max(1, w_img // 20)].reshape(-1, 3),
+        arr[-max(1, h_img // 20):, -max(1, w_img // 20):].reshape(-1, 3),
+    ])
+    bg = np.median(corners, axis=0)
+    dist = np.sqrt(((arr.astype(int) - bg.astype(int)) ** 2).sum(axis=2))
+    person = (dist > tolerance).astype("uint8")
 
-    # 2) GrabCut 不稳时回退：背景色距离（四角中值色）
-    if person.mean() < 0.05 or person.mean() > 0.95:
-        corners = np.concatenate([
-            arr[: max(1, h_img // 20), : max(1, w_img // 20)].reshape(-1, 3),
-            arr[: max(1, h_img // 20), -max(1, w_img // 20):].reshape(-1, 3),
-            arr[-max(1, h_img // 20):, : max(1, w_img // 20)].reshape(-1, 3),
-            arr[-max(1, h_img // 20):, -max(1, w_img // 20):].reshape(-1, 3),
-        ])
-        bg = np.median(corners, axis=0)
-        dist = np.sqrt(((arr.astype(int) - bg.astype(int)) ** 2).sum(axis=2))
-        person = (dist > tolerance).astype("uint8")
+    # 2) 主通道失效（前景占比异常：整图同色或底色不均）→ GrabCut 回退
+    person_mean = person.mean()
+    if person_mean < 0.02 or person_mean > 0.9:
+        mask = np.zeros((h_img, w_img), np.uint8)
+        bgd = np.zeros((1, 65), np.float64)
+        fgd = np.zeros((1, 65), np.float64)
+        rect = (int(w_img * 0.05), int(h_img * 0.05), int(w_img * 0.9), int(h_img * 0.9))
+        cv2.grabCut(arr, mask, rect, bgd, fgd, 5, cv2.GC_INIT_WITH_RECT)
+        person = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 1, 0).astype("uint8")
+        if person.mean() < 0.02 or person.mean() > 0.95:
+            raise HTTPException(status_code=422, detail="未能识别到前景人像，请换一张背景更干净的证件照")
 
-    # 3) 取前景包围盒，按证件照比例裁剪（头部居上）
-    ys, xs = np.where(person > 0)
+    # 3) 形态学清理：去背景侧小噪点 + 填人像内部孔洞（衣扣/阴影误判补回）
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    person = cv2.morphologyEx(person, cv2.MORPH_OPEN, kernel)
+    person = cv2.morphologyEx(person, cv2.MORPH_CLOSE, kernel)
+
+    # 4) 取前景最大连通域（比全前景包围盒更抗孤立噪块），按证件照比例裁剪（头部居上）
+    n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(person, connectivity=8)
+    if n_labels <= 1:
+        raise HTTPException(status_code=422, detail="未能识别到前景人像，请换一张背景更干净的证件照")
+    largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    ys, xs = np.where(labels == largest)
     if len(xs) < 100:
         raise HTTPException(status_code=422, detail="未能识别到前景人像，请换一张背景更干净的证件照")
     px0, px1 = int(xs.min()), int(xs.max())
@@ -335,7 +348,7 @@ async def id_photo(
     crop = arr[cy0:cy1, cx0:cx0 + crop_w]
     ch, cw = crop.shape[:2]
 
-    # 4) 裁剪区域内重建 alpha 并合成目标底色（边缘羽化 2px）
+    # 5) 裁剪区域内重建 alpha 并合成目标底色（边缘羽化 2px）
     local_person = person[cy0:cy1, cx0:cx0 + crop_w]
     alpha = cv2.GaussianBlur(local_person.astype(float), (5, 5), 0)
     alpha = np.clip(alpha[..., None], 0, 1)
@@ -344,7 +357,7 @@ async def id_photo(
     ], dtype=float)
     blended = crop.astype(float) * alpha + bg_rgb[None, None, :] * (1 - alpha)
 
-    # 5) 缩放到目标尺寸（300DPI 标准像素）
+    # 6) 缩放到目标尺寸（300DPI 标准像素）
     target_px_w = round(width_mm / 25.4 * dpi)
     target_px_h = round(height_mm / 25.4 * dpi)
     resized = cv2.resize(blended.astype(np.uint8), (target_px_w, target_px_h), interpolation=cv2.INTER_AREA)

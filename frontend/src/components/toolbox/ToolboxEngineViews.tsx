@@ -2,7 +2,7 @@
  * 工具箱·引擎类小工具视图（走 /api/toolbox/* 后端端点，产物统一交付层出口）：
  * 二维码生成/识别 / 图片打码 / 证件照换底色 / 重复文件查找 / PDF 书签编辑 / TTS 朗读。
  */
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   QrCode,
   ScanLine,
@@ -210,31 +210,36 @@ export const ImageMaskView: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [resultName, setResultName] = useState('')
-  const dragRef = useRef<{ startX: number; startY: number } | null>(null)
+  const dragRef = useRef<{ startX: number; startY: number; pointerId: number } | null>(null)
   const [dragNow, setDragNow] = useState<MaskRegion | null>(null)
 
   const file = files[0]
-  const fileUrl = file ? URL.createObjectURL(file.file) : null
+  // objectURL 必须随 file 稳定复用：渲染体里直接 createObjectURL 每帧泄漏一个句柄
+  const fileUrl = useMemo(() => (file ? URL.createObjectURL(file.file) : null), [file])
+  useEffect(() => () => { if (fileUrl) URL.revokeObjectURL(fileUrl) }, [fileUrl])
 
-  const toImageCoords = (e: React.MouseEvent<HTMLDivElement>, img: HTMLImageElement) => {
+  const toImageCoords = (clientX: number, clientY: number, img: HTMLImageElement) => {
     const rect = img.getBoundingClientRect()
     const scaleX = img.naturalWidth / rect.width
     const scaleY = img.naturalHeight / rect.height
     return {
-      x: Math.round((e.clientX - rect.left) * scaleX),
-      y: Math.round((e.clientY - rect.top) * scaleY),
+      x: Math.round((clientX - rect.left) * scaleX),
+      y: Math.round((clientY - rect.top) * scaleY),
     }
   }
 
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>, img: HTMLImageElement) => {
-    const p = toImageCoords(e, img)
-    dragRef.current = { startX: p.x, startY: p.y }
+  // Pointer Events 统一鼠标/触屏/笔：触屏不派发 mouse 序列，且默认手势会抢走拖拽
+  const onPointerDown = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    const p = toImageCoords(e.clientX, e.clientY, e.currentTarget)
+    dragRef.current = { startX: p.x, startY: p.y, pointerId: e.pointerId }
+    e.currentTarget.setPointerCapture(e.pointerId)
     setDragNow({ x: p.x, y: p.y, w: 0, h: 0 })
   }
 
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>, img: HTMLImageElement) => {
-    if (!dragRef.current || !img) return
-    const p = toImageCoords(e, img)
+  const onPointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== e.pointerId) return
+    const p = toImageCoords(e.clientX, e.clientY, e.currentTarget)
     const s = dragRef.current
     setDragNow({
       x: Math.min(s.startX, p.x),
@@ -244,10 +249,12 @@ export const ImageMaskView: React.FC = () => {
     })
   }
 
-  const onMouseUp = () => {
+  const onPointerUp = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== e.pointerId) return
     if (dragNow && dragNow.w > 4 && dragNow.h > 4) setRegions((prev) => [...prev, dragNow])
     dragRef.current = null
     setDragNow(null)
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* 已隐式释放 */ }
   }
 
   const run = async () => {
@@ -307,17 +314,17 @@ export const ImageMaskView: React.FC = () => {
           <p className="text-xs text-mem-ink/50 font-medium">{t('toolbox.maskDragHint')}</p>
 
           <div
-            className="relative inline-block max-w-full border-2 border-mem-ink rounded-xl overflow-hidden select-none"
-            onMouseUp={onMouseUp}
-            onMouseLeave={() => { dragRef.current = null; setDragNow(null) }}
+            className="relative inline-block max-w-full border-2 border-mem-ink rounded-xl overflow-hidden select-none touch-none"
+            onPointerUp={onPointerUp}
+            onPointerCancel={() => { dragRef.current = null; setDragNow(null) }}
           >
             <img
               src={fileUrl}
               alt=""
               className="max-w-full max-h-[480px] block"
               draggable={false}
-              onMouseDown={(e) => onMouseDown(e, e.currentTarget)}
-              onMouseMove={(e) => onMouseMove(e, e.currentTarget)}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
             />
             {regions.map((r, i) => (
               <RegionBox key={i} region={r} img={fileUrl} onRemove={() => setRegions((prev) => prev.filter((_, k) => k !== i))} />
@@ -403,6 +410,13 @@ const RegionBox: React.FC<{
 
 const ID_SIZES = ['one-inch', 'two-inch', 'small-two-inch', 'one-inch-large'] as const
 const ID_BG_PRESETS = ['#438EDB', '#FFFFFF', '#FF0000', '#0000FF']
+// name -> (宽mm, 高mm)：与后端 ID_PHOTO_SIZES 打印尺寸对齐（预览按真实比例渲染）
+const ID_SIZE_MM: Record<(typeof ID_SIZES)[number], { w: number; h: number }> = {
+  'one-inch': { w: 25, h: 35 },
+  'two-inch': { w: 35, h: 49 },
+  'small-two-inch': { w: 33, h: 48 },
+  'one-inch-large': { w: 33, h: 48 },
+}
 
 export const IdPhotoView: React.FC = () => {
   const { t } = useI18n()
@@ -468,6 +482,21 @@ export const IdPhotoView: React.FC = () => {
             <input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-8 h-8 border-2 border-mem-ink rounded-lg cursor-pointer" title={t('toolbox.idBgCustom')} />
           </div>
         </Field>
+      </div>
+      {/* 尺寸预览：同一比例尺按真实毫米比例渲染，不同档大小/形状可直接对比 */}
+      <div className="flex items-center gap-4 px-4 py-3 bg-white border-2 border-mem-ink rounded-xl">
+        <div
+          className="border-2 border-mem-ink rounded-sm shrink-0"
+          style={{
+            width: ID_SIZE_MM[size].w * (96 / 49),
+            height: ID_SIZE_MM[size].h * (96 / 49),
+            backgroundColor: bg,
+          }}
+        />
+        <div className="text-xs font-bold text-mem-ink/70">
+          {t(`toolbox.idSize_${size}`)}
+          <div className="font-mono text-[10px] text-mem-ink/50 mt-0.5">{ID_SIZE_MM[size].w}×{ID_SIZE_MM[size].h} mm @ 300DPI</div>
+        </div>
       </div>
       <MemphisButton variant="yellow" onClick={run} disabled={busy || !files.length}>
         {t('toolbox.idApply')}
