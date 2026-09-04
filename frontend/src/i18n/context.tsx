@@ -14,6 +14,7 @@ const MESSAGES: Record<Locale, MessageTree> = {
 };
 
 type Vars = Record<string, string | number>;
+export type { Vars };
 
 interface I18nContextValue {
   locale: Locale;

@@ -4,8 +4,9 @@
 1. 词表 / Logo 目录不含 FISHER / EMERSON 等特定企业出厂规则；
 2. 合成样本 + 用户自定义企业词（ACME）全链路脱敏；
 3. 通用保密标记（CONFIDENTIAL 等）属于发布版合法内置项，与特定企业无关；
-4. 许可门禁（Phase M）：运行环境 / requirements / 打包产物中无 AGPL 组件
-   （PyMuPDF 等），保证公开发布合规。
+4. 许可门禁（Phase M）：**产物口径** —— requirements / 打包产物中无 AGPL 组件
+   （PyMuPDF 等），保证公开发布合规。开发机环境若为其他项目装有 AGPL 包，
+   仅提示不判失败（见 _check_no_agpl_components 注释）。
 
 用法:
   python scripts/release_acceptance.py
@@ -70,7 +71,15 @@ def _check_rules_clean(rules_root: Path) -> dict:
 
 
 def _check_no_agpl_components(exe_dir: Path | None) -> dict:
-    """许可门禁：运行环境、requirements.txt 与打包产物均不得含 AGPL 组件。"""
+    """许可门禁：打包产物 / requirements.txt 不得含 AGPL 组件。
+
+    口径说明：本门禁是「公开发布合规」门禁——约束的是 ZonKey 产物（requirements.txt、
+    PyInstaller 打包产物）不得携带 AGPL 组件，**不约束开发机运行环境**：
+    同一台机器可能为其他项目装有 PyMuPDF（AGPL）等，若把「环境装了 AGPL」也算 FAIL，
+    会误伤共存环境并阻断发布。因此：
+    - 环境探测仅作提示（installed_bad 不再参与 pass 判定）；
+    - requirements.txt 与打包产物（fitz/pymupdf/PyMuPDF 文件）仍是一票否决。
+    """
     import importlib.metadata as md
 
     installed_bad: list[str] = []
@@ -101,7 +110,7 @@ def _check_no_agpl_components(exe_dir: Path | None) -> dict:
         "requirements_bad": reqs_bad,
         "fitz_importable": importable,
         "bundle_hits": sorted(set(bundle_hits)),
-        "pass": not installed_bad and not reqs_bad and not importable and not bundle_hits,
+        "pass": not reqs_bad and not importable and not bundle_hits,
     }
 
 

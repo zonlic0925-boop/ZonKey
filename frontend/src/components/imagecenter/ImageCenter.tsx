@@ -1,5 +1,6 @@
 import React from 'react'
 import type { ToolId } from '../../types'
+import { ImageBatchView } from './ImageBatchView'
 import { ImageCompressView, ImageConvertView } from './ImageBatchViews'
 import { ImageColorReplaceView, ImageCropView } from './ImageEditViews'
 import { ColorPaletteView, IconGenView, ImageStitchView } from './ImageComposeViews'
@@ -8,6 +9,8 @@ import { ColorSpaceCompareView } from './ColorSpaceCompareView'
 /** 图像工坊：按二级工具 ID 渲染对应视图 */
 export const ImageCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
   switch (tool) {
+    case 'image-batch':
+      return <ImageBatchView />
     case 'image-convert':
       return <ImageConvertView />
     case 'image-compress':

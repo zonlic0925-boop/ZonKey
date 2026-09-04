@@ -1,6 +1,21 @@
-> 更新于：2026-09-04（第二十轮：批处理引擎一期——PDF 工坊 19 操作试水，纯前端编排器 + EXE/Pages 收尾 + AGPL 环境红线修复）。
+> 更新于：2026-09-04（第二十一轮：批处理二期——图像/PPT 中心接入同一编排器 BatchEngine + AGPL 门禁改产物口径 + 手机网页版批处理可用性实证）。
 
-## 2026-09-04 第二十轮进度（批处理引擎一期，本轮）
+## 2026-09-04 第二十一轮进度（批处理二期，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 通用编排器 BatchEngine | ✅ | 新 `frontend/src/components/common/BatchEngine.tsx`：一期 PdfBatchView 编排逻辑（三步 UI/逐文件状态行/停止/进度/汇总/ZIP 打包/服务端产物交付）提为通用组件；center 差异收敛为 props（ops 注册表 + getEngineAvailability + runOp + paramControls + extraValidate + gateNote + fileThumb）。共享根级 `batchEngine.*` i18n（约 21 键×3） |
+| 图像中心批处理 | ✅ | `ImageBatchView.tsx`（`image-batch` 注册，SubNav 首位 pill）：格式转换/质量压缩/色彩替换 3 op，**纯 client canvas 浏览器内跑**（网页/EXE 全端可用）→ ZIP 交付。色彩替换参数化（from/to/tolerance）。裁剪/拼接/图标生成等交互式不进批量（hint 如实标注） |
+| PPT 中心批处理 | ✅ | `PptBatchView.tsx`（`ppt-batch` 注册，PPT 首页宫格 batch 组首位卡片）：PPT 转 PDF/转长图（server，走 `/api/ppt/render` capability 门禁，需桌面引擎）+ 图片提取/PPT 瘦身（client JSZip）。文本导出/大纲/草稿不进批量 |
+| PDF 批处理重构 | ✅ | `PdfBatchView.tsx` 改挂 BatchEngine 薄壳（19 op 注册表 + runPdfOp 分支 + 参数控件自持），行为与一期一致（r20 冒烟回归 13/15，2 FAIL 为后端在线环境差异） |
+| AGPL 门禁口径修正 | ✅ | round-19/20 把「环境装 pymupdf」判 FAIL 系误伤（用户其他项目引擎，保留）。`_check_no_agpl_components` 改为产物口径：环境探测仅提示、requirements/打包产物仍一票否决；伪造 pymupdf 共存验证 pass=True |
+| 手机网页版批处理（用户问询①） | ✅ | **可用**：client op 纯前端零后端零壳依赖，ZIP 浏览器直下；server op 需桌面引擎在线（局域网直连可用；纯 Pages 静态域按设计出门禁提示）。手机 390px 探针：批处理页可达 + 零溢出 + 零 pageerror |
+| 回归验证 | ✅ | npm build 成功；Playwright `r21_batch_phase2.py` **22/22**（图像压缩/PPT 瘦身跑通出 ZIP、server op 门禁语义、手机 390px 等）+ 离线门禁 4/4；pytest **141 passed**；release_acceptance 全过 |
+| EXE 重打包 | ✅ | `build_zonkey_exe.bat` 全链通过；`dist_release/ZonKey_Setup_x64_20260904.exe` + zip/7z + 三 sidecar（覆盖 round-20 同日旧包）；zip 内主 chunk `index-C40-1MuO.js` 特征串（ppt-batch/image-batch/imageGroups/batchEngine）全命中，pymupdf/fitz 零命中 |
+| Pages 部署 | ✅ | 生产 `7f86dbd3`（--branch main）；主域 bundle=`index-C40-1MuO.js`=本地=zip（imageGroups×2 命中） |
+| 遗留 | ⏳ | 用户 EXE 实测：壳内 ZIP 原生另存体验 + 图像/PPT 批处理全流程；批处理三期范围拍板（隐私体检/更多中心接入） |
+
+## 2026-09-04 第二十轮进度（批处理引擎一期，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

@@ -4,14 +4,14 @@ import type { ToolId } from '../../types'
 import { useI18n } from '../../i18n'
 import { FavoriteStar } from '../navigation/FavoriteStar'
 
-const PPT_GROUPS = ['convert', 'extract', 'create'] as const
+const PPT_GROUPS = ['batch', 'convert', 'extract', 'create'] as const
 
 interface PptToolHomeProps {
   onSelect: (tool: ToolId) => void
   onNotify?: (msg: string, type: 'success' | 'error' | 'info') => void
 }
 
-/** PPT 工坊首页：转换 / 提取优化 / 生成 三组工具网格，卡片右上角可收藏（对齐 PDF 工坊首页） */
+/** PPT 工坊首页：批处理 / 转换 / 提取优化 / 生成 四组工具网格，卡片右上角可收藏（对齐 PDF 工坊首页） */
 export const PptToolHome: React.FC<PptToolHomeProps> = ({ onSelect, onNotify }) => {
   const { t } = useI18n()
   const tools = CENTER_TOOLS.ppt_center.filter((m) => m.id !== 'ppt-home')

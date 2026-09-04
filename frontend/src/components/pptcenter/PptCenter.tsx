@@ -1,5 +1,6 @@
 import React from 'react'
 import type { ToolId } from '../../types'
+import { PptBatchView } from './PptBatchView'
 import { PptCompressView, PptImagesView, PptTextView } from './PptCenterViews'
 import { PptToImageView, PptToPdfView } from './PptRenderViews'
 import { PptDraftView, PptOutlineView } from './PptDraftViews'
@@ -8,6 +9,9 @@ import { PptDraftView, PptOutlineView } from './PptDraftViews'
 export const PptCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
   switch (tool) {
     case 'ppt-home':
+      return null
+    case 'ppt-batch':
+      return <PptBatchView />
     case 'ppt-to-pdf':
       return <PptToPdfView />
     case 'ppt-to-image':

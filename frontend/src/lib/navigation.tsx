@@ -38,7 +38,7 @@ export interface ToolMeta {
   /** i18n key，见 locales 的 tools.* */
   labelKey: string;
   availability: ToolAvailability;
-  /** 工坊类：SubNavPills 分组键（PDF 走 pdfGroups.*，PPT 走 pptGroups.*） */
+  /** 工坊类：SubNavPills 分组键（PDF 走 pdfGroups.*，PPT 走 pptGroups.*，图像走 imageGroups.*） */
   group?: 'batch' | 'organize' | 'convert' | 'edit' | 'security' | 'extract' | 'create';
 }
 
@@ -103,6 +103,8 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
   ],
   ppt_center: [
     { id: 'ppt-home', labelKey: 'tools.pptHome', availability: 'ready' },
+    // 批处理
+    { id: 'ppt-batch', labelKey: 'tools.pptBatch', availability: 'ready', group: 'batch' },
     // 转换
     { id: 'ppt-to-pdf', labelKey: 'tools.pptToPdf', availability: 'ready', group: 'convert' },
     { id: 'ppt-to-image', labelKey: 'tools.pptToImage', availability: 'ready', group: 'convert' },
@@ -115,10 +117,12 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'ppt-draft', labelKey: 'tools.pptDraft', availability: 'ready', group: 'create' },
   ],
   image_center: [
-    { id: 'image-crop', labelKey: 'tools.imageCrop', availability: 'ready' },
-    { id: 'image-color-replace', labelKey: 'tools.imageColorReplace', availability: 'ready' },
+    // 批处理
+    { id: 'image-batch', labelKey: 'tools.imageBatch', availability: 'ready', group: 'batch' },
     { id: 'image-convert', labelKey: 'tools.imageConvert', availability: 'ready' },
     { id: 'image-compress', labelKey: 'tools.imageCompress', availability: 'ready' },
+    { id: 'image-crop', labelKey: 'tools.imageCrop', availability: 'ready' },
+    { id: 'image-color-replace', labelKey: 'tools.imageColorReplace', availability: 'ready' },
     { id: 'image-stitch', labelKey: 'tools.imageStitch', availability: 'ready' },
     { id: 'icon-gen', labelKey: 'tools.iconGen', availability: 'ready' },
     { id: 'color-extractor', labelKey: 'tools.colorExtractor', availability: 'ready' },

@@ -183,8 +183,8 @@ export default function App() {
               id: tool.id,
               label: t(tool.labelKey),
               group:
-                tool.group && (activeCenter === 'pdf_center' || activeCenter === 'ppt_center')
-                  ? t(`${activeCenter === 'pdf_center' ? 'pdfGroups' : 'pptGroups'}.${tool.group}`)
+                tool.group && activeCenter !== 'redact'
+                  ? t(`${activeCenter === 'pdf_center' ? 'pdfGroups' : activeCenter === 'ppt_center' ? 'pptGroups' : 'imageGroups'}.${tool.group}`)
                   : undefined,
             }))}
             activeId={activeTool}
@@ -275,25 +275,25 @@ export default function App() {
             )}
           </div>
         )}
-        {activeCenter === 'image_center' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-            <ImageCenter tool={activeTool} />
-          </div>
-        )}
-        {activeCenter === 'ppt_center' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-            {activeTool === 'ppt-home' ? (
-              <PptToolHome onSelect={handleToolChange} onNotify={showNotify} />
-            ) : (
-              <PptCenter tool={activeTool} />
+            {activeCenter === 'image_center' && (
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+                <ImageCenter tool={activeTool} />
+              </div>
             )}
-          </div>
-        )}
-        {activeCenter === 'media_center' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-            <MediaCenter tool={activeTool} />
-          </div>
-        )}
+            {activeCenter === 'ppt_center' && (
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+                {activeTool === 'ppt-home' ? (
+                  <PptToolHome onSelect={handleToolChange} onNotify={showNotify} />
+                ) : (
+                  <PptCenter tool={activeTool} />
+                )}
+              </div>
+            )}
+            {activeCenter === 'media_center' && (
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+                <MediaCenter tool={activeTool} />
+              </div>
+            )}
         {activeCenter === 'system_tools' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
             <SystemCenter tool={activeTool} />

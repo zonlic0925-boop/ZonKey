@@ -49,6 +49,7 @@ export type PdfToolId =
 /** PPT 工坊 */
 export type PptToolId =
   | 'ppt-home'
+  | 'ppt-batch'
   | 'ppt-to-pdf'
   | 'ppt-to-image'
   | 'ppt-images'
@@ -59,6 +60,7 @@ export type PptToolId =
 
 /** 图像工坊 */
 export type ImageToolId =
+  | 'image-batch'
   | 'image-crop'
   | 'image-color-replace'
   | 'image-convert'

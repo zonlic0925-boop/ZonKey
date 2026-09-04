@@ -1,8 +1,23 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十轮：批处理引擎一期·PDF 工坊试水，收尾=回归+EXE+Pages+git）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十一轮：批处理二期·图像/PPT 中心接入同一编排器 + AGPL 门禁改产物口径 + 手机网页版批处理可用性实证，收尾=回归+EXE+Pages+git）。
 
-## 〇、2026-09-04 第二十轮（批处理引擎一期 · PDF 工坊 19 操作试水，本轮）
+## 〇、2026-09-04 第二十一轮（批处理二期 · 图像/PPT 中心接入 + AGPL 门禁口径修正，本轮）
+
+- **任务（用户 3 项）**：① 手机网页版（Pages 端）批处理是否可用？② pymupdf 是其他项目引擎勿误删；③ 批处理二期：图像/PPT 中心接入同一编排器（改动面=注册表+分支+i18n）。
+- **① 手机网页版批处理可用性（实证结论）**：**可用**。批处理引擎纯前端（client op 浏览器内跑，产物 JSZip 打包 → `downloadBlob` 浏览器 a[download] 直下，零后端/零壳依赖）。手机端唯一限制：server 类操作（PDF↔Office 转换/深度压缩/OCR/加密/PPT 渲染）需桌面引擎在线——浏览器直连后端（局域网模式）时可用；纯 Pages（无后端）时如实显示 offlineNote + 开始禁用，属预期设计。本轮 Playwright 手机 390px 探针实证批处理页可达、零溢出、零 pageerror。
+- **② AGPL 门禁改产物口径（重要修正）**：round-19/20 把「环境装 pymupdf」判 FAIL 是误伤——同一开发机可为其他项目装 AGPL 包（用户明示 pymupdf 是他项目引擎，勿卸载）。`release_acceptance.py::_check_no_agpl_components` 改为：**环境探测仅提示（installed_bad 不参与 pass）；requirements.txt 与打包产物（fitz/pymupdf/PyMuPDF）仍一票否决**。验证：伪造环境装有 pymupdf → pass=True。
+- **③ 二期实现（编排器收敛进通用件 BatchEngine）**：
+  - 新 `frontend/src/components/common/BatchEngine.tsx`：一期 PdfBatchView 编排逻辑（三步 UI/逐文件状态行/停止/进度/汇总/ZIP 打包/服务端产物交付）提为通用组件，center 差异收敛为 props（ops 注册表 + getEngineAvailability + runOp + paramControls + extraValidate + gateNote + fileThumb）。跨中心共享**根级** `batchEngine.*` i18n。
+  - `PdfBatchView.tsx` 重构为 BatchEngine 薄壳（19 op 注册表 + runPdfOp 分支 + PDF 参数控件自持，行为与一期一致）；`ImageBatchView.tsx`（convert/compress/color-replace 3 op，纯 client canvas）+ `PptBatchView.tsx`（to-pdf/to-image server 走 `/api/ppt/render` capability 门禁 + images/compress client JSZip）挂同款引擎。
+  - 注册点：types 加 `ppt-batch`/`image-batch`；navigation 两中心注册（PPT 组 batch；图像首项组 batch 其余平铺——图像中心未建首页，SubNav pill 直达）；PptCenter/ImageCenter case；PptToolHome `PPT_GROUPS` 首位加 'batch'；App.tsx SubNav 分组键扩 imageGroups。
+  - i18n 三语同轮：`tools.pptBatch/imageBatch` + `pptGroups.batch`/`imageGroups.*`（imageGroups 仅 batch 键）+ 根级 `batchEngine.*`（约 21 键）+ `imagecenter.batch.*`/`pptcenter.batch.*`。
+- **验证汇总**：npm build 成功；Playwright `temp_ui_test/r21_batch_phase2.py` **22/22**（图像压缩跑通→ZIP/色彩替换参数区/PPT 瘦身跑通→ZIP/服务端 op 在线 serverNote/PDF 回归/手机 390px 零溢出零 pageerror）；离线门禁 4/4（route abort 模拟无后端 → PDF/PPT server op 出门禁+禁用）；r20_batch_smoke 13/15（2 FAIL=脚本假设后端离线，当前后端在线，环境差异非回归）；pytest **141 passed**；release_acceptance 全过。
+- **EXE + Pages**：`build_zonkey_exe.bat` 全链通过 → `dist_release/ZonKey_Setup_x64_20260904.exe`+zip/7z+三 sidecar（覆盖 round-20 同日旧包）；zip 内主 chunk `index-C40-1MuO.js` 特征串全命中 + pymupdf/fitz 零命中。Pages 生产部署 `7f86dbd3`（--branch main），主域 bundle=`index-C40-1MuO.js`=本地=zip。
+- **测试坑（本轮新增）**：① 桌面 header 中心按钮**非激活时只显图标**（文字仅激活项）——定位用 `button[title='中心名']` 别用 has-text；② batchEngine 键**必须根级**（三个实例共用 `t('batchEngine.*')`），误嵌 pdfcenter.batch 会渲染出 BATCHENGINE.STEP1 裸键；③ 大 i18n 文件改完用字符串感知括号检查器验证（单引号内 {count} 污染朴素计数）；④ 冒烟脚本 server op 断言受后端在线影响——先探测或 route abort 模拟。
+- **接手注意**：① 下一步扩张方向：批处理三期（隐私体检/元数据清洗）或更多中心接入（text/media 逐文件操作）——扩中心=注册表+BatchEngine props+i18n，编排零改动；② 壳内另存体验（ZIP 原生另存为）仍待用户 EXE 实测；③ pymupdf 是用户其他项目依赖，**环境保留**，AGPL 门禁已按产物口径不再误报；④ 用户再报「批处理不可用」先区分 client op（应可用）vs server op（需引擎在线）与是否纯 Pages 静态域。
+
+## 〇、2026-09-04 第二十轮（批处理引擎一期 · PDF 工坊 19 操作试水，上轮）
 
 - **任务**：市场调研结论落地——市面工具箱（PDF24/我的ABC/Stirling）的共性瓶颈是「批量」，本轮给 PDF 工坊上批处理引擎。**架构定调：纯前端编排器，后端零改动**。
 - **实现**：新 `frontend/src/components/pdfcenter/PdfBatchView.tsx`（工具 id `pdf-batch`，SubNav 组 `batch`，PDF 首页宫格首位分组）。三步式 UI：①按组选操作（整理/转换/编辑/安全）→②多文件队列（accept 随操作变化）→③参数区（按操作渲染）→逐文件顺序执行 + 每文件状态行（等待/处理中/完成/失败/已跳过）+ 总进度条 + 运行中可「停止」（stopRef，剩余标跳过）。
