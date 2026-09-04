@@ -1,8 +1,16 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十二轮：新增「这次更新了什么」升级弹窗——内容轮次化 + 当天首次口径 + 升级即看，收尾=回归+EXE+Pages+git 全链完成）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十三轮：第三梯队 10 个高频小工具全部落地 + WhatsNew 升 round-23，收尾链进行中）。
 
-## 〇、2026-09-04 第二十二轮（新增「这次更新了什么」升级弹窗，本轮）
+## 〇、2026-09-04 第二十三轮（高频小工具 ×10，本轮）
+
+- **任务（用户）**：第三梯队高频刚需小工具一次性补齐 10 个：二维码生成/识别、图片打码/局部模糊、证件照换底色+尺寸裁剪、文本 diff、正则测试器、批量重命名、重复文件查找、PDF 书签编辑、TTS 文字转朗读（Windows SAPI 离线）、单位/进制换算。
+- **归属**：文本工坊+4（diff/regex/重命名/TTS）、图像工坊+2（打码/证件照）、PDF 工坊+1（书签编辑 edit 组）、计算开发+2（单位/进制）、系统硬件+1（重复文件）。全部 `ready`。
+- **实现**：后端 `backend_toolbox_tools.py`（`/api/toolbox` 10 端点，挂 server_bridge；qrcode=BSD/zxing-cpp=Apache-2.0/SAPI 系统内置，零 AGPL）；前端 `lib/zonkey/toolboxCore.ts`（纯前端核心）+ `components/toolbox/`（ToolboxTextViews 5 + ToolboxEngineViews 7）；requirements.txt + ZonKey.spec hiddenimports（backend_toolbox_tools/qrcode/zxingcpp）同步。
+- **验证**：pytest 141 passed；release_acceptance 全过；后端 TestClient+真服 HTTP 双层冒烟全 200（QR 中英往返/打码三模式/证件照 413×579 白底/重复文件三组/书签树层级往返/TTS 双语 WAV）；Playwright `temp_ui_test/toolbox_smoke.mjs` **10/10 视图 PASS 零 pageerror** + 进制 255→FF 交互 E2E。
+- **接手注意**：① **SubNavPills 在 `<main>` 外**（App.tsx 兄弟 div）——UI 冒烟定位 pill 用全局 `page.locator('button')`，缩到 main 永远找不到；② 首启弹窗冒烟绕法=localStorage 预填 `zonkey.privacyNotice.v1='ack'` + `zonkey.whatsNewSeen.v1='{"seenRound":99,"lastSeenDay":"2026-09-04"}'` 后 reload（点按钮关弹窗会被 WhatsNew 滚动容器卡住）；③ TTS：SAPI5 SpFileStream 只支持 PCM WAV（SAFTMP3 不存在），MP3 靠 ffmpeg 转码、缺失时诚实回退 WAV；④ 证件照是 GrabCut+色距双通道（诚实边界：非 AI 分割，纯色底效果最佳），UI 文案已如实标注；⑤ 批量重命名只做规划器（读文件名不碰内容），执行交给文件管理器——设计即如此；⑥ WhatsNew 已升 round-23（改内容必升 WHATSNEW_ROUND 规则不变）；⑦ EXE/Pages 收尾链本轮进行中（见 PROJECT_STATUS 收尾状态）。
+
+## 〇、2026-09-04 第二十二轮（新增「这次更新了什么」升级弹窗，上轮）
 
 - **任务**：把最近几轮更新内容做成前端「更新内容弹窗」——升级后用户当天第一次打开自动弹出，一次看完不再打扰。
 - **实现**：新 `frontend/src/components/WhatsNewModal.tsx`（round-22 新增，非 review）：

@@ -1,6 +1,21 @@
-> 更新于：2026-09-04（第二十二轮：新增「这次更新了什么」升级弹窗——内容轮次化 + 当天首次口径 + 升级即看一次）。
+> 更新于：2026-09-04（第二十三轮：第三梯队 10 个高频小工具全部落地——二维码/图片打码/证件照/文本 diff/正则/批量重命名/重复文件/PDF 书签/TTS/单位进制换算）。
 
-## 2026-09-04 第二十二轮进度（「这次更新了什么」升级弹窗，本轮）
+## 2026-09-04 第二十三轮进度（高频小工具 ×10，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 后端引擎桥 | ✅ | 新 `backend_toolbox_tools.py`（router `/api/toolbox`）：二维码生成（qrcode BSD）/识别（zxing-cpp Apache-2.0，低清图放大+CLAHE 二次尝试）/图片打码（马赛克·模糊·纯黑三模式，框选区域）/证件照（GrabCut+色距双通道抠人像→换底→标准尺寸 300DPI）/重复文件查找（size→首尾哈希→全量 sha256 三级漏斗，只读）/PDF 书签读·写（pikepdf 高层 outline API，层级堆栈正确处理深度跳跃）/TTS（Windows SAPI 离线合成，SpFileStream 落 WAV→ffmpeg 转 MP3 缺失时诚实回退）。挂 `server_bridge.py` |
+| 前端核心 | ✅ | 新 `frontend/src/lib/zonkey/toolboxCore.ts`：行级 LCS diff（前后缀剪枝）/正则测试（捕获组+命名组+高亮+零宽防死循环）/单位换算 8 类（温度独立处理，1024 进制数据单位）/进制换算（2-36 严格回验防 parseInt 宽容解析）/批量重命名规划器（正则+前后缀+序号，冲突标注，只规划不执行）。esbuild 转译 node 单测全绿 |
+| 前端视图 | ✅ | 新 `frontend/src/components/toolbox/`：ToolboxTextViews（diff/regex/单位/进制/重命名 5 个纯前端）+ ToolboxEngineViews（QR×2/打码/证件照/重复文件/书签/TTS 7 个走引擎）。打码视图实现图上拖拽框选（%定位区域盒天然适配缩放）；产物统一走 `downloadBlob` 交付层 |
+| 中心归属 | ✅ | 文本工坊+4（文本对比/正则测试/批量重命名/TTS）；图像工坊+2（图片打码/证件照换底色）；PDF 工坊+1（书签编辑，edit 组自动进首页宫格）；计算开发+2（单位/进制换算）；系统硬件+1（重复文件查找）。types/navigation/各 Center switch 同步注册 |
+| i18n 三语 | ✅ | `tools.*` 10 键 + `toolbox.*` 101 键 + `whatsnew.entries.r23` ×3 locale 同轮补齐（键一致性脚本校验 NONE-diff）；idSize_* 连字符键加引号修复 TS 语法错 |
+| WhatsNew | ✅ | `WHATSNEW_ROUND` 22→23，r23 条目三语（10 工具+零离线口径），r22 条目保留 |
+| 打包与依赖 | ✅ | requirements.txt + qrcode>=8.0/zxing-cpp>=2.0（许可 BSD/Apache-2.0，零 AGPL）；ZonKey.spec hiddenimports + backend_toolbox_tools/qrcode/zxingcpp |
+| 回归验证 | ✅ | pytest **141 passed**；release_acceptance 全过；后端 10 端点 TestClient+真服 HTTP 双层冒烟全 200（QR 中英往返/打码三模式块内一致性/证件照 413×579@白底/重复文件三组/书签树往返层级正确/TTS Huihui+Zira 双语 WAV）；Playwright UI 冒烟 **10/10 视图 PASS + 零 pageerror**（`temp_ui_test/toolbox_smoke.mjs`）+ 交互 E2E（进制 255→FF 实时联动 OK） |
+| 测试坑（新） | ✅ | ① **SubNavPills 在 `<main>` 外**（App.tsx 兄弟块）——pill 定位别缩到 main；② np.asarray 只读视图原地写打码会 ValueError，须 np.array；③ pikepdf outline.root 是 list 非 Dictionary，children 也 list；④ 小文件 partial hash 的 seek(-N, END) 会 EINVAL，须先判 size>65536；⑤ TTS MP3 回退路径须先转码判成再删临时 WAV（原写法先删后复制）；⑥ 首启冒烟用 localStorage 预填 `zonkey.privacyNotice.v1='ack'` + `zonkey.whatsNewSeen.v1={seenRound:99,...}` 绕弹窗遮罩最稳（点按钮关弹窗会被滚动容器卡住） |
+| 收尾状态 | ⏳ | EXE 重打包与 Pages 部署进行中（本轮收尾链）；文档与 git 提交随后 |
+
+## 2026-09-04 第二十二轮进度（「这次更新了什么」升级弹窗，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|
