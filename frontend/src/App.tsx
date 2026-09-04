@@ -37,6 +37,7 @@ import { useI18n } from './i18n';
 import { isShellMode } from './lib/deliver';
 import { APP_NAME, APP_TAGLINE } from './lib/brand';
 import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components/OfflinePrivacyNotice';
+import { WhatsNewModal, readWhatsNewSeen, shouldShowWhatsNew, writeWhatsNewSeen } from './components/WhatsNewModal';
 
 export default function App() {
   const { t } = useI18n();
@@ -49,6 +50,18 @@ export default function App() {
   const { online, status, refresh } = useBackendStatus();
   // 首次打开弹出「隐私与联网声明」；确认后 localStorage 记忆，页眉盾牌可重开
   const [privacyNoticeOpen, setPrivacyNoticeOpen] = useState(() => !hasAcknowledgedPrivacyNotice());
+  // 「这次更新了什么」：升级后当天首次打开才弹；若首启同时有隐私声明，隐私关掉后接上
+  const [whatsNewOpen, setWhatsNewOpen] = useState(() => shouldShowWhatsNew(readWhatsNewSeen()));
+
+  const handlePrivacyClose = () => {
+    setPrivacyNoticeOpen(false);
+    if (shouldShowWhatsNew(readWhatsNewSeen())) setWhatsNewOpen(true);
+  };
+
+  const handleWhatsNewClose = () => {
+    writeWhatsNewSeen();
+    setWhatsNewOpen(false);
+  };
 
   const [notification, setNotification] = useState<{
     msg: string;
@@ -339,7 +352,8 @@ export default function App() {
         </div>
       )}
 
-      <OfflinePrivacyNotice open={privacyNoticeOpen} onClose={() => setPrivacyNoticeOpen(false)} />
+      <OfflinePrivacyNotice open={privacyNoticeOpen} onClose={handlePrivacyClose} />
+      <WhatsNewModal open={whatsNewOpen} onClose={handleWhatsNewClose} />
     </div>
   );
 }
