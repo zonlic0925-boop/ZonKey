@@ -1,6 +1,20 @@
-> 更新于：2026-09-03（第十九轮：支持作者文案随产品定位刷新 + EXE/Pages 收尾，含 sha256 全产物修复与 Pages 生产分支教训）。
+> 更新于：2026-09-04（第二十轮：批处理引擎一期——PDF 工坊 19 操作试水，纯前端编排器 + EXE/Pages 收尾 + AGPL 环境红线修复）。
 
-## 2026-09-03 第十九轮进度（文案优化 + 收尾，本轮）
+## 2026-09-04 第二十轮进度（批处理引擎一期，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 批处理引擎（一期） | ✅ | 新 `PdfBatchView.tsx`（`pdf-batch`，SubNav 组 batch + 首页宫格首位分组）：三步式（选操作→多文件队列→参数）+ 逐文件顺序执行 + 每文件状态行 + 总进度 + 停止（剩余标跳过）。**纯前端编排器，后端零改动** |
+| 操作注册表（19 个） | ✅ | client 10（压缩/旋转/水印/解密/页码/增强/裁剪/拆分/提取/转图片，pdfCore 浏览器内跑→JSZip 打包一次另存）+ server 7（word/excel/pdf 互转×5、compress-deep、ocr-export，复用 convert job 队列→MediaOutputList）+ repair 1 + protect 1（encrypt→protect-advanced，字节进 zip）。交互式工具（合并/整理/编辑器/填表/证书签名）如实标注不参与批量 |
+| 注册点 + i18n | ✅ | types PdfToolId、navigation ToolMeta.group 扩 'batch'、PdfCenter case、PdfToolHome 首位分组；三语同轮 `tools.pdfBatch`+`pdfGroups.batch`+`pdfcenter.batch.*`（约 55 键×3，zh-TW 批次處理/浮水印口径） |
+| 能力门禁 | ✅ | server/repair/protect 需引擎在线（offlineNote+禁用）；ocr-export 需 rapidocr；浏览器模式 client 操作照常可用 |
+| 回归验证 | ✅ | npm build 成功；Playwright `r20_batch_smoke.py` **15/15**（首页组+pill/注入 2 PDF→2 成功+ZIP 行/服务端门禁/en/手机 390px 零溢出/零 pageerror）；pytest **141 passed**；release_acceptance 全过 |
+| AGPL 环境红线（新事件） | ✅ | agent-reach venv 于 09-03 18:43 被外部装入 pymupdf→`no_agpl_components` FAIL；项目零引用，`pip uninstall` 恢复。教训：门禁失败先查解释器与安装时间戳 |
+| EXE 重打包 | ✅ | `ZonKey_Setup_x64_20260904.exe`（195MB）+ zip 282MB + 7z 192MB，三份 sha256 同批 09:10:15；zip 双 chunk md5=本地，批处理文案命中，**pymupdf/fitz 全列表零命中** |
+| Pages 部署 | ✅ | 生产 `f512dc90`（--branch main，Environment=Production 实证）；主域 bundle=`index-CbpgPpmC.js`=本地=zip，线上含批处理文案 |
+| 遗留 | ⏳ | 用户 EXE 实测批处理全流程（重点：壳内 ZIP 原生另存体验）；批处理二期范围拍板（图像/PPT 中心接入） |
+
+## 2026-09-03 第十九轮进度（文案优化 + 收尾，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

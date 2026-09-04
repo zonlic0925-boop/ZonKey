@@ -1,8 +1,25 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-03（第十九轮：支持作者文案随产品定位刷新，收尾=回归+EXE+Pages+git）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十轮：批处理引擎一期·PDF 工坊试水，收尾=回归+EXE+Pages+git）。
 
-## 〇、2026-09-03 第十九轮（支持作者文案刷新，本轮）
+## 〇、2026-09-04 第二十轮（批处理引擎一期 · PDF 工坊 19 操作试水，本轮）
+
+- **任务**：市场调研结论落地——市面工具箱（PDF24/我的ABC/Stirling）的共性瓶颈是「批量」，本轮给 PDF 工坊上批处理引擎。**架构定调：纯前端编排器，后端零改动**。
+- **实现**：新 `frontend/src/components/pdfcenter/PdfBatchView.tsx`（工具 id `pdf-batch`，SubNav 组 `batch`，PDF 首页宫格首位分组）。三步式 UI：①按组选操作（整理/转换/编辑/安全）→②多文件队列（accept 随操作变化）→③参数区（按操作渲染）→逐文件顺序执行 + 每文件状态行（等待/处理中/完成/失败/已跳过）+ 总进度条 + 运行中可「停止」（stopRef，剩余标跳过）。
+- **三类操作通道（op 注册表 19 个）**：
+  - `client`（10 个，全浏览器内跑 `lib/zonkey/pdfCore`，零后端）：压缩/旋转/水印(文+图)/解密/页码/增强/裁剪/拆分(每页一档)/提取(页码范围)/转图片 → 产物收集后 **JSZip 内存打包，「打包另存为 ZIP」一次交付**（`downloadBlob` 壳内=原生另存，浏览器=a[download]）。
+  - `server`（7 个，逐文件复用现有 convert job 队列 `startConvertJob`+`pollConvertJob`）：pdf-to-word/excel/ppt、word/excel-to-pdf、compress-deep、ocr-export；产物落 output/ 走 **MediaOutputList 逐个另存**。
+  - `repair`（pdf-repair，`convertRepair` 同步端点）与 `protect`（pdf-encrypt，`encryptPdfFileAdvanced`→`/api/convert/protect-advanced`，产物字节进 ZIP）。
+  - **明确不参与批量**（交互式/跨文件语义，UI 有如实标注）：合并/页面整理/编辑器/填表/证书签名/图片转PDF/html-to-pdf。
+- **注册点**：`types/index.ts` PdfToolId+`'pdf-batch'`；`lib/navigation.tsx` ToolMeta.group 扩 `'batch'` + pdf_center 首位注册；`PdfCenter.tsx` case；`PdfToolHome.tsx` PDF_GROUPS 首位加 'batch'；i18n 三语同轮：`tools.pdfBatch` + `pdfGroups.batch` + `pdfcenter.batch.*`（约 55 键×3，zh-CN/zh-TW/en 全齐，zh-TW 用「批次處理/浮水印」口径）。
+- **能力门禁**：server/repair/protect 操作需桌面引擎在线（`getConvertCapability`，离线显示 offlineNote + 开始禁用）；ocr-export 额外要求 rapidocr（复用 CapabilityGate）。浏览器模式下 client 类操作照常可用（本地离线卖点成立）。
+- **验证汇总**：npm build 成功；Playwright `temp_ui_test/r20_batch_smoke.py` **15/15**（首页批处理组+SubNav pill/进页/选压缩/set_input_files 注入 2 真实 PDF→2 成功 0 失败+ZIP 行/服务端 op 浏览器门禁+开始禁用/en 标签/手机 390px 零溢出/双页面零 pageerror）；pytest **141 passed**（--ignore native dialog）；release_acceptance 全过。
+- **EXE + Pages**：`dist_release/ZonKey_Setup_x64_20260904.exe`（195MB 09:07）+ zip 282MB/7z 192MB，**三份 .sha256 同批 09:10:15**（round-19 sidecar 根治生效）。zip 内嵌 dist_web 双 chunk 验证：现代主 chunk `index-CbpgPpmC.js` 与 legacy `index-legacy-CRCFdnQc.js` 均 md5=本地，批处理文案命中（2/1），**zip 全列表 pymupdf/fitz 零命中**。Pages 生产部署 `f512dc90`（Environment=Production + branch=main），主域 curl 返回新 chunk 且含批处理文案。
+- **⚠️ 环境事件（接手必读）**：round-19 收尾后（09-03 18:43），agent-reach 共享 venv（`.agent-reach-venv`，本项目 pytest/构建的解释器）被外部装入 **pymupdf 1.28.2** → release_acceptance `no_agpl_components` FAIL。项目代码零引用 fitz（grep 证实），已 `pip uninstall pymupdf` 恢复。**教训**：门禁失败先 `pip show pymupdf` 查装在哪+查安装时间戳，勿急着改代码；agent 工具链 venv 与项目共用时，AGPL 红线可能被会话外动作击穿。
+- **测试坑（本轮新增两条）**：① 批处理页内操作 pill 与 SubNav 工具 pill 同名（如「文字类 PDF 压缩」）——Playwright 必须收窄到 `div.max-w-2xl`（批处理页容器全站唯一宽度）；② CapabilityGate 渲染的是 `div` 不是 `p`，文案断言用 `div:has-text(...)`。
+- **接手注意**：① 下一步扩张方向已与用户对齐：批处理二期（图像/PPT 中心接入同一编排器）→ 文档隐私体检（元数据清洗）→ 高频小工具（二维码/图片打码/文本 diff/正则/批量重命名/重复文件）；② 批处理扩新操作只改 `BATCH_OPS` 注册表 + `runClientOp`/`runServerOp` 分支 + i18n，三步 UI 自动跟随；③ 服务端 op 逐文件顺序执行（无并发池），大量文件时 UI 有逐行进度，属预期设计。
+
+## 〇、2026-09-03 第十九轮（支持作者文案刷新，上轮）
 
 - **任务**：支持作者弹窗第一段（`support.description`）随产品定位刷新——ZonKey 已不是单纯打码工具，改为多工具口径。
 - **文案（三语同步，各改 1 行）**：zh-CN「…它早已不只是『打码工具』：图纸公文脱敏、PDF 工坊、图像音视频、计算开发……这箱日用百宝箱还在持续上新…」（en 对应 "It is no longer just a redaction tool…"；zh-TW 繁中同口径）。保留免费/开源/本地离线/非付费解锁承诺。入口文件 `frontend/src/components/SupportAuthorModal.tsx` 正文即 `t('support.description')`。
