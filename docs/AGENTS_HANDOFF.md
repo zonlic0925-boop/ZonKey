@@ -1,8 +1,16 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十三轮：第三梯队 10 个高频小工具全部落地 + WhatsNew 升 round-23，收尾链进行中）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十四轮：图片打码触屏框选修复 + 证件照色距主通道/真实比例预览）。
 
-## 〇、2026-09-04 第二十三轮（高频小工具 ×10，本轮）
+## 〇、2026-09-04 第二十四轮（工具箱两 bug 修复，本轮）
+
+- **任务（用户 5 项）**：① 修图片打码手机触屏框选（mouse→Pointer Events+touch-none）；② 修证件照 GrabCut 主通道不可靠→色距主通道 + 尺寸预览按真实比例；③ npm build+pytest 回归；④ round-23 十工具最小冒烟（网页 Playwright）；⑤ 桌面壳同步验证（pywebview+8765）→ git 提交+文档收尾。
+- **bug1 实现**（`ToolboxEngineViews.tsx` ImageMaskView）：mouse 事件序列触屏不派发且浏览器手势抢拖拽 → `onPointerDown/Move/Up` + `setPointerCapture`（pointerId 校验防多点混淆）+ 容器 `touch-none`；顺修 `fileUrl` 每渲染 `createObjectURL` 泄漏 → `useMemo` + 卸载 revoke。
+- **bug2 实现**：后端 `backend_toolbox_tools.py::id_photo` 主通道对调——色距（四角中值底色 + tolerance）为主，GrabCut 降为对比度弱底回退（前景占比 <2% 或 >90% 才触发，双重失败 422 前置）；新增形态学开闭去噪 + `connectedComponentsWithStats` 取最大连通域（抗孤立噪块）。前端 IdPhotoView 加真实比例预览块（`ID_SIZE_MM` 表 + 同一比例尺 96/49 px/mm 渲染，颜色跟随底色选择）。
+- **验证汇总**：npm build 成功（主 chunk `index-Bp1zXvkA.js`，dist_web 已刷新）；pytest **141 passed**（--ignore native dialog）；`toolbox_smoke.mjs` **10/10 零 pageerror**；新 `temp_ui_test/r24_mask_pointer_smoke.mjs` **9/9**（鼠标 pointer 框选成区 / CDP touch 事件链触屏框选成区（探针实证 pointerType=touch）/ 手机 390px 零 pageerror / 预览存在 / 一寸 49×69 渲染 / 比例 25/35=0.714 vs 33/48=0.687 断言 / 二寸>一寸同比例尺）；后端合成证件照双场景（纯色蓝底 295×413 白底合成 + 条纹干扰底不漏）TestClient 实测；**桌面壳内 SendInput 真鼠标拖拽框选→已选 1 区域→应用打码→保存图片出现**全链路 + 壳内尺寸预览渲染确认。
+- **接手注意**：① 触屏冒烟坑：CDP `dispatchTouchEvent` 的坐标要落图片**内部**（手机 390px 视口图片常在首屏外，先 `scrollIntoViewIfNeeded` 再取 box）；② 桌面壳 computer-use 拖拽在 WebView2 表面 frame 绑定持续失配（渲染面属 msedgewebview2 子进程无 UIA 树、背景动画致 full-display raster 恒 stale）——**绕法=Python ctypes mouse_event SendInput 按窗口 rect 换算屏幕坐标真拖**，反而是最真实的触点验证；③ 证件照回退触发阈值（<2%/>90%）比旧版（<5%/>95%）收紧，GrabCut 只在色距彻底失效时跑；④ r24_shell_test.png 是冒烟夹具（temp_ui_test 内，不入 dist）。
+
+## 〇、2026-09-04 第二十三轮（高频小工具 ×10，上轮）
 
 - **任务（用户）**：第三梯队高频刚需小工具一次性补齐 10 个：二维码生成/识别、图片打码/局部模糊、证件照换底色+尺寸裁剪、文本 diff、正则测试器、批量重命名、重复文件查找、PDF 书签编辑、TTS 文字转朗读（Windows SAPI 离线）、单位/进制换算。
 - **归属**：文本工坊+4（diff/regex/重命名/TTS）、图像工坊+2（打码/证件照）、PDF 工坊+1（书签编辑 edit 组）、计算开发+2（单位/进制）、系统硬件+1（重复文件）。全部 `ready`。
@@ -23,7 +31,6 @@
 - **EXE + Pages（收尾链，本轮完成）**：`build_zonkey_exe.bat` 全链通过（用等义 bash 包装跑，6/6 步 exit=0，PyInstaller 用 venv python + PYINSTALLER_CONFIG_DIR）→ `dist_release/ZonKey_Setup_x64_20260904.exe`(195.5MB) + zip(282MB) + 7z(194MB) 于 11:07-11:11 覆盖同日旧包；**sha256 sidecar 三件全 MATCH**；zip 内主 chunk `index-BottbVgB.js` 特征串 9/9 HIT（whatsnew/zonkey.whatsNewSeen.v1/seenRound/三语标题/Round 22/batchEngine）；**Setup 静默实装**（/VERYSILENT 装到 Temp）`index-BottbVgB.js` 内三语命中，装完即删。Pages 生产部署 `656b86de`（--branch main，Environment=Production，deployment list 实证）；主域 bundle=`index-BottbVgB.js`，**线上 md5 fed41c8c = 本地 = zip**，特征串命中（第 22 轮×1/whatsNewSeen×1/What's New×1）。
 - **接手注意**：① **改弹窗内容 = 改 i18n `whatsnew.entries` + 升 `WHATSNEW_ROUND`**（组件头注释已写）——不升轮则已看过旧内容的用户永远看不到新条目；② EXE + Pages 已在本轮收尾链完成（见上）；git 分批提交于功能完成时执行（4 笔，master 干净）；③ 触发键与隐私键各自独立（`zonkey.whatsNewSeen.v1` / `zonkey.privacyNotice.v1`），隐私 ack 不代表看过更新；④ i18n 键值带单引号（en `What's New`）改文案时勿破坏 TS 字符串转义（曾致构建红）。
 
-## 〇、2026-09-04 第二十一轮（批处理二期
 ## 〇、2026-09-04 第二十一轮（批处理二期 · 图像/PPT 中心接入 + AGPL 门禁口径修正，本轮）
 
 - **任务（用户 3 项）**：① 手机网页版（Pages 端）批处理是否可用？② pymupdf 是其他项目引擎勿误删；③ 批处理二期：图像/PPT 中心接入同一编排器（改动面=注册表+分支+i18n）。
