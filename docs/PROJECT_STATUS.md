@@ -9,7 +9,7 @@
 | bug2·尺寸预览真实比例 | ✅ | IdPhotoView 加预览块：`ID_SIZE_MM` 表 + 同一比例尺（96/49 px/mm）按真实 mm 渲染，颜色跟随底色选择，不同档形状大小可直接对比 |
 | 回归验证 | ✅ | npm build 成功（主 chunk `index-Bp1zXvkA.js`）；pytest **141 passed**；`toolbox_smoke.mjs` 10/10 零 pageerror；新 `r24_mask_pointer_smoke.mjs` **9/9**（鼠标/触屏 CDP touch 框选成区、预览比例 25/35 vs 33/48 断言、390px 零 pageerror）；合成证件照后端双场景（纯色底 295×413 白底合成 + 条纹干扰底不漏） |
 | 桌面壳同步验证 | ✅ | pywebview 壳 + 8765 引擎：壳内 SendInput 真鼠标拖拽框选→「已选 1 个区域」→应用打码→「保存图片」出现全链路；壳内尺寸预览渲染确认。测试壳/服务器已清理 |
-| 收尾状态 | ✅ | git 提交 `d2279e4`（master）；handoff/status 本轮更新。**遗留**：EXE 重打包 + Pages 部署本轮未跑（用户未要求，下轮收尾链或按需执行）；用户手机实拍触屏框选体验待确认 |
+| 收尾状态 | ✅ | git 提交 `d2279e4`+`8324bb5`（master）；handoff/status 本轮更新。**Pages 生产部署 `986ce016`**（--branch main，Environment=Production 实证，Source=8324bb5）：主域 bundle=`index-Bp1zXvkA.js`，线上 md5 d98a2e3e=本地，round-24 特征串命中（touch-none×3/setPointerCapture×3/mm @ 300DPI）。**遗留**：EXE 重打包本轮未跑（按需执行）；用户手机实拍触屏框选体验待确认 |
 
 ## 2026-09-04 第二十三轮进度（高频小工具 ×10，上轮）
 
