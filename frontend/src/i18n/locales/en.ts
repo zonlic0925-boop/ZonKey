@@ -1047,6 +1047,41 @@ export const en: MessageTree = {
     later: 'Later',
     confirm: 'Got it, feel safe',
   },
+  whatsnew: {
+    title: "What's New",
+    desc: 'Recent updates, week by week.',
+    badgeLatest: 'Latest',
+    noteDesktop: 'Smaller updates (new tools, UI polish and fixes) keep shipping — see the full history on the GitHub / Gitee Release pages.',
+    gotIt: 'Got it',
+    entries: {
+      r22: {
+        badge: 'This Week · Round 22',
+        date: '2026-09-04',
+        i1: 'New "What\'s New" dialog: opens once on the first launch of the day after an update — read it and it stays quiet',
+        i2: 'Batch engine phase 2: Image Studio and PPT Studio join the unified batch pipeline (last round)',
+      },
+      r21: {
+        badge: '2026-09-04 · Round 21',
+        date: '2026-09-04',
+        i1: 'Batch engine phase 2: Image Studio and PPT Studio now share one batch engine',
+        i2: 'Image batch: convert / compress / color replace — all in your browser',
+        i3: 'PPT batch: PPT to PDF / long image, plus batch image extraction and file slimming',
+        i4: 'Batch works on mobile web too (when directly connected to the engine); server-side operations need the desktop engine online',
+        i5: 'PDF batch rebuilt on the shared orchestrator — behavior unchanged',
+      },
+      r20: {
+        badge: '2026-09-04 · Round 20',
+        date: '2026-09-04',
+        i1: 'PDF Studio gains "Batch": pick an operation, queue multiple files, run one by one — 19 operations including compress / rotate / watermark / decrypt / split / extract / to-image',
+        i2: 'Server-side operations (Word/Excel conversions, OCR export, deep compress…) available when the engine is online',
+      },
+      r19: {
+        badge: '2026-09-03 · Round 19',
+        date: '2026-09-03',
+        i1: '"Support the author" copy refreshed: an everyday toolbox, not just a redaction tool',
+      },
+    },
+  },
 
   promo: {
     banner: 'This is the web edition — install the ZonKey desktop app to unlock the redaction engine, OCR export, certificate signing and more',
