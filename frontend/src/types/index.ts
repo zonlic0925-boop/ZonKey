@@ -34,6 +34,7 @@ export type PdfToolId =
   | 'pdf-watermark'
   | 'pdf-page-numbers'
   | 'pdf-crop'
+  | 'pdf-bookmarks'
   | 'pdf-encrypt'
   | 'pdf-decrypt'
   | 'pdf-to-word'
@@ -65,6 +66,8 @@ export type ImageToolId =
   | 'image-color-replace'
   | 'image-convert'
   | 'image-compress'
+  | 'image-mask'
+  | 'id-photo'
   | 'image-stitch'
   | 'icon-gen'
   | 'color-extractor'
@@ -85,6 +88,10 @@ export type TextToolId =
   | 'markdown-editor'
   | 'text-stats'
   | 'text-format'
+  | 'text-diff'
+  | 'regex-tester'
+  | 'batch-rename'
+  | 'tts'
   | 'transcription'
   | 'typing-test';
 
@@ -100,7 +107,9 @@ export type CalcToolId =
   | 'url-codec'
   | 'uuid'
   | 'jwt'
-  | 'hash-crypto';
+  | 'hash-crypto'
+  | 'unit-converter'
+  | 'base-converter';
 
 /** 系统硬件中心 */
 export type SystemToolId =
@@ -111,6 +120,7 @@ export type SystemToolId =
   | 'hardware-storage'
   | 'hardware-power-sensors'
   | 'large-file-cleanup'
+  | 'duplicate-finder'
   | 'c-drive-cleanup';
 
 export type ToolId =

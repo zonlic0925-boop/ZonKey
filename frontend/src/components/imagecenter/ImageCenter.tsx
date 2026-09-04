@@ -5,6 +5,7 @@ import { ImageCompressView, ImageConvertView } from './ImageBatchViews'
 import { ImageColorReplaceView, ImageCropView } from './ImageEditViews'
 import { ColorPaletteView, IconGenView, ImageStitchView } from './ImageComposeViews'
 import { ColorSpaceCompareView } from './ColorSpaceCompareView'
+import { ImageMaskView, IdPhotoView } from '../toolbox/ToolboxEngineViews'
 
 /** 图像工坊：按二级工具 ID 渲染对应视图 */
 export const ImageCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
@@ -17,6 +18,10 @@ export const ImageCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <ImageCompressView />
     case 'image-crop':
       return <ImageCropView />
+    case 'image-mask':
+      return <ImageMaskView />
+    case 'id-photo':
+      return <IdPhotoView />
     case 'image-color-replace':
       return <ImageColorReplaceView />
     case 'image-stitch':

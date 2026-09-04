@@ -2,6 +2,7 @@ import React from 'react'
 import { useI18n } from '../../i18n'
 import type { ToolId } from '../../types'
 import { CleanupView, LargeFileView, SystemInfoView } from './SystemViews'
+import { DuplicateFinderView } from '../toolbox/ToolboxEngineViews'
 
 /** 系统硬件中心：信息视图读取 FastAPI /api/system/* 端点 */
 export const SystemCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
@@ -21,6 +22,8 @@ export const SystemCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <SystemInfoView endpoint="/api/system/hardware/network" title={t('tools.hardwarePowerSensors')} />
     case 'large-file-cleanup':
       return <LargeFileView />
+    case 'duplicate-finder':
+      return <DuplicateFinderView />
     case 'c-drive-cleanup':
       return <CleanupView />
     default:

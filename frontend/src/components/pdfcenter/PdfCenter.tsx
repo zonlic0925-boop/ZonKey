@@ -18,6 +18,7 @@ import { PdfCertSignView } from './PdfCertSignView'
 import { PdfWatermarkView } from './PdfWatermarkView'
 import { PdfPageNumbersView } from './PdfPageNumbersView'
 import { PdfCropView } from './PdfCropView'
+import { PdfBookmarkView } from '../toolbox/ToolboxEngineViews'
 import { ConvertView } from './ConvertView'
 
 export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
@@ -56,6 +57,8 @@ export const PdfCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <PdfPageNumbersView />
     case 'pdf-crop':
       return <PdfCropView />
+    case 'pdf-bookmarks':
+      return <PdfBookmarkView />
     case 'pdf-forms':
       return <PdfFormsView />
     case 'pdf-cert-sign':

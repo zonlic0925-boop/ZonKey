@@ -11,6 +11,7 @@ import { UrlCodecView } from './UrlCodecView'
 import { UuidView } from './UuidView'
 import { JwtView } from './JwtView'
 import { HashCryptoView } from './HashCryptoView'
+import { UnitConverterView, BaseConverterView } from '../toolbox/ToolboxTextViews'
 
 /** 计算开发中心：按二级工具 ID 渲染对应视图 */
 export const CalcDevCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
@@ -37,6 +38,10 @@ export const CalcDevCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <JwtView />
     case 'hash-crypto':
       return <HashCryptoView />
+    case 'unit-converter':
+      return <UnitConverterView />
+    case 'base-converter':
+      return <BaseConverterView />
     default:
       return null
   }
