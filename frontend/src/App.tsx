@@ -38,6 +38,7 @@ import { isShellMode } from './lib/deliver';
 import { APP_NAME, APP_TAGLINE } from './lib/brand';
 import { OfflinePrivacyNotice, hasAcknowledgedPrivacyNotice } from './components/OfflinePrivacyNotice';
 import { WhatsNewModal, readWhatsNewSeen, shouldShowWhatsNew, writeWhatsNewSeen } from './components/WhatsNewModal';
+import { TaskDoneModal } from './components/TaskDoneModal';
 
 export default function App() {
   const { t } = useI18n();
@@ -354,6 +355,7 @@ export default function App() {
 
       <OfflinePrivacyNotice open={privacyNoticeOpen} onClose={handlePrivacyClose} />
       <WhatsNewModal open={whatsNewOpen} onClose={handleWhatsNewClose} />
+      <TaskDoneModal />
     </div>
   );
 }
