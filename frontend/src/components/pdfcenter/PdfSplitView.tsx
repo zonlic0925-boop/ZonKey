@@ -59,7 +59,7 @@ export const PdfSplitView: React.FC = () => {
   const downloadZip = async () => {
     if (outputs.length === 0) return
     const zipName = `${outputs[0]!.fileName.replace(/_page_\d+\.pdf$/, '').replace(/_part_\d+_p[\d-]+\.pdf$/, '') ?? 'split'}_pages.zip`
-    await downloadFilesZip(outputs, zipName)
+    await downloadFilesZip(outputs, zipName, t('tools.pdfSplit'))
   }
 
   return (

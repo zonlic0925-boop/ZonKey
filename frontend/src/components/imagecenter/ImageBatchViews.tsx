@@ -8,6 +8,7 @@ import {
   type TargetFormat,
 } from '../../lib/zonkey/imageCore'
 import { downloadBlob, ImagePicker, SaveRow, type PickedImage } from './imageKit'
+import { emitTaskDone } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 function convertToFiles(picked: PickedImage[]): File[] {
@@ -36,6 +37,10 @@ export const ImageConvertView: React.FC = () => {
         outputs.push(await convertImage(picked, target))
       }
       setResults(outputs)
+      emitTaskDone(
+        t('tools.imageConvert'),
+        outputs.map((output) => ({ blob: output.blob, name: output.fileName, kind: 'image' })),
+      )
     } catch (err) {
       setError(String((err as Error).message))
     } finally {
@@ -98,6 +103,10 @@ export const ImageCompressView: React.FC = () => {
       }
       setResults(outputs)
       setSavedPercent(original > 0 ? Math.max(0, Math.round(((original - compressed) / original) * 100)) : 0)
+      emitTaskDone(
+        t('tools.imageCompress'),
+        outputs.map((output) => ({ blob: output.blob, name: output.fileName, kind: 'image' })),
+      )
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

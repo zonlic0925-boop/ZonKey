@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { cropImage, replaceColor } from '../../lib/zonkey/imageCore'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { downloadBlob, ImagePicker, type PickedImage } from './imageKit'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 import { CropStage, type RectImage } from './CropStage'
@@ -46,6 +47,7 @@ export const ImageCropView: React.FC = () => {
     setNotice(null)
     try {
       const output = await cropImage(file.file, r)
+      emitTaskDoneBlob(t('tools.imageCrop'), output.blob, output.fileName)
       const result = await downloadBlob(output.blob, output.fileName)
       // 壳内 save-as 被取消时 downloadBlob 正常返回——必须给用户明确反馈，
       // 否则「点了下载、什么都没发生」观感等同功能坏死（round-16 用户反馈②）
@@ -130,6 +132,7 @@ export const ImageColorReplaceView: React.FC = () => {
     try {
       const output = await replaceColor(file.file, { from, to, tolerance })
       setReplaced(output.replacedPixels)
+      emitTaskDoneBlob(t('tools.imageColorReplace'), output.blob, output.fileName)
       const url = URL.createObjectURL(output.blob)
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)

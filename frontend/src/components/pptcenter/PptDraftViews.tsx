@@ -14,6 +14,7 @@ import {
 import { buildPptDraftPptx, PPT_DRAFT_THEMES } from '../../lib/zonkey/pptDraftCore'
 import { downloadBytes } from '../pdfcenter/pdfKit'
 import { downloadBlob } from '../imagecenter/imageKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 const DECK_TYPE_I18N_KEYS: Record<PptOutlineDeckType, string> = {
@@ -69,7 +70,9 @@ export const PptOutlineView: React.FC = () => {
   }
 
   const downloadMd = () => {
-    downloadBlob(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), 'outline.md')
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    emitTaskDoneBlob(t('tools.pptOutline'), blob, 'outline.md')
+    downloadBlob(blob, 'outline.md')
   }
 
   return (
@@ -159,7 +162,7 @@ export const PptDraftView: React.FC = () => {
     try {
       const deck = parsePptOutlineMarkdown(markdown)
       const output = await buildPptDraftPptx(deck, themeId)
-      downloadBytes(output.bytes, output.fileName, 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+      downloadBytes(output.bytes, output.fileName, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', t('tools.pptDraft'))
       setDone(output.slideCount)
     } catch (err) {
       setError(String((err as Error).message))

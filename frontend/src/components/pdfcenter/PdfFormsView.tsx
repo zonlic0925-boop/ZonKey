@@ -77,7 +77,7 @@ export const PdfFormsView: React.FC = () => {
       form.flatten()
       const bytes = await pdfDoc.save()
       const baseName = files[0].name.replace(/\.pdf$/i, '')
-      downloadBytes(bytes, `${baseName}_filled.pdf`)
+      downloadBytes(bytes, `${baseName}_filled.pdf`, undefined, t('tools.pdfForms'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

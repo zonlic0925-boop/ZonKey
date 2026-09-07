@@ -3,6 +3,7 @@ import { FilePlus2, X } from 'lucide-react'
 import JSZip from 'jszip'
 import { MemphisButton } from '../common/MemphisButton'
 import { downloadBlob } from '../../lib/deliver'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 
 export interface PickedFile {
   file: File
@@ -58,11 +59,13 @@ export const PdfFilePicker: React.FC<{
   )
 }
 
-/** 统一交付出口：桌面壳走服务端中转 + 原生另存为，浏览器直接 a[download] */
-export async function downloadBytes(bytes: Uint8Array, filename: string, mime = 'application/pdf') {
+/** 统一交付出口：桌面壳走服务端中转 + 原生另存为，浏览器直接 a[download]。
+ *  toolLabel（可选）：传入时交付即弹出「任务完成」档案（行内按钮交付形态用）。 */
+export async function downloadBytes(bytes: Uint8Array, filename: string, mime = 'application/pdf', toolLabel?: string) {
   const buffer = new ArrayBuffer(bytes.byteLength)
   new Uint8Array(buffer).set(bytes)
   const blob = new Blob([buffer], { type: mime })
+  if (toolLabel) emitTaskDoneBlob(toolLabel, blob, filename)
   try {
     await downloadBlob(blob, filename)
   } catch {
@@ -76,15 +79,16 @@ export async function downloadBytes(bytes: Uint8Array, filename: string, mime = 
   }
 }
 
-export async function downloadFilesZip(files: { fileName: string; bytes: Uint8Array }[], zipName: string) {
+export async function downloadFilesZip(files: { fileName: string; bytes: Uint8Array }[], zipName: string, toolLabel?: string) {
   const zip = new JSZip()
   for (const file of files) zip.file(file.fileName, file.bytes)
   const blob = await zip.generateAsync({ type: 'blob' })
+  if (toolLabel) emitTaskDoneBlob(toolLabel, blob, zipName)
   await downloadBlob(blob, zipName)
 }
 
-export async function downloadImageZip(outputs: { fileName: string; bytes: Uint8Array }[], zipName: string) {
-  return downloadFilesZip(outputs, zipName)
+export async function downloadImageZip(outputs: { fileName: string; bytes: Uint8Array }[], zipName: string, toolLabel?: string) {
+  return downloadFilesZip(outputs, zipName, toolLabel)
 }
 
 export const BusyLine: React.FC<{ busy: boolean; label: string }> = ({ busy, label }) =>

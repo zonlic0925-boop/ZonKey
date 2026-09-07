@@ -3,6 +3,7 @@ import { Clapperboard } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { captureVideoFrame } from '../../lib/zonkey/mediaCore'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { downloadBlob } from '../imagecenter/imageKit'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 
@@ -22,6 +23,7 @@ export const VideoFrameView: React.FC = () => {
     setSaved(null)
     try {
       const output = await captureVideoFrame(file, timestamp)
+      emitTaskDoneBlob(t('tools.videoFrame'), output.blob, output.fileName)
       downloadBlob(output.blob, output.fileName)
       const url = URL.createObjectURL(output.blob)
       setPreviewUrl((prev) => {

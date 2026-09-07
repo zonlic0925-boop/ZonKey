@@ -3,6 +3,7 @@ import { FileCode2 } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import { useI18n } from '../../i18n'
 import { downloadBlob } from '../../lib/deliver'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { MemphisButton } from '../common/MemphisButton'
 import {
   applyMarkdownAction,
@@ -70,19 +71,22 @@ export const MarkdownEditorView: React.FC = () => {
           <MemphisButton
             size="sm"
             variant="white"
-            onClick={() => downloadBlob(new Blob([text], { type: 'text/markdown' }), `${baseName}.md`)}
+            onClick={() => {
+              const blob = new Blob([text], { type: 'text/markdown' })
+              emitTaskDoneBlob(t('tools.markdownEditor'), blob, `${baseName}.md`)
+              downloadBlob(blob, `${baseName}.md`)
+            }}
           >
             .md
           </MemphisButton>
           <MemphisButton
             size="sm"
             variant="pink"
-            onClick={() =>
-              downloadBlob(
-                new Blob([buildStandaloneMarkdownHtml({ title: headings[0]?.text ?? 'ZonKey', renderedHtml: html })], { type: 'text/html' }),
-                `${baseName}.html`,
-              )
-            }
+            onClick={() => {
+              const blob = new Blob([buildStandaloneMarkdownHtml({ title: headings[0]?.text ?? 'ZonKey', renderedHtml: html })], { type: 'text/html' })
+              emitTaskDoneBlob(t('tools.markdownEditor'), blob, `${baseName}.html`)
+              downloadBlob(blob, `${baseName}.html`)
+            }}
           >
             .html
           </MemphisButton>

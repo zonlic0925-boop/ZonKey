@@ -29,7 +29,7 @@ export const PdfDecryptView: React.FC = () => {
       const fileData = new Uint8Array(await picked.file.arrayBuffer())
       const decrypted = await decryptPdfFile(fileData, password)
       const baseName = picked.name.replace(/\.pdf$/i, '')
-      downloadBytes(decrypted, `${baseName}_decrypted.pdf`)
+      downloadBytes(decrypted, `${baseName}_decrypted.pdf`, undefined, t('tools.pdfDecrypt'))
     } catch (err) {
       setError(t('pdfcenter.decryptFailed'))
     } finally {

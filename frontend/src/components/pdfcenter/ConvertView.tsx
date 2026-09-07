@@ -15,6 +15,7 @@ import {
   type ConvertOp,
 } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
+import { emitTaskDoneBlob, emitTaskDoneOutputs } from '../../lib/zonkey/taskDone'
 import { WEB_SUPPORTED_OPS, runWebConversion, type WebConvertResult } from '../../lib/zonkey/convertWebCore'
 
 const OPS: ConvertOp[] = [
@@ -101,6 +102,7 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
           title,
         }, (stage) => setWebStage(stage))
         setWebResult(result)
+        emitTaskDoneBlob(t(`convert.op.${op}`), result.blob, result.filename)
         await downloadBlob(result.blob, result.filename)
         return
       }
@@ -108,10 +110,12 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
         if (!file) throw new Error(t('convert.errNoFile'))
         const result = await convertRepair(file)
         setOutputs([{ name: result.download_name, dir: result.output_dir }])
+        emitTaskDoneOutputs(t(`convert.op.${op}`), [{ name: result.download_name, dir: result.output_dir }])
       } else if (isHtml) {
         if (!file && !content.trim()) throw new Error(t('convert.errNoInput'))
         const result = await convertHtmlToPdf({ content, file, title: title || undefined })
         setOutputs([{ name: result.download_name, dir: result.output_dir }])
+        emitTaskDoneOutputs(t(`convert.op.${op}`), [{ name: result.download_name, dir: result.output_dir }])
       } else {
         if (!file) throw new Error(t('convert.errNoFile'))
         const started = await startConvertJob(op as ConvertOp, file, {
@@ -125,6 +129,7 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
           setError(final.error || t('convert.failed'))
         } else {
           setOutputs(final.outputs)
+          emitTaskDoneOutputs(t(`convert.op.${op}`), final.outputs)
         }
       }
     } catch (err) {

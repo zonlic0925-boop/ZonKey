@@ -11,6 +11,7 @@ import {
   type MediaToolCapabilities,
 } from '../../lib/api'
 import { CapabilityGate, MediaOutputList, ProgressBar } from './mediaKit'
+import { emitTaskDoneOutputs } from '../../lib/zonkey/taskDone'
 
 const FPS_OPTIONS = [6, 8, 12, 16, 20]
 const WIDTH_OPTIONS = [360, 480, 640, 960, 1280]
@@ -78,7 +79,11 @@ export const VideoGifView: React.FC = () => {
     try {
       const started = await startVideoGif(file, { startS, endS, fps, width, quality })
       const final = await pollMediaJob(started.job_id, (status) => setJob(status))
-      if (final.status === 'error') setError(final.error || t('mediaJob.failed'))
+      if (final.status === 'error') {
+        setError(final.error || t('mediaJob.failed'))
+      } else if (final.outputs.length) {
+        emitTaskDoneOutputs(t('tools.videoGif'), final.outputs)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('mediaJob.failed'))
     } finally {

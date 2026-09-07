@@ -11,6 +11,7 @@ import {
   type MediaToolCapabilities,
 } from '../../lib/api'
 import { CapabilityGate, MediaOutputList, ProgressBar } from './mediaKit'
+import { emitTaskDoneOutputs } from '../../lib/zonkey/taskDone'
 
 const TARGETS = ['mp4', 'mkv', 'mov', 'flv', 'ts', 'avi', 'webm', 'wmv'] as const
 
@@ -36,7 +37,11 @@ export const VideoConvertView: React.FC = () => {
     try {
       const started = await startVideoConvert(file, target)
       const final = await pollMediaJob(started.job_id, (status) => setJob(status))
-      if (final.status === 'error') setError(final.error || t('mediaJob.failed'))
+      if (final.status === 'error') {
+        setError(final.error || t('mediaJob.failed'))
+      } else if (final.outputs.length) {
+        emitTaskDoneOutputs(t('tools.videoConvert'), final.outputs)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('mediaJob.failed'))
     } finally {

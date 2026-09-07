@@ -31,7 +31,7 @@ export const PdfMergeView: React.FC = () => {
       }
       assertPdfFileCount(files, 2, files.reduce((sum, f) => sum + f.size, 0))
       const merged = await mergePdfFiles(documents)
-      downloadBytes(merged, createPdfMergedFileName())
+      downloadBytes(merged, createPdfMergedFileName(), undefined, t('tools.pdfMerge'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

@@ -5,6 +5,7 @@ import { MemphisButton } from '../common/MemphisButton'
 import { TabsRow } from '../calcdev/kit'
 import { addPdfWatermark, createPdfWatermarkedFileName } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 const WM_COLORS = ['#808080', '#111111', '#dc2626', '#2563eb']
@@ -55,8 +56,10 @@ export const PdfWatermarkView: React.FC = () => {
         rotation,
         tile,
       })
+      const outName = createPdfWatermarkedFileName(picked.name)
       setOutputBytes(result)
-      setOutputName(createPdfWatermarkedFileName(picked.name))
+      setOutputName(outName)
+      emitTaskDoneBlob(t('tools.pdfWatermark'), new Blob([new Uint8Array(result).buffer as ArrayBuffer], { type: 'application/pdf' }), outName)
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

@@ -57,7 +57,7 @@ export const PdfRotateView: React.FC = () => {
         fileData,
         pages: pageNumbers.map((pageIndex) => ({ pageIndex, rotation: angle })),
       })
-      downloadBytes(rotated, createPdfRotateFileName(picked.name, pageNumbers.length === pageCount ? undefined : pageNumbers[0]))
+      downloadBytes(rotated, createPdfRotateFileName(picked.name, pageNumbers.length === pageCount ? undefined : pageNumbers[0]), undefined, t('tools.pdfRotate'))
     } catch (err) {
       const message = String((err as Error).message)
       setError(message.startsWith('page-out-of-range') ? t('pdfcenter.pageOutOfRange') : message)

@@ -35,7 +35,7 @@ export const PdfCertSignView: React.FC = () => {
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const bytes = new Uint8Array(await res.arrayBuffer())
       const baseName = files[0].name.replace(/\.pdf$/i, '')
-      downloadBytes(bytes, `${baseName}_signed.pdf`)
+      downloadBytes(bytes, `${baseName}_signed.pdf`, undefined, t('tools.pdfCertSign'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { downloadBlob } from '../imagecenter/imageKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine, Field, inputClass } from '../calcdev/kit'
 
 export function formatBytes(bytes?: number | null): string {
@@ -292,7 +293,9 @@ export const LargeFileView: React.FC = () => {
   const exportCsv = () => {
     if (!files) return
     const csv = ['path,size_bytes', ...files.map((file) => `"${file.path}",${file.size_bytes}`)].join('\n')
-    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'large_files.csv')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    emitTaskDoneBlob(t('tools.largeFileCleanup'), blob, 'large_files.csv')
+    downloadBlob(blob, 'large_files.csv')
   }
 
   return (

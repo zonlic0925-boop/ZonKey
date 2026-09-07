@@ -9,6 +9,7 @@ import {
   type PptSlideText,
 } from '../../lib/zonkey/pptCore'
 import { downloadBlob } from '../imagecenter/imageKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 export const PptPicker: React.FC<{ onFile: (file: File) => void; disabled?: boolean }> = ({ onFile, disabled }) => (
@@ -52,7 +53,9 @@ export const PptImagesView: React.FC = () => {
   const downloadZip = async () => {
     const zip = new JSZip()
     for (const item of items) zip.file(item.name, item.blob)
-    downloadBlob(await zip.generateAsync({ type: 'blob' }), 'ppt_media.zip')
+    const blob = await zip.generateAsync({ type: 'blob' })
+    emitTaskDoneBlob(t('tools.pptImages'), blob, 'ppt_media.zip')
+    downloadBlob(blob, 'ppt_media.zip')
   }
 
   return (
@@ -112,7 +115,9 @@ export const PptTextView: React.FC = () => {
         return `${t('pptcenter.slide')} ${slide.slideNumber}: ${slide.title}\n${body}${notes}`
       })
       .join('\n\n')
-    downloadBlob(new Blob([text], { type: 'text/plain;charset=utf-8' }), 'ppt_text.txt')
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    emitTaskDoneBlob(t('tools.pptText'), blob, 'ppt_text.txt')
+    downloadBlob(blob, 'ppt_text.txt')
   }
 
   return (
@@ -157,6 +162,7 @@ export const PptCompressView: React.FC = () => {
     try {
       const output = await compressPptx(file)
       setResult(output)
+      emitTaskDoneBlob(t('tools.pptCompress'), output.blob, output.fileName)
       downloadBlob(output.blob, output.fileName)
     } catch (err) {
       setError(String((err as Error).message))

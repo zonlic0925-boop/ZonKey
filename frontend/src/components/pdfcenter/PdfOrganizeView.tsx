@@ -42,8 +42,7 @@ export const PdfOrganizeView: React.FC = () => {
       const blob = await exportEditedPdf(originalFile, elements);
       const outName = fileName.replace(/\.[^.]+$/, '') + '_edited.pdf';
       const fileData = new Uint8Array(await blob.arrayBuffer());
-      downloadBytes(fileData, outName);
-    } catch (err: unknown) {
+      downloadBytes(fileData, outName, 'application/pdf', t('tools.pdfOrganize'));    } catch (err: unknown) {
       setExportError(String((err as Error).message));
     } finally {
       setIsExporting(false);

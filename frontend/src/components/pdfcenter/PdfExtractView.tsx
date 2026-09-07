@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { extractPdfPages, createPdfExtractedFileName, parsePdfPageRanges } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 export const PdfExtractView: React.FC = () => {
@@ -31,8 +32,10 @@ export const PdfExtractView: React.FC = () => {
       const pageCount = (await source.PDFDocument.load(fileData.slice())).getPageCount()
       const parsed = parsePdfPageRanges(ranges, pageCount)
       const result = await extractPdfPages({ fileData, sourceName: picked.name, ranges: parsed })
+      const outName = createPdfExtractedFileName(picked.name)
       setOutputBytes(result)
-      setOutputName(createPdfExtractedFileName(picked.name))
+      setOutputName(outName)
+      emitTaskDoneBlob(t('tools.pdfExtract'), new Blob([new Uint8Array(result).buffer as ArrayBuffer], { type: 'application/pdf' }), outName)
     } catch (err) {
       setError(String((err as Error).message).includes('Invalid page range') ? t('pdfcenter.rangesInvalid') : String((err as Error).message))
     } finally {

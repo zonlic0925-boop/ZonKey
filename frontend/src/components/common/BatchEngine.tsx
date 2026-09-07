@@ -19,6 +19,7 @@ import { ErrorLine } from '../calcdev/kit'
 import { CapabilityGate, MediaOutputList, ProgressBar } from '../mediacenter/mediaKit'
 import type { MediaJobOutput } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
+import { emitTaskDoneBlob, emitTaskDoneOutputs } from '../../lib/zonkey/taskDone'
 import type { Vars } from '../../i18n/context'
 
 export type BatchCenter = 'pdf' | 'image' | 'ppt'
@@ -309,9 +310,14 @@ export const BatchEngine: React.FC<BatchEngineProps> = ({
         const zip = new JSZip()
         for (const out of clientOutputs) zip.file(out.fileName, out.bytes)
         const blob = await zip.generateAsync({ type: 'blob' })
-        setZipResult({ blob, name: `ZonKey_batch_${def.id}_${stamp}.zip`, count: clientOutputs.length })
+        const zipName = `ZonKey_batch_${def.id}_${stamp}.zip`
+        setZipResult({ blob, name: zipName, count: clientOutputs.length })
+        emitTaskDoneBlob(t(titleKey), blob, zipName)
       }
-      if (outputs.length > 0) setServerOutputs(outputs)
+      if (outputs.length > 0) {
+        setServerOutputs(outputs)
+        emitTaskDoneOutputs(t(titleKey), outputs)
+      }
       setDoneSummary(t('batchEngine.doneSummary', { ok: okCount, fail: failCount }))
       if (stopRef.current) setError(t('batchEngine.stoppedNote'))
     } catch (err) {

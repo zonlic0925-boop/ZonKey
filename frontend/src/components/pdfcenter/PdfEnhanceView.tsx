@@ -26,7 +26,7 @@ export const PdfEnhanceView: React.FC = () => {
     try {
       const fileData = new Uint8Array(await picked.file.arrayBuffer())
       const enhanced = await enhancePdfScan({ fileData, mode, strength: 1.4, scale: 2 })
-      downloadBytes(enhanced, createPdfEnhancedFileName(picked.name))
+      downloadBytes(enhanced, createPdfEnhancedFileName(picked.name), undefined, t('tools.pdfEnhance'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

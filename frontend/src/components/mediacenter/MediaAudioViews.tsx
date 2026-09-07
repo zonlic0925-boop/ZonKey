@@ -9,6 +9,7 @@ import {
   type BpmResult,
 } from '../../lib/zonkey/mediaCore'
 import { downloadBlob } from '../imagecenter/imageKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine, Field, inputClass, ResultTile } from '../calcdev/kit'
 
 const AudioPicker: React.FC<{ onFile: (file: File) => void; accept?: string; busy?: boolean }> = ({ onFile, accept = 'audio/*', busy }) => (
@@ -97,6 +98,7 @@ export const AudioClipView: React.FC = () => {
     setSaved(null)
     try {
       const output = await clipAudioToWav(file, range)
+      emitTaskDoneBlob(t('tools.audioClip'), output.blob, output.fileName)
       downloadBlob(output.blob, output.fileName)
       setSaved(`${output.fileName} · ${t('mediacenter.sourceDuration')}: ${fmtDuration(output.duration)}`)
     } catch (err) {
@@ -141,6 +143,7 @@ export const AudioConvertView: React.FC = () => {
     setSaved(null)
     try {
       const output = await convertAudioToWav(file)
+      emitTaskDoneBlob(t('tools.audioConvert'), output.blob, output.fileName)
       downloadBlob(output.blob, output.fileName)
       setSaved(`${output.fileName} · ${fmtDuration(output.duration)}`)
     } catch (err) {
@@ -178,6 +181,7 @@ export const AudioExtractView: React.FC = () => {
     setSaved(null)
     try {
       const output = await extractAudioFromVideo(file)
+      emitTaskDoneBlob(t('tools.audioExtract'), output.blob, output.fileName)
       downloadBlob(output.blob, output.fileName)
       setSaved(`${output.fileName} · ${fmtDuration(output.duration)}`)
     } catch (err) {

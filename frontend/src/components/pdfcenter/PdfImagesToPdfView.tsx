@@ -5,6 +5,7 @@ import { MemphisButton } from '../common/MemphisButton'
 import { TabsRow } from '../calcdev/kit'
 import { createImagesPdfFileName, imagesToPdf, type PdfImagesPageSize } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes } from './pdfKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 export const PdfImagesToPdfView: React.FC = () => {
@@ -39,8 +40,10 @@ export const PdfImagesToPdfView: React.FC = () => {
     setOutputName(null)
     try {
       const result = await imagesToPdf({ files, pageSize, marginPt })
+      const name = createImagesPdfFileName(files.length, files[0]?.name)
       setOutputBytes(result)
-      setOutputName(createImagesPdfFileName(files.length, files[0]?.name))
+      setOutputName(name)
+      emitTaskDoneBlob(t('tools.pdfImagesToPdf'), new Blob([new Uint8Array(result).buffer as ArrayBuffer], { type: 'application/pdf' }), name)
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

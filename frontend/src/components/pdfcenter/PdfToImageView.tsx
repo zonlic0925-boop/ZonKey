@@ -67,7 +67,11 @@ export const PdfToImageView: React.FC = () => {
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-mem-ink/70">{t('pdfcenter.toImageDone', { count: outputs.length })}</p>
             {outputs.length > 1 && (
-              <MemphisButton size="sm" variant="teal" onClick={() => downloadImageZip(outputs, `${baseName}_images.zip`)}>
+              <MemphisButton
+                size="sm"
+                variant="teal"
+                onClick={() => downloadImageZip(outputs, `${baseName}_images.zip`, t('tools.pdfToImage'))}
+              >
                 ZIP ({outputs.length})
               </MemphisButton>
             )}

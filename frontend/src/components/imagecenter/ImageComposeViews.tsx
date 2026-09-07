@@ -10,6 +10,7 @@ import {
   type StitchDirection,
 } from '../../lib/zonkey/imageCore'
 import { downloadBlob, ImagePicker, SaveRow, type PickedImage } from './imageKit'
+import { emitTaskDone, emitTaskDoneBlob, type TaskArtifact } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 export const ImageStitchView: React.FC = () => {
@@ -29,7 +30,9 @@ export const ImageStitchView: React.FC = () => {
     setError(null)
     setResult(null)
     try {
-      setResult(await stitchImages(files.map((picked) => picked.file), direction))
+      const output = await stitchImages(files.map((picked) => picked.file), direction)
+      emitTaskDoneBlob(t('tools.imageStitch'), output.blob, output.fileName)
+      setResult(output)
     } catch (err) {
       setError(String((err as Error).message))
     } finally {
@@ -77,7 +80,12 @@ export const IconGenView: React.FC = () => {
     setError(null)
     setOutputs([])
     try {
-      setOutputs(await generateIcons(file.file))
+      const generated = await generateIcons(file.file)
+      setOutputs(generated)
+      emitTaskDone(
+        t('tools.iconGen'),
+        generated.map((output) => ({ blob: output.blob, name: output.fileName, kind: 'image' })),
+      )
     } catch (err) {
       setError(String((err as Error).message))
     } finally {
@@ -89,6 +97,7 @@ export const IconGenView: React.FC = () => {
     const zip = new JSZip()
     for (const output of outputs) zip.file(output.fileName, output.blob)
     const blob = await zip.generateAsync({ type: 'blob' })
+    emitTaskDoneBlob(t('tools.iconGen'), blob, 'icons.zip')
     downloadBlob(blob, 'icons.zip')
   }
 

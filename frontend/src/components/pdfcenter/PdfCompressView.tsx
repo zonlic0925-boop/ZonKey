@@ -30,7 +30,7 @@ export const PdfCompressView: React.FC = () => {
       const compressed = await compressPdfFile(original, level)
       setResult({ original: original.length, compressed: compressed.length })
       const baseName = picked.name.replace(/\.pdf$/i, '')
-      downloadBytes(compressed, `${baseName}_compressed.pdf`)
+      downloadBytes(compressed, `${baseName}_compressed.pdf`, undefined, t('tools.pdfCompress'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

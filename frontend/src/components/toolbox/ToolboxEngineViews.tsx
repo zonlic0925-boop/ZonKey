@@ -21,6 +21,7 @@ import { ImagePicker } from '../imagecenter/imageKit'
 import { CropStage, type RectImage } from '../imagecenter/CropStage'
 import { apiFetch, pickExportFolder } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
+import { emitTaskDoneBlob, emitTaskDoneOutput } from '../../lib/zonkey/taskDone'
 import type { PickedImage } from '../imagecenter/imageKit'
 
 const selectClass = `${inputClass} appearance-none`
@@ -57,6 +58,7 @@ export const QrGenerateView: React.FC = () => {
       const res = await fetch('/api/toolbox/qr/generate', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const blob = await res.blob()
+      emitTaskDoneBlob(t('tools.qrGenerate'), blob, 'qrcode.png')
       setImgUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
         return URL.createObjectURL(blob)
@@ -271,7 +273,9 @@ export const ImageMaskView: React.FC = () => {
       const res = await fetch('/api/toolbox/image/mask', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const blob = await res.blob()
-      setResultName(`${file.name.replace(/\.[^.]+$/, '')}_masked.png`)
+      const maskName = `${file.name.replace(/\.[^.]+$/, '')}_masked.png`
+      setResultName(maskName)
+      emitTaskDoneBlob(t('tools.imageMask'), blob, maskName)
       setResultUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
         return URL.createObjectURL(blob)
@@ -424,6 +428,9 @@ export const IdPhotoView: React.FC = () => {
   const [files, setFiles] = useState<PickedImage[]>([])
   const [bg, setBg] = useState('#438EDB')
   const [size, setSize] = useState<(typeof ID_SIZES)[number]>('one-inch')
+  // 处理模式：replace=换底色+人像裁剪（旧行为）；keep=仅裁剪尺寸，保留衣着与
+  // 背景原样（round-26：用户实拍衣服色接近底色估色时被整片消除的出口）
+  const [bgMode, setBgMode] = useState<'replace' | 'keep'>('replace')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
@@ -462,6 +469,7 @@ export const IdPhotoView: React.FC = () => {
       form.append('file', files[0].file)
       form.append('bg_color', bg)
       form.append('size_preset', size)
+      form.append('bg_mode', bgMode)
       // 用户拖过裁剪框才传裁剪参数；未动 = 全自动人像裁剪（旧行为）
       if (rect) {
         form.append('crop_x', String(Math.round(rect.x)))
@@ -472,6 +480,7 @@ export const IdPhotoView: React.FC = () => {
       const res = await fetch('/api/toolbox/id-photo', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const blob = await res.blob()
+      emitTaskDoneBlob(t('tools.idPhoto'), blob, 'id_photo.png')
       setResultUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
         return URL.createObjectURL(blob)
@@ -506,6 +515,16 @@ export const IdPhotoView: React.FC = () => {
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Field label={t('toolbox.idMode')}>
+          <select
+            value={bgMode}
+            onChange={(e) => setBgMode(e.target.value as typeof bgMode)}
+            className={selectClass}
+          >
+            <option value="replace">{t('toolbox.idMode_replace')}</option>
+            <option value="keep">{t('toolbox.idMode_keep')}</option>
+          </select>
+        </Field>
         <Field label={t('toolbox.idSize')}>
           <select value={size} onChange={(e) => setSize(e.target.value as typeof size)} className={selectClass}>
             {ID_SIZES.map((s) => (
@@ -513,6 +532,13 @@ export const IdPhotoView: React.FC = () => {
             ))}
           </select>
         </Field>
+      </div>
+      {bgMode === 'keep' && (
+        <p className="text-xs text-mem-ink/60 font-medium bg-mem-teal/10 border border-mem-teal/40 rounded-lg px-3 py-2">
+          {t('toolbox.idModeKeepHint')}
+        </p>
+      )}
+      {bgMode === 'replace' && (
         <Field label={t('toolbox.idBg')}>
           <div className="flex items-center gap-2">
             {ID_BG_PRESETS.map((c) => (
@@ -528,7 +554,7 @@ export const IdPhotoView: React.FC = () => {
             <input type="color" value={bg} onChange={(e) => setBg(e.target.value)} className="w-8 h-8 border-2 border-mem-ink rounded-lg cursor-pointer" title={t('toolbox.idBgCustom')} />
           </div>
         </Field>
-      </div>
+      )}
       {/* 尺寸预览：同一比例尺按真实毫米比例渲染，不同档大小/形状可直接对比 */}
       <div className="flex items-center gap-4 px-4 py-3 bg-white border-2 border-mem-ink rounded-xl">
         <div
@@ -536,7 +562,7 @@ export const IdPhotoView: React.FC = () => {
           style={{
             width: ID_SIZE_MM[size].w * (96 / 49),
             height: ID_SIZE_MM[size].h * (96 / 49),
-            backgroundColor: bg,
+            backgroundColor: bgMode === 'keep' ? 'rgba(0,0,0,0.08)' : bg,
           }}
         />
         <div className="text-xs font-bold text-mem-ink/70">
@@ -718,7 +744,9 @@ export const PdfBookmarkView: React.FC = () => {
       const dispo = res.headers.get('content-disposition') || ''
       const match = dispo.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i)
       const outName = match ? decodeURIComponent(match[1]) : `${file.name.replace(/\.pdf$/i, '')}_bookmarks.pdf`
-      await downloadBlob(await res.blob(), outName)
+      const blob = await res.blob()
+      emitTaskDoneBlob(t('tools.pdfBookmarks'), blob, outName)
+      await downloadBlob(blob, outName)
       setNotice(t('toolbox.bmSaved'))
     } catch (err) {
       setError(String((err as Error).message))
@@ -858,6 +886,7 @@ export const TtsView: React.FC = () => {
       const res = await fetch('/api/toolbox/tts/synthesize', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const blob = await res.blob()
+      emitTaskDoneBlob(t('tools.tts'), blob, `tts_${Date.now()}.${fmt === 'mp3' ? 'mp3' : 'wav'}`)
       setAudioUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
         return URL.createObjectURL(blob)

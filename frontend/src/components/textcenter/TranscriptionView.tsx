@@ -11,6 +11,7 @@ import {
   type MediaToolCapabilities,
 } from '../../lib/api'
 import { CapabilityGate, MediaOutputList, ProgressBar } from '../mediacenter/mediaKit'
+import { emitTaskDoneOutputs } from '../../lib/zonkey/taskDone'
 
 /** 语音转写（音视频提取文字）：faster-whisper 纯离线识别，输出 TXT + SRT */
 export const TranscriptionView: React.FC = () => {
@@ -35,7 +36,11 @@ export const TranscriptionView: React.FC = () => {
     try {
       const started = await startTranscription(file, language, modelSize)
       const final = await pollMediaJob(started.job_id, (status) => setJob(status))
-      if (final.status === 'error') setError(final.error || t('mediaJob.failed'))
+      if (final.status === 'error') {
+        setError(final.error || t('mediaJob.failed'))
+      } else if (final.outputs.length) {
+        emitTaskDoneOutputs(t('tools.transcription'), final.outputs)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('mediaJob.failed'))
     } finally {

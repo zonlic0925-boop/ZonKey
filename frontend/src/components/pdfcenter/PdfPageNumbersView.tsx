@@ -5,6 +5,7 @@ import { MemphisButton } from '../common/MemphisButton'
 import { TabsRow } from '../calcdev/kit'
 import { addPageNumbers, createPdfNumberedFileName, type PdfPageNumberFormat, type PdfPageNumberPosition } from '../../lib/zonkey/pdfCore'
 import { BusyLine, downloadBytes, PdfFilePicker, type PickedFile } from './pdfKit'
+import { emitTaskDoneBlob } from '../../lib/zonkey/taskDone'
 import { ErrorLine } from '../calcdev/kit'
 
 const POSITION_OPTIONS: PdfPageNumberPosition[] = [
@@ -37,8 +38,10 @@ export const PdfPageNumbersView: React.FC = () => {
     try {
       const fileData = new Uint8Array(await picked.file.arrayBuffer())
       const result = await addPageNumbers({ fileData, position, format, fontSize, startAt })
+      const outName = createPdfNumberedFileName(picked.name)
       setOutputBytes(result)
-      setOutputName(createPdfNumberedFileName(picked.name))
+      setOutputName(outName)
+      emitTaskDoneBlob(t('tools.pdfPageNumbers'), new Blob([new Uint8Array(result).buffer as ArrayBuffer], { type: 'application/pdf' }), outName)
     } catch (err) {
       setError(String((err as Error).message))
     } finally {

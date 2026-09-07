@@ -41,7 +41,7 @@ export const PdfEncryptView: React.FC = () => {
         perms
       );
       const baseName = picked.name.replace(/\.pdf$/i, '')
-      downloadBytes(encrypted, `${baseName}_encrypted.pdf`)
+      downloadBytes(encrypted, `${baseName}_encrypted.pdf`, undefined, t('tools.pdfEncrypt'))
     } catch (err) {
       setError(String((err as Error).message))
     } finally {
