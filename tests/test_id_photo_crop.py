@@ -87,3 +87,74 @@ def test_id_photo_crop_clamps_out_of_bounds(client):
     data = _synth_photo()
     out = _post(client, data, crop_x=-50, crop_y=-50, crop_w=99999, crop_h=99999)
     assert out["status"] in (200, 422)  # 收束为全图后正常人像定位；任何情况都不得 500
+
+
+# ---------------------------------------------------------------------------
+# round-26：bg_mode="keep" 仅裁剪尺寸模式（不识别不换底，衣服/背景一律保留）
+# ---------------------------------------------------------------------------
+
+def _synth_photo_clothes_near_bg(w=640, h=800) -> bytes:
+    """紫蓝底 + 肤色脸 + 深紫衣服（衣服色与底色估色接近——replace 模式会消除衣服）。"""
+    arr = np.zeros((h, w, 3), dtype=np.uint8)
+    arr[:, :] = (70, 60, 130)
+    arr[180:360, 210:430] = (242, 201, 160)
+    arr[360:800, 0:640] = (75, 68, 125)
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_id_photo_keep_mode_preserves_clothes(client):
+    """keep 模式：衣服色接近底色估色时也必须原样保留（replace 会整片消除）。"""
+    data = _synth_photo_clothes_near_bg()
+    out = _post(client, data, bg_mode="keep", size_preset="one-inch")
+    assert out["status"] == 200, out["bytes"][:200]
+    img = Image.open(io.BytesIO(out["bytes"])).convert("RGB")
+    assert img.size == (295, 413)  # 25×35mm @ 300DPI
+    arr = np.asarray(img)
+    shirt = ((np.abs(arr.astype(int) - np.array([75, 68, 125])).max(axis=2)) < 30).sum()
+    face = ((np.abs(arr.astype(int) - np.array([242, 201, 160])).max(axis=2)) < 40).sum()
+    total = arr.shape[0] * arr.shape[1]
+    assert shirt / total > 0.3, f"衣服应大面积保留，实测 {shirt / total:.1%}"
+    assert face / total > 0.01, f"人脸应保留，实测 {face / total:.1%}"
+
+
+def test_id_photo_keep_mode_with_manual_crop(client):
+    """keep 模式 + 手动框选：按框选区域比例裁剪缩放，不触发换底。"""
+    data = _synth_photo_clothes_near_bg()
+    out = _post(client, data, bg_mode="keep", size_preset="two-inch",
+                crop_x=100, crop_y=150, crop_w=440, crop_h=500)
+    assert out["status"] == 200, out["bytes"][:200]
+    img = Image.open(io.BytesIO(out["bytes"]))
+    assert img.size == (413, 579)  # 35×49mm @ 300DPI
+
+
+def test_id_photo_keep_mode_never_rejects_plain_background(client):
+    """keep 模式对纯背景图（replace 会 422 的输入）也必出图——无识别步骤。"""
+    arr = np.zeros((300, 300, 3), dtype=np.uint8)
+    arr[:, :] = (240, 240, 240)
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")
+    out = _post(client, buf.getvalue(), bg_mode="keep", size_preset="one-inch")
+    assert out["status"] == 200, out["bytes"][:200]
+
+
+def test_id_photo_keep_mode_bad_value_rejected(client):
+    """bg_mode 非法值 → 400。"""
+    data = _synth_photo()
+    out = _post(client, data, bg_mode="wat")
+    assert out["status"] == 400
+
+
+def test_id_photo_replace_mode_default_unchanged(client):
+    """默认 bg_mode=replace → 旧行为不回归（换底仍生效：蓝底样本换白底）。"""
+    data = _synth_photo()  # 蓝底 + 肤色人像
+    out = _post(client, data, bg_color="#FFFFFF", size_preset="two-inch")
+    assert out["status"] == 200, out["bytes"][:200]
+    img = Image.open(io.BytesIO(out["bytes"])).convert("RGB")
+    assert img.size == (413, 579)
+    # 换底生效：四角应接近白色（旧底蓝色被替换）
+    arr = np.asarray(img)
+    corners = [arr[:8, :8], arr[:8, -8:], arr[-8:, :8], arr[-8:, -8:]]
+    for c in corners:
+        assert c.mean() > 200, "replace 模式四角应为新底色（白）"

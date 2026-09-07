@@ -268,6 +268,7 @@ async def id_photo(
     crop_y: int = Form(-1),
     crop_w: int = Form(-1),
     crop_h: int = Form(-1),
+    bg_mode: str = Form("replace"),
 ):
     """证件照：背景色距抠人像 + 换纯色底 + 标准尺寸裁剪。
 
@@ -276,6 +277,11 @@ async def id_photo(
     诚实边界：不做人像 AI 分割。top_ratio/bottom_ratio 控制头留白与底部裁剪比例（0-0.3）。
     crop_x/y/w/h（前端裁剪画布输出，原图像素）全部 ≥0 时先按该区域预裁剪，
     之后再走自动人像定位——用户手动框选优先于全自动包围盒。
+
+    bg_mode：replace=换底色（默认，色距抠人像后合成新底）；keep=仅裁剪尺寸——
+    不识别不换底，手动框选区域原样缩放到目标尺寸（无 crop 时按目标比例居中裁剪）。
+    keep 模式永不做像素替换，衣服/背景一律保留（round-26：用户实拍衣服色接近
+    底色估色时被整片消除的根治出口），且不触发人像识别 422。
     """
     import cv2
     import numpy as np
@@ -284,12 +290,16 @@ async def id_photo(
 
     if size_preset not in ID_PHOTO_SIZES:
         raise HTTPException(status_code=400, detail="尺寸预设不支持")
+    if bg_mode not in ("replace", "keep"):
+        raise HTTPException(status_code=400, detail="bg_mode 须为 replace 或 keep")
     width_mm, height_mm, dpi = ID_PHOTO_SIZES[size_preset]
     tolerance = max(10, min(120, int(tolerance)))
     top_ratio = max(0.0, min(0.3, float(top_ratio)))
     bottom_ratio = max(0.0, min(0.3, float(bottom_ratio)))
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", bg_color.strip()):
         raise HTTPException(status_code=400, detail="底色须为 #RRGGBB 格式")
+    target_px_w = round(width_mm / 25.4 * dpi)
+    target_px_h = round(height_mm / 25.4 * dpi)
 
     raw = await file.read()
     try:
@@ -312,6 +322,27 @@ async def id_photo(
             raise HTTPException(status_code=400, detail="裁剪区域过小（至少 50×50 像素）")
         arr = arr[cy0:cy1, cx0:cx1]
         h_img, w_img = arr.shape[:2]
+
+    # 仅裁剪尺寸：跳过识别与换底，纯几何裁剪 + 缩放（keep 模式分支）
+    if bg_mode == "keep":
+        target_ratio = width_mm / height_mm
+        src_ratio = w_img / h_img
+        if src_ratio > target_ratio:
+            # 源过宽 → 裁左右（居中）
+            keep_w = int(round(h_img * target_ratio))
+            x0 = (w_img - keep_w) // 2
+            crop = arr[:, x0:x0 + keep_w]
+        else:
+            # 源过高 → 裁下侧（证件照头部居上，保留上部）
+            keep_h = int(round(w_img / target_ratio))
+            crop = arr[:keep_h, :]
+        resized = cv2.resize(crop, (target_px_w, target_px_h), interpolation=cv2.INTER_AREA)
+        out_img = Image.fromarray(resized)
+        buf = _io.BytesIO()
+        out_img.save(buf, format="PNG", dpi=(dpi, dpi))
+        out_path = _unique_output_path(f"{_safe_base_name(file.filename)}_idphoto", ".png")
+        out_path.write_bytes(buf.getvalue())
+        return FileResponse(out_path, media_type="image/png", filename=out_path.name)
 
     # 1) 主通道：背景色距离（四角中值色）——纯色/近似纯色底最稳
     corners = np.concatenate([
@@ -375,8 +406,6 @@ async def id_photo(
     blended = crop.astype(float) * alpha + bg_rgb[None, None, :] * (1 - alpha)
 
     # 6) 缩放到目标尺寸（300DPI 标准像素）
-    target_px_w = round(width_mm / 25.4 * dpi)
-    target_px_h = round(height_mm / 25.4 * dpi)
     resized = cv2.resize(blended.astype(np.uint8), (target_px_w, target_px_h), interpolation=cv2.INTER_AREA)
     out_img = Image.fromarray(resized)
     buf = _io.BytesIO()
