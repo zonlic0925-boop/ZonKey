@@ -8,7 +8,7 @@
  *   （服务端返回 Content-Disposition: attachment，手机浏览器自动存入下载目录）。
  */
 import { useEffect, useState } from 'react'
-import { apiFetch, buildDownloadUrl, saveOutputFileAs } from './api'
+import { apiFetch, buildDownloadUrl, probeBackendAlive, saveOutputFileAs } from './api'
 
 /** 同步检测桌面壳（pywebview 注入 window.pywebview） */
 export function isShellMode(): boolean {
@@ -40,6 +40,21 @@ export function useShellMode(): boolean {
     }
   }, [shell])
   return shell
+}
+
+/** 后端引擎在线态（null=探测中）：需要后端的视图据此降级为浏览器引擎或明确引导 */
+export function useBackendOnline(): boolean | null {
+  const [online, setOnline] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    probeBackendAlive().then((ok) => {
+      if (!cancelled) setOnline(ok)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return online
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {

@@ -20,9 +20,10 @@ import { ErrorLine, Field, NumInput, AreaInput, inputClass } from '../calcdev/ki
 import { ImagePicker } from '../imagecenter/imageKit'
 import { CropStage, type RectImage } from '../imagecenter/CropStage'
 import { apiFetch, pickExportFolder, probeBackendAlive } from '../../lib/api'
-import { downloadBlob } from '../../lib/deliver'
+import { downloadBlob, useBackendOnline } from '../../lib/deliver'
 import { emitTaskDoneBlob, emitTaskDoneOutput } from '../../lib/zonkey/taskDone'
 import { runIdPhotoWeb, ID_PHOTO_SIZE_MM, type IdPhotoSizePreset } from '../../lib/zonkey/idPhotoWebCore'
+import { generateQrWeb, readQrWeb } from '../../lib/zonkey/qrWebCore'
 import type { PickedImage } from '../imagecenter/imageKit'
 
 const selectClass = `${inputClass} appearance-none`
@@ -44,21 +45,28 @@ export const QrGenerateView: React.FC = () => {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imgUrl, setImgUrl] = useState<string | null>(null)
+  const backendOnline = useBackendOnline()
 
   const generate = async () => {
     if (!text.trim()) return
     setBusy(true)
     setError(null)
     try {
-      const form = new FormData()
-      form.append('text', text)
-      form.append('ecc', ecc)
-      form.append('box_size', String(boxSize))
-      form.append('dark_color', dark)
-      form.append('light_color', light)
-      const res = await fetch('/api/toolbox/qr/generate', { method: 'POST', body: form })
-      if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
-      const blob = await res.blob()
+      let blob: Blob
+      if (backendOnline === false) {
+        // 后端离线（手机网页版/Pages）：浏览器引擎兜底（node-qrcode 动态加载）
+        blob = await generateQrWeb(text, { ecc, boxSize, dark, light })
+      } else {
+        const form = new FormData()
+        form.append('text', text)
+        form.append('ecc', ecc)
+        form.append('box_size', String(boxSize))
+        form.append('dark_color', dark)
+        form.append('light_color', light)
+        const res = await fetch('/api/toolbox/qr/generate', { method: 'POST', body: form })
+        if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
+        blob = await res.blob()
+      }
       emitTaskDoneBlob(t('tools.qrGenerate'), blob, 'qrcode.png')
       setImgUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
@@ -78,6 +86,11 @@ export const QrGenerateView: React.FC = () => {
         <QrCode className="w-5 h-5 text-mem-sky" />
         <h3 className="font-display font-black text-mem-ink">{t('tools.qrGenerate')}</h3>
       </div>
+      {backendOnline === false && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-yellow/30 text-xs font-bold text-mem-ink">
+          {t('toolbox.qrWebEngineNote')}
+        </div>
+      )}
       <Field label={t('toolbox.qrContent')}>
         <textarea
           value={text}
@@ -142,6 +155,7 @@ export const QrReadView: React.FC = () => {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<QrReadResult[] | null>(null)
+  const backendOnline = useBackendOnline()
 
   const read = async () => {
     if (!files[0]) return
@@ -149,9 +163,16 @@ export const QrReadView: React.FC = () => {
     setError(null)
     setResults(null)
     try {
-      const form = new FormData()
-      form.append('file', files[0].file)
-      const data = await apiFetch<{ found: number; results: QrReadResult[] }>('/api/toolbox/qr/read', { method: 'POST', body: form }, 120000)
+      let data: { found: number; results: QrReadResult[] }
+      if (backendOnline === false) {
+        // 后端离线（手机网页版/Pages）：浏览器引擎兜底（jsQR 单码，小图 2× 重试）
+        const found = await readQrWeb(files[0].file)
+        data = { found: found.length, results: found }
+      } else {
+        const form = new FormData()
+        form.append('file', files[0].file)
+        data = await apiFetch<{ found: number; results: QrReadResult[] }>('/api/toolbox/qr/read', { method: 'POST', body: form }, 120000)
+      }
       setResults(data.results)
       if (!data.results.length) setError(t('toolbox.qrNotFound'))
     } catch (err) {
@@ -167,6 +188,11 @@ export const QrReadView: React.FC = () => {
         <ScanLine className="w-5 h-5 text-mem-teal" />
         <h3 className="font-display font-black text-mem-ink">{t('tools.qrRead')}</h3>
       </div>
+      {backendOnline === false && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-yellow/30 text-xs font-bold text-mem-ink">
+          {t('toolbox.qrWebEngineNote')}
+        </div>
+      )}
       <ImagePicker files={files} onChange={setFiles} />
       <MemphisButton variant="teal" onClick={read} disabled={busy || !files.length}>
         {t('toolbox.qrRecognize')}
