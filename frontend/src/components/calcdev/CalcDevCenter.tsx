@@ -12,6 +12,7 @@ import { UuidView } from './UuidView'
 import { JwtView } from './JwtView'
 import { HashCryptoView } from './HashCryptoView'
 import { UnitConverterView, BaseConverterView } from '../toolbox/ToolboxTextViews'
+import { QrGenerateView, QrReadView } from '../toolbox/ToolboxEngineViews'
 
 /** 计算开发中心：按二级工具 ID 渲染对应视图 */
 export const CalcDevCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
@@ -42,6 +43,10 @@ export const CalcDevCenter: React.FC<{ tool: ToolId }> = ({ tool }) => {
       return <UnitConverterView />
     case 'base-converter':
       return <BaseConverterView />
+    case 'qr-generate':
+      return <QrGenerateView />
+    case 'qr-read':
+      return <QrReadView />
     default:
       return null
   }

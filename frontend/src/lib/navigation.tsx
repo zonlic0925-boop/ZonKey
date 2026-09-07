@@ -165,6 +165,8 @@ export const CENTER_TOOLS: Record<CenterId, ToolMeta[]> = {
     { id: 'hash-crypto', labelKey: 'tools.hashCrypto', availability: 'ready' },
     { id: 'unit-converter', labelKey: 'tools.unitConverter', availability: 'ready' },
     { id: 'base-converter', labelKey: 'tools.baseConverter', availability: 'ready' },
+    { id: 'qr-generate', labelKey: 'tools.qrGenerate', availability: 'ready' },
+    { id: 'qr-read', labelKey: 'tools.qrRead', availability: 'ready' },
   ],
   system_tools: [
     { id: 'hardware-overview', labelKey: 'tools.hardwareOverview', availability: 'ready' },

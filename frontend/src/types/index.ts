@@ -109,7 +109,9 @@ export type CalcToolId =
   | 'jwt'
   | 'hash-crypto'
   | 'unit-converter'
-  | 'base-converter';
+  | 'base-converter'
+  | 'qr-generate'
+  | 'qr-read';
 
 /** 系统硬件中心 */
 export type SystemToolId =
