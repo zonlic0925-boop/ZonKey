@@ -1,6 +1,17 @@
-> 更新于：2026-09-07（第二十七轮：QR 导航入口 + 手机弹窗「打开」白屏修复 + 证件照手机网页版浏览器引擎）。
+> 更新于：2026-09-07（第二十八轮：手机网页版 QR 浏览器引擎 + PPT 渲染工具离线门禁）。
 
-## 2026-09-07 第二十七轮进度（QR 入口 + 白屏根治 + 证件照浏览器引擎，本轮）
+## 2026-09-07 第二十八轮进度（手机网页版用户反馈，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| PPT 转 PDF/转长图 HTTP 405 | ✅ | 根因：两视图裸调 `/api/ppt/render`，Pages 静态托管对 POST 返 405。PPTX 渲染依赖本机 LibreOffice/PowerPoint COM，浏览器无渲染器属**能力边界**（不可兜底）——`PptToPdfView/PptToImageView` 挂 `useBackendOnline()` 门禁：离线显示「渲染引擎需要本机后端」引导条（三语 `pptcenter.backendOffline`），不再裸 405；在线路径零改动（Playwright 实测 PowerPoint COM 真渲染通过）。批处理版早有 BatchEngine 门禁无此问题 |
+| 二维码生成无效果 | ✅ | 同根因家族：裸调 `/api/toolbox/qr/*`。新 `qrWebCore.ts` 浏览器引擎双兜底——生成=node-qrcode(MIT) toCanvas（参数与后端对齐：scale=box_size/margin=4/ECC/前后景色）；识别=jsQR(Apache-2.0)（attemptBoth+小图 2× 重试，1600px 工作上限，EXIF 转正）。均动态 import()（browser-*.js/jsQR-*.js 按需 chunk）主包仅 +3KB；两视图离线黄条（三语 `toolbox.qrWebEngineNote`）+ 引擎出图/解码。诚实边界：浏览器识别单码（后端多码）、无 CLAHE。**r23「勿引前端 QR 库」结论修订**：动态 import 按需加载不违包体积初衷 |
+| 用户确认反馈（第②项） | ✅ | 「pdf转word 转换后可直接打开」= r27 修复实测确认（浏览器引擎兜底 + docx 自动下载→手机打开链路正常），本轮零改动 |
+| 通用探针 hook | ✅ | `deliver.ts` 新 `useBackendOnline(): boolean|null`（null=探测中走服务端）——浏览器兜底视图的标准探针；IdPhotoView 旧内联写法行为一致待下次收敛 |
+| 回归验证 | ✅ | tsc 零错 + npm build（主 chunk `index-L971O2z9.js`）；新 `r28_mobile_qr_ppt_smoke.mjs` **13/13**（离线 route abort 模拟 Pages：QR 生成引擎出图+弹窗 / **QR 识别 jsQR 真解码往返** / PPT 双工具引导无 405；在线：PowerPoint COM 真渲染）；r27 冒烟重跑 **15/15** + r26 **14/14** 零 pageerror；许可 MIT/Apache 过门禁（npm audit 3 high 均既有依赖） |
+| 收尾状态 | ✅ | git 分批提交 master 4 笔（`5d17476`/`b8786dc`/`711f125`/本笔 docs+smoke）。**EXE 重打包** exit=0（`build_exe_r28.log`）：release_acceptance 8/8 PASS，三产物+sidecar 同批 16:01-16:03；zip 主 chunk md5=本地+特征串命中（qrWebEngineNote×5+browser/jsQR chunk 在包）；Setup 静默实装 EXIT=0。**Pages 生产部署 `ea248df2`**（--branch main，Production 实证，Source=711f125）：主域 bundle=`index-L971O2z9.js`，线上 md5=本地=zip 三方一致。**遗留**：① 用户手机真机复测（QR 生成/识别实拍、PPT 工具引导文案）；② WHATSNEW_ROUND 自 r24 起五轮未升，下次大功能一并处理 |
+
+## 2026-09-07 第二十七轮进度（QR 入口 + 白屏根治 + 证件照浏览器引擎，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

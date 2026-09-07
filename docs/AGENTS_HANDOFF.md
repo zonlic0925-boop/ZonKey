@@ -1,8 +1,20 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十七轮：QR 导航入口 + 手机弹窗「打开」白屏修复 + 证件照手机网页版浏览器引擎）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十八轮：手机网页版 QR 浏览器引擎 + PPT 渲染工具离线门禁；r27 三修复用户确认转换链路正常）。
 
-## 〇、2026-09-07 第二十七轮（QR 入口注册 + TaskDoneModal 白屏根治 + 证件照浏览器引擎，本轮）
+## 〇、2026-09-07 第二十八轮（手机网页版用户反馈三件：405/确认/QR，本轮）
+
+- **任务（用户 3 项，手机网页版）**：① PPT 工坊「转 PDF」「转长图」HTTP 405 无法使用；② 「pdf转word，那些转换功能是可以直接打开的，转换后可以直接打开的」；③ 二维码生成无效果。
+- **定性**：①③ 与 r27 证件照同根因家族——视图裸调 `/api/*`，Pages 静态托管对 POST 返 405；② 为**确认反馈**（r27 浏览器引擎兜底 + docx 产物 auto-download→手机「打开」链路实测正常），无需改动。会话内连跑两轮收尾链（r27+同一会话追加 r28）。
+- **实现**：
+  - **PPT 转PDF/转长图（405 根治=诚实门禁）**：PPTX 渲染依赖本机 LibreOffice/PowerPoint COM，**浏览器无 PPTX 渲染器属能力边界**（与 pdf-to-word 不同，无法兜底）——`PptToPdfView/PptToImageView` 挂 `useBackendOnline()`：离线显示天蓝提示条（`pptcenter.backendOffline` 三语，措辞对齐 convert.backendOffline），选文件后 setError 同文案，不再裸 405；在线路径零改动（Playwright 实测 PowerPoint COM 真渲染「渲染完成（PowerPoint）」）。批处理版本无此问题（r21 BatchEngine 自带 getEngineAvailability 门禁）。
+  - **二维码浏览器引擎（生成+识别双兜底）**：新 `frontend/src/lib/zonkey/qrWebCore.ts`——生成=node-qrcode(MIT) `toCanvas`（UTF-8 原生，scale=后端 box_size 同义、margin=4、dark/light 前后景色、ECC 对齐）；识别=jsQR(Apache-2.0) canvas 解码（attemptBoth 双极性，<600px 小图 2× 放大重试一次，1600px 工作上限，EXIF from-image）。**r23「勿引前端 QR 库」结论就此修订**：旧结论针对零引用死重量；动态 import() 代码分割（`browser-*.js`/`jsQR-*.js` chunk 按需加载）主包仅 +3KB。许可 MIT/Apache 均过零 AGPL 门禁（npm audit 3 high 均为既有 image-size/xlsx，与新依赖无关）。QR 生成/识别视图离线黄条（`toolbox.qrWebEngineNote` 三语）+ 走引擎；`deliver.ts` 新 `useBackendOnline(): boolean|null` 通用探针 hook（null=探测中走服务端）。
+  - **诚实边界**（引擎头注释+黄条）：浏览器识别为单码（后端 zxing-cpp 多码）、无 CLAHE 对比度增强；PPT 渲染类永不支持纯浏览器。
+- **验证汇总**：tsc 零错 + npm build（主 chunk `index-L971O2z9.js`，qrcode/jsQR 均独立 chunk）；新 `temp_ui_test/r28_mobile_qr_ppt_smoke.mjs` **13/13**——离线组（route abort 模拟 Pages）：QR 生成黄条+引擎 blob 出图+弹窗 qrcode.png、**QR 识别 jsQR 真解码往返命中**（python qrcode 造 fixture → 识别出原文 zonkey-r28-roundtrip-20260907 + QR_CODE 徽标）、PPT 转PDF/转长图引导文案且无 405；在线组：PowerPoint COM 真渲染通过（fixture 由 python-pptx/qrcode 按需生成，脚本自动补齐不入库）。回归 r27 **15/15** + r26 **14/14** 零 pageerror。
+- **收尾状态**：git 分批提交 master 4 笔（`5d17476` PPT 门禁 → `b8786dc` QR 引擎 → `711f125` 三语 → 本笔 docs+smoke）。**EXE 重打包**：等义 bash 链 exit=0（`build_exe_r28.log`），release_acceptance 8/8 PASS，三产物+sidecar 同批 16:01-16:03（Setup 161.0MB / 7z 160.4MB / zip 223.7MB）；zip 主 chunk md5=本地（9803c65f）+ `qrWebEngineNote`×5 命中 + browser/jsQR 动态 chunk 在包；**Setup 静默实装** EXIT=0+命中，装完即删。**Pages 生产部署 `ea248df2`**（--branch main，Production 实证，Source=711f125）：主域 bundle=`index-L971O2z9.js`，**线上 md5=本地=zip 三方一致**，线上 qrWebEngineNote 命中。7z 打包偶发崩溃坑本轮未触发（r27 曾 .tmp 残留假象，注意 ls 时段）。
+- **接手注意**：① `useBackendOnline()` 已成浏览器兜底视图的标准探针（IdPhotoView 还是内联旧写法，行为一致，下次顺手收敛）；② probe 为 8s 异步——探测窗口内点「生成/转换」仍会走服务端 fetch 失败，属瞬态可接受，别改成同步阻塞首屏；③ jsQR/qrcode 的 chunk 名含 hash，验证在包别 grep 文件名，grep 特征串（qrWebEngineNote/errorCorrectionLevel）；④ node-qrcode `toCanvas` 会直接 throw（内容超长等），error line 直出英文异常属预期；⑤ 用户反馈分类口径沉淀：**「下载可以/打开白屏」=交付层问题（r27），「HTTP 405」=离线裸调（r28），「无效果」=入口或引擎缺失**——先问用户在哪个入口测的（Pages/LAN/壳），三类修法完全不同。
+
+## 〇、2026-09-07 第二十七轮（QR 入口注册 + TaskDoneModal 白屏根治 + 证件照浏览器引擎，上轮）
 
 - **任务（用户 3 项）**：① 二维码生成/识别视图 round-23 建成后一直无导航入口（emit 在位 UI 进不去），挂入计算开发中心；② 手机版 PDF 转 Word/PPT 等弹窗后「下载」可用、「打开文件」白屏，找根因修复；③ 证件照手机版网页点「生成证件照」一直不成功，评估手机网页版能否实现该功能。
 - **根因（第一性拆解）**：
