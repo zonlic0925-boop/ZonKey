@@ -9,7 +9,8 @@
 | 回归验证 | ✅ | npm build（`index-Bh4HOGe1.js`）；新 `r29_preview_smoke.py` **18/18**（打开按钮可见/预览命中/**零自动下载**/手动下载×1/xlsx 表格/手机 390px/WhatsNew 29 首启+seenRound 落盘/零 pageerror）；pytest **151 passed** |
 | 收尾状态 | ✅ | git 4 笔（`d0f9bd1`/`8b1bbb7`/`acb8b62`/本笔）；EXE 三产物+sidecar 同批 16:40-16:42 + 验收 8/8 + Setup 静默实装命中装完即删；Pages 生产 `847a05cc`（线上 md5 d8f9a1c7=本地=zip）。朋友圈物料三卡（`docs/screenshots/round29/moments/`）+ `scripts/gen_moments_r29.py` + MOMENTS_KIT.md round-29 文案 A/B |
 | 朋友圈重做 | ✅ | 当晚按用户反馈重写 `gen_moments_r29.py` 文案结构：卡1=一句话点题+以前/现在对比；卡2=「本次更新了什么」3 件事（不再混排 r26-r28 旧功能）；卡3=获取方式。MOMENTS_KIT.md 同步；judge 视觉验收 3/3 pass |
-| 遗留 | — | ① 手机真机复测「打开」预览（Safari / 安卓 Chrome / 微信内置浏览器——微信内下载受限是已知边界，restrictedBrowser 黄条已有引导换系统浏览器）；② pptx 预览暂无许可干净的轻量渲染器，如实保持下载通道；③ 朋友圈素材已就绪待用户发布；④ 线上 Release v2.1.0 资产仍是 20260903 批次，本地 20260907 三产物未上传——网页下载弹窗动态拉 Release，用户现下到的是旧版（上传方式待用户确认） |
+| Release v2.2.0 | ✅ | 用户确认新建 Release：master+tag v2.2.0 已 push（红线审计过），6 资产（Setup/7z/zip + sha256×3）上传并核验字节一致，已成 Latest——网页下载弹窗自此拉到 20260907 新版；macOS DMG 由 Actions tag 触发自动附加（发布时 queued） |
+| 遗留 | — | ① 手机真机复测「打开」预览（Safari / 安卓 Chrome / 微信内置浏览器——微信内下载受限是已知边界，restrictedBrowser 黄条已有引导换系统浏览器）；② pptx 预览暂无许可干净的轻量渲染器，如实保持下载通道；③ 朋友圈素材已就绪待用户发布；④ macOS DMG 自动构建完成后到 Release 检查附件（run 34112083361） |
 
 ## 2026-09-07 第二十八轮进度（手机网页版用户反馈，上轮）
 
