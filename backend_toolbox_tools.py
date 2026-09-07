@@ -285,7 +285,7 @@ async def id_photo(
     """
     import cv2
     import numpy as np
-    from PIL import Image
+    from PIL import Image, ImageOps
     import io as _io
 
     if size_preset not in ID_PHOTO_SIZES:
@@ -304,6 +304,8 @@ async def id_photo(
     raw = await file.read()
     try:
         pil = Image.open(_io.BytesIO(raw))
+        # EXIF 方向转正：手机竖拍照片（Orientation=6/8）否则裁剪与换底按未旋转像素走
+        pil = ImageOps.exif_transpose(pil)
         pil = pil.convert("RGB")
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"无法读取图片: {exc}")

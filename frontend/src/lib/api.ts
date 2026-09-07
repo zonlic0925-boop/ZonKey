@@ -433,6 +433,16 @@ export async function getConvertCapability(): Promise<ConvertCapability> {
   return apiFetch<ConvertCapability>('/api/convert/capability', undefined, 10000)
 }
 
+/** 后端在线探测：需要后端引擎的工具在离线时走浏览器兜底前先探一次 */
+export async function probeBackendAlive(timeoutMs = 8000): Promise<boolean> {
+  try {
+    await apiFetch('/api/convert/capability', undefined, timeoutMs)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export type ConvertOp =
   | 'pdf-to-word'
   | 'pdf-to-excel'

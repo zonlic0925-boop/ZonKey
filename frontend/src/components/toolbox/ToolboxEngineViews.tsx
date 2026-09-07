@@ -19,9 +19,10 @@ import { MemphisButton } from '../common/MemphisButton'
 import { ErrorLine, Field, NumInput, AreaInput, inputClass } from '../calcdev/kit'
 import { ImagePicker } from '../imagecenter/imageKit'
 import { CropStage, type RectImage } from '../imagecenter/CropStage'
-import { apiFetch, pickExportFolder } from '../../lib/api'
+import { apiFetch, pickExportFolder, probeBackendAlive } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
 import { emitTaskDoneBlob, emitTaskDoneOutput } from '../../lib/zonkey/taskDone'
+import { runIdPhotoWeb, ID_PHOTO_SIZE_MM, type IdPhotoSizePreset } from '../../lib/zonkey/idPhotoWebCore'
 import type { PickedImage } from '../imagecenter/imageKit'
 
 const selectClass = `${inputClass} appearance-none`
@@ -413,21 +414,23 @@ const RegionBox: React.FC<{
 // 证件照换底色 + 尺寸
 // ---------------------------------------------------------------------------
 
-const ID_SIZES = ['one-inch', 'two-inch', 'small-two-inch', 'one-inch-large'] as const
+const ID_SIZES: IdPhotoSizePreset[] = ['one-inch', 'two-inch', 'small-two-inch', 'one-inch-large']
 const ID_BG_PRESETS = ['#438EDB', '#FFFFFF', '#FF0000', '#0000FF']
-// name -> (宽mm, 高mm)：与后端 ID_PHOTO_SIZES 打印尺寸对齐（预览按真实比例渲染）
-const ID_SIZE_MM: Record<(typeof ID_SIZES)[number], { w: number; h: number }> = {
-  'one-inch': { w: 25, h: 35 },
-  'two-inch': { w: 35, h: 49 },
-  'small-two-inch': { w: 33, h: 48 },
-  'one-inch-large': { w: 33, h: 48 },
-}
+// 尺寸表真源在 idPhotoWebCore（与后端 ID_PHOTO_SIZES 对齐，浏览器引擎/预览共用）
+const ID_SIZE_MM = ID_PHOTO_SIZE_MM
 
 export const IdPhotoView: React.FC = () => {
   const { t } = useI18n()
   const [files, setFiles] = useState<PickedImage[]>([])
+  // 后端在线探测：null=探测中 / false=离线（Pages 等纯静态环境）→ 浏览器引擎兜底
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    probeBackendAlive().then((ok) => { if (!cancelled) setBackendOnline(ok) })
+    return () => { cancelled = true }
+  }, [])
   const [bg, setBg] = useState('#438EDB')
-  const [size, setSize] = useState<(typeof ID_SIZES)[number]>('one-inch')
+  const [size, setSize] = useState<IdPhotoSizePreset>('one-inch')
   // 处理模式：replace=换底色+人像裁剪（旧行为）；keep=仅裁剪尺寸，保留衣着与
   // 背景原样（round-26：用户实拍衣服色接近底色估色时被整片消除的出口）
   const [bgMode, setBgMode] = useState<'replace' | 'keep'>('replace')
@@ -465,6 +468,21 @@ export const IdPhotoView: React.FC = () => {
     setError(null)
     setResultUrl(null)
     try {
+      if (backendOnline === false) {
+        // 后端离线（手机网页版/Pages）：浏览器引擎兜底（基础版色距抠像/纯几何裁剪）
+        const result = await runIdPhotoWeb(files[0].file, {
+          bgColor: bg,
+          sizePreset: size,
+          bgMode,
+          crop: rect,
+        })
+        emitTaskDoneBlob(t('tools.idPhoto'), result.blob, result.fileName)
+        setResultUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev)
+          return URL.createObjectURL(result.blob)
+        })
+        return
+      }
       const form = new FormData()
       form.append('file', files[0].file)
       form.append('bg_color', bg)
@@ -499,6 +517,11 @@ export const IdPhotoView: React.FC = () => {
         <h3 className="font-display font-black text-mem-ink">{t('tools.idPhoto')}</h3>
       </div>
       <p className="text-xs text-mem-ink/60 font-medium">{t('toolbox.idIntro')}</p>
+      {backendOnline === false && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-yellow/30 text-xs font-bold text-mem-ink">
+          {t('toolbox.idWebEngineNote')}
+        </div>
+      )}
       <ImagePicker files={files} onChange={(f) => { setFiles(f); setResultUrl(null) }} />
       {/* 手动裁切画布：触屏拖画/移动/八向手柄，默认全图（不裁=自动人像定位） */}
       {fileUrl && imgSize.w > 0 && rect && (
