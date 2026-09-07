@@ -1,6 +1,16 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-04（第二十四轮：图片打码触屏框选修复 + 证件照色距主通道/真实比例预览）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十五轮：手机端三修复——网页版捏合缩放/图像裁剪展示/证件照手动裁切）。
+
+## 〇、2026-09-07 第二十五轮（手机端三修复：缩放/裁剪展示/证件照裁切，本轮）
+
+- **任务（用户 2 项）**：① 手机网页版可缩放 + 图像裁剪图片展示不全、触屏难操作；② 证件照换底色裁切手机端没效果。成功标准：手机可捏合缩放页面；裁剪画布 390px 完整可见可操作；证件照有可用的裁切交互且传参到后端；桌面不回归；Playwright 390px 实测。
+- **根因（第一性拆解）**：① 缩放——viewport meta 未禁缩放，真凶是 **iOS 从主屏图标进入 PWA standalone 模式默认禁捏合缩放**（manifest `display: standalone`），必须显式 `user-scalable=yes` 声明；② 图像裁剪——画布宽度硬编码 `maxW=600px`，390px 视口下 stage 溢出被 body `overflow:hidden` 裁掉右侧（图片不完整、右侧手柄框选不到）；③ 证件照——`IdPhotoView` 前端**根本没有裁切交互**（后端全自动人像裁剪无法干预），用户做任何"裁切操作"都无效果是必然。
+- **实现**：新建共享组件 `frontend/src/components/imagecenter/CropStage.tsx`（ResizeObserver 容器实测宽度自适应 + 限高 55vh + Pointer Events 统一鼠标/触屏/笔 + stage setPointerCapture + 八向手柄 14px 视觉/28px 热区）；`ImageCropView` 与 `IdPhotoView` 都接入；后端 `id_photo` 加 `crop_x/y/w/h` Form 参数（全部 ≥0 时在人像识别前预裁剪，<50×50 400 防呆，越界收束不 500）；i18n `toolbox.idCropHint` 三语同轮补齐；viewport meta 加 `user-scalable=yes, minimum-scale=1, maximum-scale=5`。
+- **三个深坑（真实根因链）**：① CropStage 初版 `if (!ready) return null` 自锁死循环——wrapper 不挂载则 ResizeObserver 永远量不到宽、box 恒 0（修：wrapper 恒渲染）；② 触屏 pointerdown 的 `button=-1`（规范），`e.button!==0` 检查把触屏全挡了（修：只对 `pointerType==='mouse'` 检查，同 r24 打码）；③ **手柄热区伸到框外被 stage `overflow-hidden` 裁掉且不可命中**——全图框时四角手柄只剩半边可点（旧实现注释早有此坑记录「手柄放框内 2px」，重写时丢了）；修：28px 热区中心收进框内 14px。另：touch pointerdown 上 preventDefault 会抑制 Chromium 合成 touch 序列的后续 pointermove 派发（删掉，防手势交给 touch-action:none）。
+- **验证汇总**：npm build 成功（dist_web bundle `index-Bp1gkirE.js` 特征串命中）；pytest **146 passed**（新增 `tests/test_id_photo_crop.py` 5 个：手动裁剪 295×413 / <50×50 400 / 纯背景区 422 / 不传 crop 旧路径 413×579 不回归 / 越界收束）；release_acceptance 全过；新 `temp_ui_test/r25_mobile_crop_smoke.mjs` **13/13**（viewport user-scalable=yes / touch-action≠none / 裁剪画布 350px 完整落 390 视口 / 手柄缩框 465×596 / 框体移动 x=77 / 证件照画布完整 / 手柄缩框+空白拖画 / 生成无 pageerror / output 新产物 / **产物尺寸 295×413@300DPI 断言**）；r24 冒烟重跑 9/9 不回归。
+- **冒烟方法论（round-16 复用）**：CDP `dispatchTouchEvent` 在 React 18 合成事件层不可靠（原生 root 探针收到完整 touch pointer 序列，但 React onPointerMove 不触发；手动 dispatchEvent 则全通）——**鼠标管线验证交互逻辑本体 + root 事件链证据 + r24 同款 Pointer Events 模式，触屏真机留给用户验收**；PowerShell `ConvertTo-Json` 日期是 `/Date(ms)/` 格式，`new Date()` 解析恒 Invalid 必须抽 ms；测试断言注意全图初始框占满 stage 时拖画起点必在框内（走 move 模式）、move 空间=0（clamp 顶格）——先手柄缩小再测移动/拖画。
+- **接手注意**：① 手机端二级工具导航是 SubNavPills 横向滚动条，pill 可能滚出视口 Playwright click 判不可见——DOM JS click（`[...sc.querySelectorAll('button')].find(b=>b.textContent.trim()===工具名).click()`）实测可靠；② CropStage 定位选择器：`main img[class*="w-full h-full"]` 的父元素即 stage；③ 裁剪断言前先滚内层 `.overflow-y-auto`（`scroller.scrollTop=99999`）否则 stage 底部在视口外坐标超界；④ 证件照冒烟的拖画区必须真含人像，纯背景区后端正确 422；⑤ 触屏 pointerdown 的 `button=-1` 与 pointerdown preventDefault 抑制 move 两条坑写进 CropStage 注释，改动前先读注释。
 
 ## 〇、2026-09-04 第二十四轮（工具箱两 bug 修复，本轮）
 

@@ -1,4 +1,16 @@
-> 更新于：2026-09-04（第二十四轮：工具箱两 bug 修复——图片打码触屏框选 Pointer Events 化 + 证件照色距主通道/真实比例预览）。
+> 更新于：2026-09-07（第二十五轮：手机端三修复——网页版捏合缩放放开 + 图像裁剪手机展示/操作重写 + 证件照手动裁切交互）。
+
+## 2026-09-07 第二十五轮进度（手机端三修复，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 手机端·捏合缩放 | ✅ | 根因不是 viewport 禁缩放（meta 本来没禁），而是 iOS 主屏图标进入 PWA standalone 模式默认禁捏合缩放——meta 显式加 `user-scalable=yes, minimum-scale=1, maximum-scale=5`（`frontend/index.html`） |
+| 手机端·图像裁剪展示/操作 | ✅ | 旧画布硬编码 600px 宽在 390px 视口溢出、被 body overflow:hidden 裁掉右侧（图片不完整、右侧手柄不可选）。新建共享 `CropStage.tsx`（ResizeObserver 容器自适应 + Pointer Events + 28px 触屏热区），`ImageCropView` 接入；390px 实测画布 350px 完整可见，手柄缩框/框体移动/空白拖画全通 |
+| 手机端·证件照裁切 | ✅ | 旧版前端根本没有裁切交互（后端全自动无法干预）——「怎么拖都没效果」是必然。`IdPhotoView` 接入 CropStage + 后端 `id_photo` 新增 `crop_x/y/w/h`（人像识别前预裁剪，<50×50 → 400，越界收束不 500）；i18n 三语 `idCropHint` 同轮补齐 |
+| 三个深坑修复 | ✅ | ① CropStage `return null` 自锁死循环（ResizeObserver 量不到宽）→ wrapper 恒渲染；② 触屏 pointerdown `button=-1` 被 `e.button!==0` 全挡 → 只对 mouse 检查；③ 手柄热区伸框外被 stage overflow-hidden 裁掉不可命中（全图框四角只剩半边）→ 热区中心收进框内 14px；④ touch pointerdown preventDefault 抑制合成序列后续 pointermove → 删除，防手势交给 touch-action:none |
+| 回归验证 | ✅ | npm build（bundle `index-Bp1gkirE.js` 特征串命中）；pytest **146 passed**（新增 `test_id_photo_crop.py` 5 个：手动裁剪 295×413 / <50×50 400 / 纯背景区 422 / 不传 crop 旧路径 413×579 不回归 / 越界收束）；release_acceptance 全过；新 `r25_mobile_crop_smoke.mjs` **13/13**（含产物尺寸 295×413@300DPI 断言）；r24 冒烟重跑 9/9 不回归 |
+| 冒烟方法论沉淀 | ✅ | CDP dispatchTouchEvent 在 React 18 合成事件层不可靠（原生 root 收到完整序列但 React onPointerMove 不触发；手动 dispatchEvent 则全通）——鼠标管线验证交互逻辑 + root 事件链证据，触屏真机留用户验收（round-16 同款分级）；PowerShell ConvertTo-Json 日期 `/Date(ms)/` 必须抽 ms；全图初始框下拖画起点必在框内（move 模式）+ move 空间=0——先缩框再测 |
+| 收尾状态 | ✅ | git 分批提交 master；handoff/status 本轮更新。EXE 重打包（无人值守 `build_zonkey_exe_r25.bat`）+ Pages 部署见提交说明。**遗留**：用户手机真机捏合缩放/触屏裁剪体验待验收（合成输入已尽，r16 方法论） |
 
 ## 2026-09-04 第二十四轮进度（工具箱 bug 修复 ×2，本轮）
 
