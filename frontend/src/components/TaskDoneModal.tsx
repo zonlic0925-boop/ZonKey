@@ -4,7 +4,8 @@
  * 数据源：lib/zonkey/taskDone.ts 事件总线（subscribeTaskDone / useSyncExternalStore）。
  * 每条产物两个动作：
  * - 打开：壳内走 /api/export/open-file（os.startfile 系统默认程序）；
- *   浏览器对 image/pdf/text/zip 走新标签预览（blob URL 或 /api/download 流）。
+ *   浏览器对 image/pdf/text/zip 走新标签预览（blob URL 或 /api/download 流），
+ *   docx/xlsx 走 ArtifactPreviewModal 弹窗内预览（round-29，手机不落下载）。
  * - 下载：壳内走 /api/export/save-as 原生另存为；浏览器 a[download]
  *   （blob 直接下 / 服务端走 /api/download 流，手机浏览器自动进下载目录）。
  *
@@ -20,6 +21,7 @@ import {
 } from '../lib/zonkey/taskDone'
 import { buildDownloadUrl, apiFetch, openOutputFile, saveOutputFileAs } from '../lib/api'
 import { downloadBlob, isShellMode, triggerServerFileDownload } from '../lib/deliver'
+import { ArtifactPreviewModal } from './ArtifactPreviewModal'
 
 const KIND_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   image: FileImage,
@@ -46,10 +48,18 @@ function formatTime(ts: number): string {
 
 /**
  * 浏览器可直接新标签预览的产物类型。
- * docx/pptx/xlsx/zip 等（kind=file/zip）浏览器无预览能力——手机浏览器新标签只会
- * 白屏（实测 iOS Safari/安卓 Chrome），「打开」对这些类型退级为下载通道。
+ * docx/xlsx（round-29 起）在浏览器端改走 ArtifactPreviewModal 内嵌预览（mammoth/SheetJS
+ * 本地渲染，零上传）——不再退级为下载；pptx/zip 等仍无浏览器渲染能力，「打开」退级下载。
  */
 const BROWSER_PREVIEWABLE = new Set(['image', 'pdf', 'text', 'audio', 'video'])
+
+/** 浏览器端可内嵌预览的文档扩展名（.doc 旧格式 mammoth 不支持，保持下载通道） */
+function docPreviewExt(name: string): 'docx' | 'xlsx' | null {
+  const ext = name.slice(name.lastIndexOf('.') + 1).toLowerCase()
+  if (ext === 'docx') return 'docx'
+  if (ext === 'xlsx' || ext === 'xls') return 'xlsx'
+  return null
+}
 
 export const TaskDoneModal: React.FC = () => {
   const { t, locale } = useI18n()
@@ -58,6 +68,8 @@ export const TaskDoneModal: React.FC = () => {
   const [savedKey, setSavedKey] = useState<string | null>(null)
   // blob 产物的预览/下载 URL：随记录生命周期创建与 revoke
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({})
+  // 浏览器端文档内嵌预览（docx/xlsx，round-29）
+  const [previewing, setPreviewing] = useState<TaskArtifact | null>(null)
 
   useEffect(() => {
     if (!record) return
@@ -96,6 +108,9 @@ export const TaskDoneModal: React.FC = () => {
         } else {
           await openOutputFile(a.outputDir, a.outputName ?? a.name)
         }
+      } else if (docPreviewExt(a.name)) {
+        // 浏览器/手机：docx/xlsx 弹窗内直接预览（不落下载、不裸开新标签）
+        setPreviewing(a)
       } else if (BROWSER_PREVIEWABLE.has(a.kind)) {
         // 浏览器/手机：可预览产物新标签打开（图片/PDF/文本/音视频可显示）
         window.open(artifactUrl(a), '_blank')
@@ -184,7 +199,7 @@ export const TaskDoneModal: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {(isShellMode() || BROWSER_PREVIEWABLE.has(a.kind)) && (
+                  {(isShellMode() || BROWSER_PREVIEWABLE.has(a.kind) || docPreviewExt(a.name) !== null) && (
                     <button
                       type="button"
                       onClick={() => void open(a)}
@@ -222,6 +237,11 @@ export const TaskDoneModal: React.FC = () => {
           </button>
         </div>
       </div>
+      <ArtifactPreviewModal
+        artifact={previewing}
+        blobUrl={previewing ? blobUrls[previewing.name] : undefined}
+        onClose={() => setPreviewing(null)}
+      />
     </div>
   )
 }

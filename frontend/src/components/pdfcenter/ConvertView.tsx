@@ -102,8 +102,9 @@ export const ConvertView: React.FC<{ op: string }> = ({ op }) => {
           title,
         }, (stage) => setWebStage(stage))
         setWebResult(result)
+        // 交付收口到任务弹窗（round-29）：打开=弹窗内预览（docx/xlsx）/下载=按需，
+        // 不再转换完自动落下载——手机端「直接打开而不是下载」由此生效
         emitTaskDoneBlob(t(`convert.op.${op}`), result.blob, result.filename)
-        await downloadBlob(result.blob, result.filename)
         return
       }
       if (isRepair) {
