@@ -1,6 +1,17 @@
-> 更新于：2026-09-07（第二十六轮：任务完成弹窗基建 + 全工具产物接入 + 证件照「仅裁剪」模式）。
+> 更新于：2026-09-07（第二十七轮：QR 导航入口 + 手机弹窗「打开」白屏修复 + 证件照手机网页版浏览器引擎）。
 
-## 2026-09-07 第二十六轮进度（任务弹窗 + 全工具接入，本轮）
+## 2026-09-07 第二十七轮进度（QR 入口 + 白屏根治 + 证件照浏览器引擎，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| QR 导航入口（r26 遗留①） | ✅ | 二维码生成/识别挂入**计算开发中心**：`CalcToolId` + `'qr-generate'/'qr-read'`、`CENTER_TOOLS.calc_dev` 两条 ready、`CalcDevCenter` 两 case；三语 `tools.qrGenerate/qrRead`（zh-TW QR Code 產生/辨識）。首页宫格/收藏/手机 pills 自注册表派生零改动。round-23 起四件注册全缺是「UI 进不去」的完整根因（连 i18n 键都不存在） |
+| 手机版「打开文件」白屏根治 | ✅ | 根因：`TaskDoneModal.open()` 浏览器分支对所有 blob 产物 `window.open(blobUrl)`——docx/pptx/xlsx/zip（kind=file/zip）浏览器无渲染器 → 手机新标签白屏；服务端产物分支还在浏览器误调壳专属 `/api/export/open-file`（= 在服务器 PC 上 os.startfile）。修复：`BROWSER_PREVIEWABLE={image,pdf,text,audio,video}`——非预览类型**不渲染「打开」按钮**且 open 退级为下载（`deliverDownload` 统一出口与 download 共用）；服务端产物浏览器侧预览类型 window.open(下载流)，不再调壳 API。壳内行为不变（save-blob→os.startfile / save-as） |
+| 证件照手机网页版（用户评估请求） | ✅ | **结论：能实现，已实现**。旧失败根因：`IdPhotoView` 只有 `/api/toolbox/id-photo` 一条路，Pages（纯静态）fetch 必败。新 `idPhotoWebCore.ts` 浏览器引擎兜底（与后端 replace 主通道同构：四角中值色距抠像→3×3 平滑→前景包围盒按证件比例裁剪→smoothstep 羽化合成→标准尺寸；keep=纯几何裁剪同构；EXIF from-image 转正；2000px 工作上限适配手机大图）。`IdPhotoView` 挂 `probeBackendAlive()` 探针，离线黄条提示+走浏览器引擎；i18n 三语 `idWebEngineNote`。诚实边界：无 GrabCut 回退/无连通域/PNG 无 DPI 元数据（引擎头注释+黄条如实标注） |
+| 后端 EXIF 竖拍转正 | ✅ | `id_photo` 加 `ImageOps.exif_transpose`——手机竖拍原图（Orientation=6/8）此前按未旋转像素裁剪换底，LAN/壳模式产出横置图；pytest 10/10 不回归 |
+| 回归验证 | ✅ | tsc 零错 + npm build（主 chunk `index-DGrZ6rzf.js`）；pytest `test_id_photo_crop.py` **10/10**；新 `r27_taskfix_smoke.mjs` **15/15**（在线：QR 双 pill+生成弹窗+识别视图+390px；**离线 route abort 模拟 Pages**：PDF转Word→docx 弹窗无「打开」按钮、证件照黄条+keep/replace 浏览器引擎产出）；r26 冒烟重跑 **14/14** 零 pageerror（弹窗重构无回归） |
+| 收尾状态 | ✅ | git 分批提交 master 5 笔（`67e2ffe`/`579abef`/`b49edfa`/`378a212`/本笔 docs+smoke）。**EXE 重打包**：等义 bash 链 exit=0（`build_exe_r27.log`），release_acceptance 8/8 PASS，`ZonKey_Setup_x64_20260907.exe`(160.9MB)+7z(159.2MB)+zip(223.6MB)+三 sidecar 同批 15:24；zip 主 chunk md5=本地，特征串命中（idWebEngineNote×4/qr-generate×2）；Setup 静默实装 EXIT=0+命中，装完即删。**Pages 生产部署 `a0d83dd6`**（--branch main，Production 实证，Source=378a212）：主域 bundle=`index-DGrZ6rzf.js`，线上 md5=本地=zip 三方一致。**遗留**：① 用户手机真机体验待验收（证件照浏览器引擎 replace 实拍效果/QR 入口/弹窗下载）；② WHATSNEW_ROUND 自 r24 起四轮未升，下次大功能一并处理 |
+
+## 2026-09-07 第二十六轮进度（任务弹窗 + 全工具接入，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

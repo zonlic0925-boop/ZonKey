@@ -1,8 +1,23 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十六轮：任务完成弹窗基建 + 全工具产物接入 + 证件照仅裁剪模式）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十七轮：QR 导航入口 + 手机弹窗「打开」白屏修复 + 证件照手机网页版浏览器引擎）。
 
-## 〇、2026-09-07 第二十六轮（任务弹窗 taskDone 总线 + TaskDoneModal + 全工具接入，本轮）
+## 〇、2026-09-07 第二十七轮（QR 入口注册 + TaskDoneModal 白屏根治 + 证件照浏览器引擎，本轮）
+
+- **任务（用户 3 项）**：① 二维码生成/识别视图 round-23 建成后一直无导航入口（emit 在位 UI 进不去），挂入计算开发中心；② 手机版 PDF 转 Word/PPT 等弹窗后「下载」可用、「打开文件」白屏，找根因修复；③ 证件照手机版网页点「生成证件照」一直不成功，评估手机网页版能否实现该功能。
+- **根因（第一性拆解）**：
+  - ① QR 视图组件写完从未接线——四件注册全缺（`CalcToolId` 类型 / `CENTER_TOOLS.calc_dev` / `CalcDevCenter` switch / i18n `tools.qrGenerate`·`qrRead` 键三语），且键缺失无人察觉（视图未被路由就没人渲染）。
+  - ② `TaskDoneModal.open()` 浏览器分支对**所有** blob 产物 `window.open(blobUrl)`——docx/pptx/xlsx/zip（kind=file/zip）浏览器无渲染器，手机新标签必然白屏（iOS Safari/安卓 Chrome 同病）；服务端产物分支更是在浏览器误调**壳专属** `/api/export/open-file`（= 在服务器 PC 上 os.startfile，手机端静默无效、Pages 404）。「下载」可用的原因：下载分支早已按 isShellMode 正确分流。
+  - ③ `IdPhotoView` 只有 `POST /api/toolbox/id-photo` 一条路：Pages（纯静态无后端）fetch 必败 → 「一直不成功」即必然；另后端不读 EXIF Orientation，手机竖拍原图在 LAN/壳模式也会产出横置图。
+- **实现**：
+  - **QR 挂入计算开发中心**：`types/index.ts` CalcToolId + `'qr-generate'|'qr-read'`；`lib/navigation.tsx` calc_dev 注册表两条（ready）；`CalcDevCenter.tsx` 两 case 引 `QrGenerateView/QrReadView`；i18n 三语 `tools.qrGenerate/qrRead`（zh-TW「QR Code 產生/辨識」）。首页宫格/收藏/手机 pills 均自 CENTER_TOOLS 派生，零额外改动。
+  - **TaskDoneModal 白屏根治**：新集合 `BROWSER_PREVIEWABLE = {image,pdf,text,audio,video}`；浏览器模式非预览类型**不渲染「打开」按钮**且 `open()` 退级为下载（抽 `deliverDownload` 统一出口，open/download 共用）；服务端产物浏览器侧预览类型 `window.open(buildDownloadUrl)`（attachment 落下载）、非预览走下载流，**不再调壳 API**；壳内行为不变（blob=save-blob→os.startfile / output=save-as）。
+  - **证件照手机网页版（评估结论：能实现，已实现）**：新 `frontend/src/lib/zonkey/idPhotoWebCore.ts` 浏览器引擎兜底——与后端 replace 主通道同构（四角中值底色 → 色距前景 → 3×3 多数平滑 → 前景包围盒按证件比例裁剪 top_ratio=0.12 → smoothstep 羽化 alpha 合成新底 → 缩放标准尺寸），keep 模式纯几何裁剪同构；`createImageBitmap({imageOrientation:'from-image'})` EXIF 转正；2000px 工作分辨率上限（产物最长边仅 ~580px，12MP 手机原图先降采样，手机性能无忧）。诚实边界（引擎头注释+UI 黄条）：无 GrabCut 回退（底色不均直接报错引导换图或 keep 模式）、无形态学/最大连通域、canvas PNG 无 pHYs 打印 DPI 元数据。`IdPhotoView` 新 `probeBackendAlive()`（api.ts 通用探针，GET /api/convert/capability）→ false 时黄条提示 + run 走浏览器引擎；null（探测中）仍走服务端。后端 `id_photo` 加 `ImageOps.exif_transpose`（LAN/壳同步受益竖拍转正）。
+- **验证汇总**：tsc 零错 + npm build 成功（主 chunk `index-DGrZ6rzf.js`）；pytest `test_id_photo_crop.py` **10/10**（EXIF 改动不回归）；新 `temp_ui_test/r27_taskfix_smoke.mjs` **15/15**——在线组：QR 双 pill 可进/生成→弹窗 qrcode.png（image 产物双按钮）/QR 识别视图可达/手机 390px 可进；**离线组（route abort 全断 /api 模拟 Pages）**：PDF转Word 前端引擎→docx 弹窗**无「打开」按钮**且下载在、证件照黄条出现 + keep/replace 双模式浏览器引擎产出 idphoto 产物无报错；r26_taskdone_smoke.mjs 重跑 **14/14** 零 pageerror（弹窗重构无回归）。
+- **收尾状态**：git 分批提交 master 5 笔（`67e2ffe` QR 接线 → `579abef` 弹窗白屏 → `b49edfa` 证件照引擎+EXIF → `378a212` 三语 → 本笔 docs+smoke）。**EXE 重打包**（等义 bash 链，`build_exe_r27.log`）：clean rules OK → PyInstaller（检出 backend_toolbox_tools 变更重打 PYZ）→ release_acceptance **8/8 PASS** → 三产物 `ZonKey_Setup_x64_20260907.exe`(160.9MB) + 7z(159.2MB) + zip(223.6MB) 与三 sidecar 同批 15:24；**zip 主 chunk md5 d16d324a=本地**，特征串命中（`idWebEngineNote`×4 / `qr-generate`×2；`BROWSER_PREVIEWABLE`/`probeBackendAlive` 是局部变量名被压缩不可 grep，属预期）；**Setup 静默实装**（PowerShell Start-Process /VERYSILENT → Temp）EXIT=0 + 安装内 chunk 特征串命中，装完即删。**Pages 生产部署 `a0d83dd6`**（--branch main，Environment=Production 实证，Source=378a212）：主域 bundle=`index-DGrZ6rzf.js`，**线上 md5=本地=zip 三方一致**，线上特征串命中（idWebEngineNote×2 行 / qr-generate×2）。
+- **接手注意**：① `BROWSER_PREVIEWABLE` 口径=浏览器新标签真能渲染的类型；未来新增产物类型（如 heic 转 image）记得同步集合，否则「打开」按钮消失；② `idPhotoWebCore` 是 canvas 管线，依赖 `createImageBitmap`（Safari<15 无）——目标为现代手机浏览器，未做 polyfill；探测中（caps=null）点生成仍会走服务端 fetch 失败，属 8s 探针窗口内的瞬态；③ WHATSNEW_ROUND 自 r24 起连续四轮未升（含本轮，均为修复/接线类），下次面向用户的大功能一并升级+补条目；④ `probeBackendAlive` 复用 /api/convert/capability 作通用在线探针，若未来该端点改名须同步；⑤ 证件照浏览器引擎 replace 模式的边界报错文案是中文硬编码（与后端 detail 一致），若做全量错误码 i18n 时一起收。
+
+## 〇、2026-09-07 第二十六轮（任务弹窗 taskDone 总线 + TaskDoneModal + 全工具接入，上轮）
 
 - **任务（用户）**：任务弹窗基建（taskDone 事件总线 + TaskDoneModal 全局弹窗：打开/下载/另存）+ App 挂载 + i18n 三语；全工具接入（downloadBlob/交付层埋点 + 证件照/QR/打码/TTS/书签/转换 job/批处理/媒体 job）；验证（npm build+pytest+Playwright 冒烟）；收尾链（EXE+Pages+文档+git）。会话起点工作区有上一会话遗留半成品（证件照衣服 bug 修复 keep 模式 + taskDone.ts/TaskDoneModal.tsx 未挂载 + 复现截图 idphoto_clothes_bug.png），本轮承接收尾。
 - **实现**：
@@ -10,7 +25,7 @@
   - **接入策略（三收口）**：① pdfKit `downloadBytes/downloadFilesZip/downloadImageZip` 加可选 toolLabel 第 4 参（传则交付即弹）；② 视图 run 成功后产生产物处 emit（生成即弹，与下载动作解耦——任务完成弹窗的「下载」按钮是二次交付，不重复弹）；③ BatchEngine client→ZIP / server→outputs 两通道各自 emit。列表型多产物工具（PDF 拆分/转图片、PPT 图片）在 ZIP 打包动作处弹（产物几十个塞弹窗无意义）。只读类（QR 识别/重复文件/BPM）不弹——符合「产物档案」语义。
   - **证件照 keep 模式（遗留承接）**：后端 `id_photo` 加 `bg_mode`（replace 默认=旧行为；keep=跳过识别换底，纯几何居中裁剪缩放，永不做像素替换、纯背景也出图）；前端模式下拉 + 提示条 + 预览灰底；截图 `temp_ui_test/idphoto_clothes_bug.png` 是复现证据。
 - **验证汇总**：tsc 零错；npm build 成功；pytest **151 passed**（+5 keep 模式：保衣色/手动框/纯背景不拒/非法 400/replace 不回归）；release_acceptance 全过；Playwright `r26_taskdone_smoke.mjs` **14/14** + `r26_taskdone_actions_smoke.mjs` **4/4** + `r26_server_output_smoke.mjs` **4/4**（Word→PDF job→弹窗+下载流），全程零 pageerror。
-- **接手注意**：① **二维码生成/识别视图 round-23 建成但至今无导航注册入口**（grep QrGenerateView 只命中自身文件）——emit 埋点已在但 UI 进不去，产品拍板入口归属（建议计算开发中心）；② TaskDoneModal 弹窗层级 z-[90]，比隐私弹窗（z-110）低——任务完成时若有隐私遮罩会叠在下面，实际无碍（隐私仅首启）；③ 弹窗 blob URL 随 record 生命周期创建/revoke，record 关闭后消失——产物历史仍走各中心 output 列表，弹窗只承载「本次会话的交付仪式」；④ Uint8Array 直灌 Blob 有 TS SharedArrayBuffer 坑，须 `new Blob([new Uint8Array(result).buffer as ArrayBuffer], ...)` 或拷 buffer.slice；⑤ 证件照 keep 模式产物 1.3KB（纯色合成图）弹窗大小显示正常——无 AI 分割是诚实边界，UI 文案已如实。
+- **接手注意**：① **二维码生成/识别视图 round-23 建成但至今无导航注册入口**（grep QrGenerateView 只命中自身文件）——emit 埋点已在但 UI 进不去，产品拍板入口归属（建议计算开发中心）【r27 已解决：已挂计算开发中心】；② TaskDoneModal 弹窗层级 z-[90]，比隐私弹窗（z-110）低——任务完成时若有隐私遮罩会叠在下面，实际无碍（隐私仅首启）；③ 弹窗 blob URL 随 record 生命周期创建/revoke，record 关闭后消失——产物历史仍走各中心 output 列表，弹窗只承载「本次会话的交付仪式」；④ Uint8Array 直灌 Blob 有 TS SharedArrayBuffer 坑，须 `new Blob([new Uint8Array(result).buffer as ArrayBuffer], ...)` 或拷 buffer.slice；⑤ 证件照 keep 模式产物 1.3KB（纯色合成图）弹窗大小显示正常——无 AI 分割是诚实边界，UI 文案已如实。
 
 ## 〇、2026-09-07 第二十五轮（手机端三修复：缩放/裁剪展示/证件照裁切，上轮）
 
