@@ -1,4 +1,16 @@
-> 更新于：2026-09-07（第二十五轮：手机端三修复——网页版捏合缩放放开 + 图像裁剪手机展示/操作重写 + 证件照手动裁切交互）。
+> 更新于：2026-09-07（第二十六轮：任务完成弹窗基建 + 全工具产物接入 + 证件照「仅裁剪」模式）。
+
+## 2026-09-07 第二十六轮进度（任务弹窗 + 全工具接入，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 事件总线 | ✅ | 新 `frontend/src/lib/zonkey/taskDone.ts`：模块级单例 + useSyncExternalStore，零 React 上下文依赖——任何视图/纯 TS 交付层可直接 emit。`emitTaskDone(label, artifacts)` / `emitTaskDoneBlob`（单 blob 产物）/ `emitTaskDoneOutput(s)`（服务端 output 产物）。产物二选一：blob（弹窗内现做 objectURL）或 outputName（走 /api/download 与 /api/export/*）；artifact kind 按扩展名自动推断（image/pdf/zip/audio/video/text/file） |
+| 全局弹窗 | ✅ | 新 `frontend/src/components/TaskDoneModal.tsx`，App.tsx 挂载（与 OfflinePrivacyNotice/WhatsNewModal 并列）：任务完成自动弹出「任务档案」——工具名+完成时刻+产物行（类型图标/文件名/大小），每行两个动作：**打开**（壳=os.startfile 系统默认程序 / 浏览器=blob 或 /api/download 新标签预览）、**下载**（壳=服务端中转+原生另存为 / 浏览器=a[download] 流）；「已保存」提示 2.5s 自动消退；遮罩点击/×/确认关闭。产物行可滚动（85dvh 上限）；blob URL 随 record 生命周期创建与 revoke |
+| blob 壳内下载修正 | ✅ | 弹窗内 blob「下载」在桌面壳不能走裸 anchor（壳无下载管理器）——复用 `deliver.downloadBlob`（壳=save-blob+原生另存为 / 浏览器=a[download]）；服务端产物按 isShellMode 分流（save-as / triggerServerFileDownload） |
+| 工具接入面 | ✅ | 交付层收口三处：① pdfKit `downloadBytes/downloadFilesZip/downloadImageZip` 加可选 toolLabel 第 4 参（传则交付即弹）；② 各视图 run 成功后产生产物处直接 emit（生成即弹，与下载动作解耦）；③ BatchEngine client→ZIP / server→outputs 两通道各自 emit。接入清单：工具箱 QR 生成/打码/证件照/TTS/书签；图像 裁剪/换色/拼接/图标生成/批转换/批压缩；PDF 压缩/解密/加密/增强/合并/旋转/签名/填表/编辑/整理/图转PDF/提取/裁剪/页码/水印/拆分ZIP/转图片ZIP（列表型多产物工具在 ZIP 交付处弹）；转换 web/repair/html/job；视频 转换/GIF/抽帧；音频 裁剪/转换/提取；转录 job；PPT 图片ZIP/文本/压缩/大纲/草稿；批处理（PDF/图像/PPT 三中心）；Markdown 导出；大文件 CSV。只读类工具（QR 识别/重复文件/清理论/BPM）不弹（无产物）——符合「产物档案」语义 |
+| 证件照「仅裁剪尺寸」模式（承接遗留改动） | ✅ | round-25 后遗留：用户实拍衣服色接近底色估色被整片消除。后端 `id_photo` 新增 `bg_mode` Form（replace=旧行为 / keep=仅裁剪尺寸），keep 模式跳过人像识别与换底、纯几何居中裁剪缩放（源过宽裁左右居中 / 源过高裁下侧保头部），永不做像素替换，且不触发识别 422（纯背景图也出图）；非法值 400。前端 IdPhotoView 加「处理模式」下拉（replace 显示底色选择，keep 显示提示条 + 预览块灰底），crop 参数照常生效。截图 `temp_ui_test/idphoto_clothes_bug.png`（复现证据，入 temp 不入包） |
+| 回归验证 | ✅ | tsc 零错；npm build 成功；pytest **151 passed**（146+5：keep 保衣色 / keep+手动框两寸 / keep 纯背景不拒 / bg_mode 非法 400 / replace 默认不回归）；release_acceptance 全过；Playwright 新 `r26_taskdone_smoke.mjs` **14/14**（keep 生成→弹窗出现/产物行/按钮/关闭/再弹/390px 弹窗在视口/手机产物可见/TTS 弹窗音频产物/en 文案 Task completed·Open·Download/PDF 压缩弹窗）+ `r26_taskdone_actions_smoke.mjs` **4/4**（下载按钮→真实浏览器下载事件 id_photo.png/打开→blob 新标签/遮罩点击关闭/只读工具视图无弹窗）+ `r26_server_output_smoke.mjs` **4/4**（Word→PDF 服务端 job→弹窗+下载流 sample.pdf）。全程零 pageerror |
+| 收尾状态 | ⏳ | git 分批提交 master + handoff/status 更新（本表）。EXE 重打包 + Pages 部署见收尾链结果（下表 / 提交说明）。**遗留**：① 二维码生成/识别视图（round-23 建）至今无导航注册入口——emit 代码在位但 UI 进不去，需产品拍板入口归属；② 壳内原生另存为/打开需用户 EXE 实测 |
 
 ## 2026-09-07 第二十五轮进度（手机端三修复，本轮）
 

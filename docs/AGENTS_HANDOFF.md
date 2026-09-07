@@ -1,8 +1,18 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十五轮：手机端三修复——网页版捏合缩放/图像裁剪展示/证件照手动裁切）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十六轮：任务完成弹窗基建 + 全工具产物接入 + 证件照仅裁剪模式）。
 
-## 〇、2026-09-07 第二十五轮（手机端三修复：缩放/裁剪展示/证件照裁切，本轮）
+## 〇、2026-09-07 第二十六轮（任务弹窗 taskDone 总线 + TaskDoneModal + 全工具接入，本轮）
+
+- **任务（用户）**：任务弹窗基建（taskDone 事件总线 + TaskDoneModal 全局弹窗：打开/下载/另存）+ App 挂载 + i18n 三语；全工具接入（downloadBlob/交付层埋点 + 证件照/QR/打码/TTS/书签/转换 job/批处理/媒体 job）；验证（npm build+pytest+Playwright 冒烟）；收尾链（EXE+Pages+文档+git）。会话起点工作区有上一会话遗留半成品（证件照衣服 bug 修复 keep 模式 + taskDone.ts/TaskDoneModal.tsx 未挂载 + 复现截图 idphoto_clothes_bug.png），本轮承接收尾。
+- **实现**：
+  - **基建**：`frontend/src/lib/zonkey/taskDone.ts`（模块级单例 + useSyncExternalStore，`emitTaskDone/emitTaskDoneBlob/emitTaskDoneOutput(s)` 便捷封装，artifact kind 按扩展名推断）；`frontend/src/components/TaskDoneModal.tsx`（App.tsx 并列挂载；自动弹「任务档案」；每产物行 打开/下载 双按钮——打开：壳 os.startfile / 浏览器新标签 blob 预览；下载：壳 save-blob+原生另存为 / 浏览器 a[download]，blob 一律复用 deliver.downloadBlob 不能裸 anchor——壳无下载管理器）；i18n `taskDone.*` 7 键×3。
+  - **接入策略（三收口）**：① pdfKit `downloadBytes/downloadFilesZip/downloadImageZip` 加可选 toolLabel 第 4 参（传则交付即弹）；② 视图 run 成功后产生产物处 emit（生成即弹，与下载动作解耦——任务完成弹窗的「下载」按钮是二次交付，不重复弹）；③ BatchEngine client→ZIP / server→outputs 两通道各自 emit。列表型多产物工具（PDF 拆分/转图片、PPT 图片）在 ZIP 打包动作处弹（产物几十个塞弹窗无意义）。只读类（QR 识别/重复文件/BPM）不弹——符合「产物档案」语义。
+  - **证件照 keep 模式（遗留承接）**：后端 `id_photo` 加 `bg_mode`（replace 默认=旧行为；keep=跳过识别换底，纯几何居中裁剪缩放，永不做像素替换、纯背景也出图）；前端模式下拉 + 提示条 + 预览灰底；截图 `temp_ui_test/idphoto_clothes_bug.png` 是复现证据。
+- **验证汇总**：tsc 零错；npm build 成功；pytest **151 passed**（+5 keep 模式：保衣色/手动框/纯背景不拒/非法 400/replace 不回归）；release_acceptance 全过；Playwright `r26_taskdone_smoke.mjs` **14/14** + `r26_taskdone_actions_smoke.mjs` **4/4** + `r26_server_output_smoke.mjs` **4/4**（Word→PDF job→弹窗+下载流），全程零 pageerror。
+- **接手注意**：① **二维码生成/识别视图 round-23 建成但至今无导航注册入口**（grep QrGenerateView 只命中自身文件）——emit 埋点已在但 UI 进不去，产品拍板入口归属（建议计算开发中心）；② TaskDoneModal 弹窗层级 z-[90]，比隐私弹窗（z-110）低——任务完成时若有隐私遮罩会叠在下面，实际无碍（隐私仅首启）；③ 弹窗 blob URL 随 record 生命周期创建/revoke，record 关闭后消失——产物历史仍走各中心 output 列表，弹窗只承载「本次会话的交付仪式」；④ Uint8Array 直灌 Blob 有 TS SharedArrayBuffer 坑，须 `new Blob([new Uint8Array(result).buffer as ArrayBuffer], ...)` 或拷 buffer.slice；⑤ 证件照 keep 模式产物 1.3KB（纯色合成图）弹窗大小显示正常——无 AI 分割是诚实边界，UI 文案已如实。
+
+## 〇、2026-09-07 第二十五轮（手机端三修复：缩放/裁剪展示/证件照裁切，上轮）
 
 - **任务（用户 2 项）**：① 手机网页版可缩放 + 图像裁剪图片展示不全、触屏难操作；② 证件照换底色裁切手机端没效果。成功标准：手机可捏合缩放页面；裁剪画布 390px 完整可见可操作；证件照有可用的裁切交互且传参到后端；桌面不回归；Playwright 390px 实测。
 - **根因（第一性拆解）**：① 缩放——viewport meta 未禁缩放，真凶是 **iOS 从主屏图标进入 PWA standalone 模式默认禁捏合缩放**（manifest `display: standalone`），必须显式 `user-scalable=yes` 声明；② 图像裁剪——画布宽度硬编码 `maxW=600px`，390px 视口下 stage 溢出被 body `overflow:hidden` 裁掉右侧（图片不完整、右侧手柄框选不到）；③ 证件照——`IdPhotoView` 前端**根本没有裁切交互**（后端全自动人像裁剪无法干预），用户做任何"裁切操作"都无效果是必然。
