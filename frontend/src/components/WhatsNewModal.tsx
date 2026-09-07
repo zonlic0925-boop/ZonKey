@@ -17,7 +17,7 @@ import { useI18n } from '../i18n'
  * WHATSNEW_ROUND」——否则已看过旧内容的用户不会再看到新条目（AGENTS_HANDOFF 接手注意已登记）。
  */
 
-export const WHATSNEW_ROUND = 23
+export const WHATSNEW_ROUND = 29
 const WHATSNEW_KEY = 'zonkey.whatsNewSeen.v1'
 /** 弹窗内展示最近几轮（含本轮），轮次数字向下走 */
 const ROUND_WINDOW = 3
