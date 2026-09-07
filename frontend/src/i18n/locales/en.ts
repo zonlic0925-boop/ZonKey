@@ -1185,36 +1185,18 @@ export const en: MessageTree = {
   },
   whatsnew: {
     title: "What's New",
-    desc: 'Recent updates, week by week.',
+    desc: 'Key features shipped since the first release (v1.0):',
     badgeLatest: 'Latest',
     noteDesktop: 'Smaller updates (new tools, UI polish and fixes) keep shipping — see the full history on the GitHub / Gitee Release pages.',
     gotIt: 'Got it',
     entries: {
-      r29: {
-        badge: 'This week · Round 29',
+      r30: {
+        badge: 'Since the first release',
         date: '2026-09-07',
-        i1: 'Mobile web "Open" now previews in-app: after PDF→Word/Excel conversion, tap Open to view it right in the dialog — no forced download first',
-        i2: 'Zero-upload preview: Word/Excel content renders in your browser, files never leave the phone; one-tap download still there for exact layout',
-        i3: 'This "What\'s New" dialog is back — covering the last four rounds',
-      },
-      r28: {
-        badge: 'This week · Round 28',
-        date: '2026-09-07',
-        i1: 'QR generate/scan works on mobile web: fully in-browser, offline too',
-        i2: 'PPT→PDF/long-image shows clear guidance when the engine is offline (rendering needs the desktop app) instead of a raw error',
-      },
-      r27: {
-        badge: 'This week · Round 27',
-        date: '2026-09-07',
-        i1: 'ID photo background replacement on mobile web: in-browser matting with auto-rotation for portrait shots',
-        i2: 'QR generate/scan added to the Calc & Dev center',
-        i3: 'Fixed the mobile "Open file" blank new tab (temporarily download-only then; now upgraded to in-app preview)',
-      },
-      r26: {
-        badge: 'This week · Round 26',
-        date: '2026-09-07',
-        i1: 'New "Task completed" dialog: every tool\'s output pops up in one place to open or download',
-        i2: 'Native Save As inside the desktop dialog; batch ZIP and multi-artifact delivery in one go',
+        i1: '10 handy tools added: QR code generate/scan, ID photo background swap & cropping, image masking, text diff, regex tester, batch rename, duplicate file finder, PDF bookmark editor, text-to-speech, unit & base converter',
+        i2: 'Mobile web covers more now: QR, ID photo and other pure-frontend tools run right in the browser — offline included; touch cropping and page zoom adapted',
+        i3: 'Batch processing for PDF / image / PPT: queue multiple files, per-file progress, stop anytime, delivered as one ZIP',
+        i4: 'New "Task done" dialog: outputs pop up in one place with Open / Download, plus native Save As on desktop',
       },
     },
   },

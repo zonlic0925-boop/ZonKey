@@ -9,15 +9,20 @@ import { useI18n } from '../i18n'
  * 触发口径（zonkey.whatsNewSeen.v1，单键双字段）：
  * - { seenRound: N, lastSeenDay: 'YYYY-MM-DD' }，只在 seenRound 比当前更新轮低时弹出；
  *   看过（确认或关闭）后 seenRound 升到当前轮 → 该轮内容只打扰一次。
- * - 「当天首次打开」：同一天内看过一次即不再弹；跨天再次打开仍不弹（seenRound 已追上）。
+ * - r30 起取消「同天看过上一轮即不再弹」的抑制（旧规则会吞同日多轮发布的新内容——
+ *   改内容必升轮，升轮即应弹一次，无论上次看是哪天）。
  * - localStorage 不可用（隐私模式）时：本次会话内仅弹一次，不做持久化。
  * - 网页端每次启动都检查；桌面壳运行时白屏自愈的窗口回放不重复弹（双 rAF 退场即主挂载）。
  *
  * 维护规则：entries 内容（i18n whatsnew.entries）随构建哈希进包；「改内容必须升
  * WHATSNEW_ROUND」——否则已看过旧内容的用户不会再看到新条目（AGENTS_HANDOFF 接手注意已登记）。
+ *
+ * r30 口径（2026-09-07 用户反馈）：不再把「打开/预览」当更新卖点——首版起转换产物
+ * 即可直接打开；弹窗改为「自首版发布（v1.0）以来陆续上线的更新总览」单条目（i1–i4），
+ * r26–r29 旧轮条目已从 i18n 删除，弹窗只渲染 r30 一节。
  */
 
-export const WHATSNEW_ROUND = 29
+export const WHATSNEW_ROUND = 30
 const WHATSNEW_KEY = 'zonkey.whatsNewSeen.v1'
 /** 弹窗内展示最近几轮（含本轮），轮次数字向下走 */
 const ROUND_WINDOW = 3
@@ -58,15 +63,9 @@ export function writeWhatsNewSeen(): void {
   }
 }
 
-function isToday(key: string): boolean {
-  return key === todayStr()
-}
-
-/** 首次打开判定：版本更高 → 本轮看过（任何天）→ 本轮当天看过 → 均满足才弹 */
+/** 首次打开判定：看过当前轮（≥ WHATSNEW_ROUND）才不再弹；更低轮一律弹一次 */
 export function shouldShowWhatsNew(seen: WhatsNewSeen): boolean {
-  if (seen.seenRound >= WHATSNEW_ROUND) return false
-  if (seen.seenRound === WHATSNEW_ROUND - 1 && seen.lastSeenDay && isToday(seen.lastSeenDay)) return false
-  return true
+  return seen.seenRound < WHATSNEW_ROUND
 }
 
 interface WhatsNewModalProps {
