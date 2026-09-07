@@ -1,6 +1,16 @@
 > 更新于：2026-09-07（第二十八轮：手机网页版 QR 浏览器引擎 + PPT 渲染工具离线门禁）。
 
-## 2026-09-07 第二十八轮进度（手机网页版用户反馈，本轮）
+## 2026-09-07 第二十九轮进度（手机「打开」弹窗内直接预览 + WhatsNew 补课，本轮）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| 手机「打开」直接预览（用户澄清后的修复） | ✅ | 用户要的是**弹窗内直接看、不是下载**（r27 下载-only 对用户是回归）。新 `ArtifactPreviewModal`：docx=mammoth / xlsx·xls=SheetJS → HTML 弹窗渲染，动态 import 零新依赖；blob 直读/服务端 /api/download 双源，零上传；页脚注明「内容视图，精确排版以下载为准」。`TaskDoneModal.docPreviewExt()` 扩展名路由（.doc/pptx/zip 保持下载）。**ConvertView 浏览器兜底删除自动 downloadBlob**——「转换完自动落下载」的另一半根因，交付收口任务弹窗 |
+| WhatsNew 补课 | ✅ | WHATSNEW_ROUND 23→29（r24-r28 四轮未升的债），entries r26-r29 三语补齐、r19-r23 已读旧条清理；老用户首启重弹一次 |
+| 回归验证 | ✅ | npm build（`index-Bh4HOGe1.js`）；新 `r29_preview_smoke.py` **18/18**（打开按钮可见/预览命中/**零自动下载**/手动下载×1/xlsx 表格/手机 390px/WhatsNew 29 首启+seenRound 落盘/零 pageerror）；pytest **151 passed** |
+| 收尾状态 | ✅ | git 4 笔（`d0f9bd1`/`8b1bbb7`/`acb8b62`/本笔）；EXE 三产物+sidecar 同批 16:40-16:42 + 验收 8/8 + Setup 静默实装命中装完即删；Pages 生产 `847a05cc`（线上 md5 d8f9a1c7=本地=zip）。朋友圈物料三卡（`docs/screenshots/round29/moments/`）+ `scripts/gen_moments_r29.py` + MOMENTS_KIT.md round-29 文案 A/B |
+| 遗留 | — | ① 手机真机复测「打开」预览（Safari / 安卓 Chrome / 微信内置浏览器——微信内下载受限是已知边界，restrictedBrowser 黄条已有引导换系统浏览器）；② pptx 预览暂无许可干净的轻量渲染器，如实保持下载通道；③ 朋友圈素材已就绪待用户发布 |
+
+## 2026-09-07 第二十八轮进度（手机网页版用户反馈，上轮）
 
 | 项 | 状态 | 说明 |
 |---|---|---|

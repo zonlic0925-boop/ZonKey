@@ -1,8 +1,21 @@
 # Agents Handoff（交接文本）
 
-> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十八轮：手机网页版 QR 浏览器引擎 + PPT 渲染工具离线门禁；r27 三修复用户确认转换链路正常）。
+> 可直接复制本文件给下一位 agent。更新每次会话结束/轮次切换时。本版更新于 2026-09-07（第二十九轮：手机「打开」弹窗内直接预览 docx/xlsx + 转换交付收口 + WhatsNew 补课升 29 + r29 朋友圈物料）。
 
-## 〇、2026-09-07 第二十八轮（手机网页版用户反馈三件：405/确认/QR，本轮）
+## 〇、2026-09-07 第二十九轮（手机「打开」弹窗内直接预览 + WhatsNew 补课 + r29 朋友圈物料，本轮）
+
+- **任务（用户反馈澄清）**：上轮把「转换后可以直接打开」误判为**确认反馈**（auto-download=可用链路保持现状）；用户澄清要的是**手机上直接打开看、不是下载**——r27 前的裸开行为在其手机实测可用，r27 改下载-only 对用户是回归。三件事：① 修复；② 更新「这次更新了什么」弹窗（内容停在 r23 四轮没弹）；③ 朋友圈更新文案+素材。
+- **实现**：
+  - **ArtifactPreviewModal（新组件）**：docx→mammoth(BSD-2) / xlsx·xls→SheetJS(Apache-2.0) 转 HTML 弹窗内渲染——全部仓库已有依赖动态 import()（零新依赖、不进主包）；blob 产物直读 arrayBuffer / 服务端产物走 /api/download 流（与下载同源），**零上传**。预览是「内容视图」，页脚固定提示「精确排版以下载文件为准」。pptx/zip 无浏览器渲染器保持下载通道（能力边界如实，mammoth 不吃 .doc 旧格式同样退下载）。
+  - **TaskDoneModal**：`docPreviewExt()` 扩展名路由——浏览器「打开」按钮对 docx/xlsx **恢复显示**（r27 回归点），点击进弹窗预览不再裸开新标签/下载；壳内行为不变（os.startfile / save-as）。
+  - **ConvertView 浏览器兜底交付收口**：删除转换完自动 `downloadBlob`——这是用户看到「变成下载」的另一半根因；交付统一走任务弹窗（打开=预览 / 下载=按需）。在线路径零改动。
+  - **WhatsNewModal 补课**：WHATSNEW_ROUND 23→29（r24-r28 四轮未升的债一并清），entries 补 r26-r29 三语、清理 r19-r23 已读旧条；老用户首启重弹一次（设计如此）。
+- **验证汇总**：npm build（主 chunk `index-Bh4HOGe1.js`，视图/i18n 在 `index-Pye54myn.js`）；新 `temp_ui_test/r29_preview_smoke.py` **18/18**——离线组（route abort 模拟 Pages）：PDF→Word 弹窗「打开」可见 + mammoth 预览正文命中 fixture 标记 + **转换完成零自动下载** + 手动「下载」×1、PDF→Excel SheetJS 表格+Page 1 sheet 名、手机 390×844 全链路；WhatsNew 首启自动弹 + 「第 29 轮/直接预览」文案 + 知道了后 seenRound=29 落盘；E0 零 pageerror（route-abort 网络噪声除外）。pytest **151 passed**（--ignore native dialog）。
+- **收尾状态**：git 分批提交 master 4 笔（`d0f9bd1` 预览修复 → `8b1bbb7` 三语 → `acb8b62` 冒烟+物料 → 本笔 docs）。**EXE 重打包**：等义 bash 链 exit=0（`build_exe_r29.log`），release_acceptance 8/8 PASS，三产物+sidecar 同批 16:40-16:42（Setup 161.0MB / 7z 161.7MB / zip 223.7MB）；zip 主 chunk `index-Bh4HOGe1.js` md5=本地（0c66c8a0），r29 特征串命中（previewLoading×10 / previewNote×4 / artifact-preview-modal×1 / 第 29 轮×1，均在 index-Pye54myn.js）；**Setup 静默实装** EXIT=0+命中，装完即删。**Pages 生产部署 `847a05cc`**（--branch main，Production 实证）：主域 bundle=`index-Pye54myn.js`，**线上 md5=本地=zip 三方一致**（d8f9a1c7），线上 previewLoading 命中。
+- **朋友圈物料**：`docs/screenshots/round29/moments/moments-01~03.png`（1080×1440 3:4，主卡/更新清单/获取方式）+ `scripts/gen_moments_r29.py`（PIL 生成，品牌色与 index.css 同源，皇冠 alpha_composite）+ MOMENTS_KIT.md round-29 节（文案 A/B + 发布建议）。
+- **接手注意**：① 弹窗预览=内容视图是设计取舍（mammoth 丢精确排版），要「所见即所得」需重型渲染器（许可+体积双否决，勿轻易引）；② `docPreviewExt`/`BROWSER_PREVIEWABLE` 模块局部名 minified 后 grep 不到属预期，验包用 i18n 特征串（previewLoading/previewNote）；③ wrangler 直传部署的 Source 列与 git sha 不对应，判定部署以 **deployment id + Environment + 线上 bundle md5** 为准；④ reportlab 只是冒烟 fixture 依赖（temp_ui_test），非运行依赖；⑤ 转换类反馈新分类口径补充：「下载可以/打开白屏」=交付层（r27/r29 两轮演进）——先分清用户要「打开」还是「拿到文件」。
+
+## 〇、2026-09-07 第二十八轮（手机网页版用户反馈三件：405/确认/QR，上轮）
 
 - **任务（用户 3 项，手机网页版）**：① PPT 工坊「转 PDF」「转长图」HTTP 405 无法使用；② 「pdf转word，那些转换功能是可以直接打开的，转换后可以直接打开的」；③ 二维码生成无效果。
 - **定性**：①③ 与 r27 证件照同根因家族——视图裸调 `/api/*`，Pages 静态托管对 POST 返 405；② 为**确认反馈**（r27 浏览器引擎兜底 + docx 产物 auto-download→手机「打开」链路实测正常），无需改动。会话内连跑两轮收尾链（r27+同一会话追加 r28）。
