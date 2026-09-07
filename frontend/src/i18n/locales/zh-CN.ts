@@ -794,6 +794,7 @@ export const zhCN: MessageTree = {
     maskClear: '全部清除',
     maskApply: '应用打码',
     idIntro: '自动抠出人像替换底色并裁剪为证件照尺寸。纯色背景效果最佳；人像与背景对比较弱时结果可能不理想。',
+    idCropHint: '可先在图片上拖动调整裁剪范围（拖框移动、拉角缩放），再生成证件照；不调整则自动定位人像。',
     idSize: '尺寸',
     'idSize_one-inch': '一寸 (25×35mm)',
     'idSize_two-inch': '二寸 (35×49mm)',

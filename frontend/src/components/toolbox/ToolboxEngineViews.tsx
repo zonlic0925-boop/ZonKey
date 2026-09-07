@@ -18,6 +18,7 @@ import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { ErrorLine, Field, NumInput, AreaInput, inputClass } from '../calcdev/kit'
 import { ImagePicker } from '../imagecenter/imageKit'
+import { CropStage, type RectImage } from '../imagecenter/CropStage'
 import { apiFetch, pickExportFolder } from '../../lib/api'
 import { downloadBlob } from '../../lib/deliver'
 import type { PickedImage } from '../imagecenter/imageKit'
@@ -426,6 +427,30 @@ export const IdPhotoView: React.FC = () => {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resultUrl, setResultUrl] = useState<string | null>(null)
+  // 裁剪区域（原图像素）：round-25 新增触屏可用的手动裁切——旧版只有后端
+  // 全自动裁剪，手机上「怎么拖都没反应」因为没有可交互的裁切 UI
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 })
+  const [rect, setRect] = useState<RectImage | null>(null)
+
+  const file = files[0]
+  useEffect(() => {
+    if (!file) {
+      setFileUrl(null)
+      setImgSize({ w: 0, h: 0 })
+      setRect(null)
+      return
+    }
+    const url = URL.createObjectURL(file.file)
+    setFileUrl(url)
+    const probe = new Image()
+    probe.onload = () => {
+      setImgSize({ w: probe.naturalWidth, h: probe.naturalHeight })
+      setRect({ x: 0, y: 0, width: probe.naturalWidth, height: probe.naturalHeight })
+    }
+    probe.src = url
+    return () => URL.revokeObjectURL(url)
+  }, [file])
 
   const run = async () => {
     if (!files[0]) return
@@ -437,6 +462,13 @@ export const IdPhotoView: React.FC = () => {
       form.append('file', files[0].file)
       form.append('bg_color', bg)
       form.append('size_preset', size)
+      // 用户拖过裁剪框才传裁剪参数；未动 = 全自动人像裁剪（旧行为）
+      if (rect) {
+        form.append('crop_x', String(Math.round(rect.x)))
+        form.append('crop_y', String(Math.round(rect.y)))
+        form.append('crop_w', String(Math.round(rect.width)))
+        form.append('crop_h', String(Math.round(rect.height)))
+      }
       const res = await fetch('/api/toolbox/id-photo', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text().catch(() => res.statusText))
       const blob = await res.blob()
@@ -459,6 +491,20 @@ export const IdPhotoView: React.FC = () => {
       </div>
       <p className="text-xs text-mem-ink/60 font-medium">{t('toolbox.idIntro')}</p>
       <ImagePicker files={files} onChange={(f) => { setFiles(f); setResultUrl(null) }} />
+      {/* 手动裁切画布：触屏拖画/移动/八向手柄，默认全图（不裁=自动人像定位） */}
+      {fileUrl && imgSize.w > 0 && rect && (
+        <div className="space-y-1.5">
+          <CropStage
+            src={fileUrl}
+            naturalWidth={imgSize.w}
+            naturalHeight={imgSize.h}
+            value={rect}
+            onChange={setRect}
+            mode="free"
+          />
+          <p className="text-xs text-mem-ink/50 font-medium">{t('toolbox.idCropHint')}</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={t('toolbox.idSize')}>
           <select value={size} onChange={(e) => setSize(e.target.value as typeof size)} className={selectClass}>

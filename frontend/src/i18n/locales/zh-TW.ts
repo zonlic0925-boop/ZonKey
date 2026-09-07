@@ -791,6 +791,7 @@ export const zhTW: MessageTree = {
     maskClear: '全部清除',
     maskApply: '套用打碼',
     idIntro: '自動去背人像、替換底色並裁切為證件照尺寸。純色背景效果最佳；人像與背景對比較弱時結果可能不理想。',
+    idCropHint: '可先在圖片上拖動調整裁切範圍（拖框移動、拉角縮放），再產生證件照；不調整則自動定位人像。',
     idSize: '尺寸',
     'idSize_one-inch': '一吋 (25×35mm)',
     'idSize_two-inch': '二吋 (35×49mm)',

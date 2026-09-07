@@ -264,12 +264,18 @@ async def id_photo(
     top_ratio: float = Form(0.12),
     bottom_ratio: float = Form(0.10),
     tolerance: int = Form(40),
+    crop_x: int = Form(-1),
+    crop_y: int = Form(-1),
+    crop_w: int = Form(-1),
+    crop_h: int = Form(-1),
 ):
     """证件照：背景色距抠人像 + 换纯色底 + 标准尺寸裁剪。
 
     主通道为色彩距离（对纯色/近似纯色底最可靠）：四角中值估计底色，
     与底色距离小于 tolerance 的像素判为背景；GrabCut 仅作对比度弱底色的回退。
     诚实边界：不做人像 AI 分割。top_ratio/bottom_ratio 控制头留白与底部裁剪比例（0-0.3）。
+    crop_x/y/w/h（前端裁剪画布输出，原图像素）全部 ≥0 时先按该区域预裁剪，
+    之后再走自动人像定位——用户手动框选优先于全自动包围盒。
     """
     import cv2
     import numpy as np
@@ -295,6 +301,17 @@ async def id_photo(
     h_img, w_img = arr.shape[:2]
     if max(h_img, w_img) < 100:
         raise HTTPException(status_code=400, detail="图片尺寸过小")
+
+    # 0) 用户预裁剪：前端裁剪画布输出有效区域时先裁（手动框选优先于自动定位）
+    if min(crop_x, crop_y, crop_w, crop_h) >= 0:
+        cx0 = max(0, min(w_img - 1, int(crop_x)))
+        cy0 = max(0, min(h_img - 1, int(crop_y)))
+        cx1 = max(cx0 + 1, min(w_img, int(crop_x + crop_w)))
+        cy1 = max(cy0 + 1, min(h_img, int(crop_y + crop_h)))
+        if (cx1 - cx0) < 50 or (cy1 - cy0) < 50:
+            raise HTTPException(status_code=400, detail="裁剪区域过小（至少 50×50 像素）")
+        arr = arr[cy0:cy1, cx0:cx1]
+        h_img, w_img = arr.shape[:2]
 
     # 1) 主通道：背景色距离（四角中值色）——纯色/近似纯色底最稳
     corners = np.concatenate([

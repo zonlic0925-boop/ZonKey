@@ -76,7 +76,9 @@
         }
       }
     </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- user-scalable=yes 显式声明：iOS 从主屏图标进入的 PWA standalone 模式
+         默认禁捏合缩放，必须写明才放开；上限 5 防过度放大破坏布局 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, minimum-scale=1, maximum-scale=5" />
     <meta name="author" content="zonlic" />
     <title>ZonKey | 日用百宝箱 · 本地离线 · by zonlic</title>
     <script>

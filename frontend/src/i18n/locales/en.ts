@@ -792,6 +792,7 @@ export const en: MessageTree = {
     maskClear: 'Clear all',
     maskApply: 'Apply masking',
     idIntro: 'Cut out the person, replace the background color and crop to a standard ID-photo size. Solid backgrounds work best; low contrast between subject and background may degrade the result.',
+    idCropHint: 'Optionally drag on the image to adjust the crop area first (drag the box to move, drag corners to resize), then generate; leave it as-is for automatic person detection.',
     idSize: 'Size',
     'idSize_one-inch': '1-inch (25×35mm)',
     'idSize_two-inch': '2-inch (35×49mm)',
