@@ -44,6 +44,13 @@ function formatTime(ts: number): string {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 }
 
+/**
+ * 浏览器可直接新标签预览的产物类型。
+ * docx/pptx/xlsx/zip 等（kind=file/zip）浏览器无预览能力——手机浏览器新标签只会
+ * 白屏（实测 iOS Safari/安卓 Chrome），「打开」对这些类型退级为下载通道。
+ */
+const BROWSER_PREVIEWABLE = new Set(['image', 'pdf', 'text', 'audio', 'video'])
+
 export const TaskDoneModal: React.FC = () => {
   const { t, locale } = useI18n()
   const record: TaskDoneRecord | null = useSyncExternalStore(subscribeTaskDone, getTaskDone)
@@ -77,20 +84,24 @@ export const TaskDoneModal: React.FC = () => {
     a.blob ? blobUrls[a.name] ?? '' : buildDownloadUrl(a.outputDir, a.outputName ?? a.name)
 
   const open = async (a: TaskArtifact) => {
-    const key = a.name
-    setBusyKey(key)
+    setBusyKey(a.name)
     try {
-      if (a.blob && !isShellMode()) {
-        // 浏览器/手机：blob 产物新标签预览（图片/PDF/文本可显示）
+      if (isShellMode()) {
+        if (a.blob) {
+          // 桌面壳：blob 先落盘中转（save-blob），再用系统默认程序打开
+          const form = new FormData()
+          form.append('file', a.blob, a.name)
+          const data = await apiFetch<{ filename: string }>('/api/export/save-blob', { method: 'POST', body: form }, 300000)
+          await openOutputFile(undefined, data.filename)
+        } else {
+          await openOutputFile(a.outputDir, a.outputName ?? a.name)
+        }
+      } else if (BROWSER_PREVIEWABLE.has(a.kind)) {
+        // 浏览器/手机：可预览产物新标签打开（图片/PDF/文本/音视频可显示）
         window.open(artifactUrl(a), '_blank')
-      } else if (a.blob) {
-        // 桌面壳：blob 先落盘中转（save-blob），再用系统默认程序打开
-        const form = new FormData()
-        form.append('file', a.blob, a.name)
-        const data = await apiFetch<{ filename: string }>('/api/export/save-blob', { method: 'POST', body: form }, 300000)
-        await openOutputFile(undefined, data.filename)
       } else {
-        await openOutputFile(a.outputDir, a.outputName ?? a.name)
+        // 非预览类型（docx/pptx/xlsx/zip…）：新标签只会白屏 → 退级为下载
+        await deliverDownload(a)
       }
     } catch {
       /* 打开失败静默——下载通道仍可用 */
@@ -99,21 +110,24 @@ export const TaskDoneModal: React.FC = () => {
     }
   }
 
+  /** 统一下载出口：blob=交付层（壳=原生另存 / 浏览器=a[download]）；服务端产物=下载流 */
+  const deliverDownload = async (a: TaskArtifact) => {
+    if (a.blob) {
+      const result = await downloadBlob(a.blob, a.name)
+      if (result.delivered !== 'cancelled') setSavedKey(a.name)
+    } else if (isShellMode()) {
+      const result = await saveOutputFileAs(a.outputDir, a.outputName ?? a.name)
+      if (!result.cancelled) setSavedKey(a.name)
+    } else {
+      triggerServerFileDownload(a.outputDir, a.outputName ?? a.name)
+      setSavedKey(a.name)
+    }
+  }
+
   const download = async (a: TaskArtifact) => {
-    const key = a.name
-    setBusyKey(key)
+    setBusyKey(a.name)
     try {
-      if (a.blob) {
-        // 统一交付层：壳内 = 服务端中转 + 原生另存为；浏览器 = a[download]
-        const result = await downloadBlob(a.blob, a.name)
-        if (result.delivered !== 'cancelled') setSavedKey(key)
-      } else if (isShellMode()) {
-        const result = await saveOutputFileAs(a.outputDir, a.outputName ?? a.name)
-        if (!result.cancelled) setSavedKey(key)
-      } else {
-        triggerServerFileDownload(a.outputDir, a.outputName ?? a.name)
-        setSavedKey(key)
-      }
+      await deliverDownload(a)
     } catch {
       /* 保持下载链接兜底 */
     } finally {
@@ -170,15 +184,17 @@ export const TaskDoneModal: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => void open(a)}
-                    disabled={busyKey === a.name}
-                    className="flex items-center gap-1 px-2.5 py-1.5 border-2 border-mem-ink rounded-lg text-xs font-bold hover:bg-mem-coral/30 disabled:opacity-50"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {t('taskDone.open')}
-                  </button>
+                  {(isShellMode() || BROWSER_PREVIEWABLE.has(a.kind)) && (
+                    <button
+                      type="button"
+                      onClick={() => void open(a)}
+                      disabled={busyKey === a.name}
+                      className="flex items-center gap-1 px-2.5 py-1.5 border-2 border-mem-ink rounded-lg text-xs font-bold hover:bg-mem-coral/30 disabled:opacity-50"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      {t('taskDone.open')}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void download(a)}
