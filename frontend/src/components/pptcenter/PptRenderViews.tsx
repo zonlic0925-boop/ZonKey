@@ -3,6 +3,7 @@ import { FileOutput, Images } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { MemphisButton } from '../common/MemphisButton'
 import { apiFetch } from '../../lib/api'
+import { useBackendOnline } from '../../lib/deliver'
 import { ExportDownloadButton } from '../ExportDownloadButton'
 import { ErrorLine } from '../calcdev/kit'
 import { PptPicker } from './PptCenterViews'
@@ -33,11 +34,18 @@ const RENDERER_LABELS: Record<string, string> = {
 
 export const PptToPdfView: React.FC = () => {
   const { t } = useI18n()
+  const backendOnline = useBackendOnline()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<PptRenderResult | null>(null)
 
   const run = async (file: File) => {
+    // PPTX 渲染必须本机引擎（LibreOffice/PowerPoint COM），浏览器无法实现——离线明确引导而非裸 405
+    if (backendOnline === false) {
+      setError(t('pptcenter.backendOffline'))
+      setResult(null)
+      return
+    }
     setBusy(true)
     setError(null)
     setResult(null)
@@ -57,6 +65,11 @@ export const PptToPdfView: React.FC = () => {
         <h3 className="font-display font-black text-mem-ink">{t('tools.pptToPdf')}</h3>
       </div>
       <p className="text-xs text-mem-ink/60 font-medium">{t('pptcenter.toPdfHint')}</p>
+      {backendOnline === false && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-sky/20 text-xs font-bold text-mem-ink">
+          {t('pptcenter.backendOffline')}
+        </div>
+      )}
       <PptPicker onFile={run} disabled={busy} />
       <ErrorLine message={error} />
       {result && (
@@ -74,12 +87,19 @@ export const PptToPdfView: React.FC = () => {
 
 export const PptToImageView: React.FC = () => {
   const { t } = useI18n()
+  const backendOnline = useBackendOnline()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
   const [result, setResult] = useState<PptRenderResult | null>(null)
 
   const run = async (file: File) => {
+    // 同 PPT 转 PDF：本机渲染引擎，浏览器无法实现——离线明确引导而非裸 405
+    if (backendOnline === false) {
+      setError(t('pptcenter.backendOffline'))
+      setResult(null)
+      return
+    }
     setBusy(true)
     setError(null)
     setResult(null)
@@ -99,6 +119,11 @@ export const PptToImageView: React.FC = () => {
         <h3 className="font-display font-black text-mem-ink">{t('tools.pptToImage')}</h3>
       </div>
       <p className="text-xs text-mem-ink/60 font-medium">{t('pptcenter.toImageHint')}</p>
+      {backendOnline === false && (
+        <div className="px-4 py-3 border-2 border-mem-ink rounded-xl bg-mem-sky/20 text-xs font-bold text-mem-ink">
+          {t('pptcenter.backendOffline')}
+        </div>
+      )}
       <div className="flex items-center gap-1.5 flex-wrap">
         {(['png', 'jpeg'] as const).map((value) => (
           <MemphisButton key={value} size="sm" variant={format === value ? 'orange' : 'white'} onClick={() => setFormat(value)}>
