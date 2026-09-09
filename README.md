@@ -1,4 +1,8 @@
 <p align="center">
+  <strong>简体中文</strong> · <a href="README_EN.md">English</a>
+</p>
+
+<p align="center">
   <img src="frontend/public/zonkey-icon.svg" width="88" alt="ZonKey" />
 </p>
 
