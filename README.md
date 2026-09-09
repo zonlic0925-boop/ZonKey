@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/zonlic0925-boop/ZonKey/releases/latest"><img src="https://img.shields.io/github/v/release/zonlic0925-boop/ZonKey?color=059669&style=flat-square&label=Release" alt="Latest Release" /></a>
   <img src="https://img.shields.io/badge/Status-Public%20Repository-059669?style=flat-square" alt="Public Repository" />
   <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11" />
   <img src="https://img.shields.io/badge/UI-React%20%2B%20FastAPI-0D9488?style=flat-square" alt="React + FastAPI" />
@@ -17,6 +18,7 @@
   <img src="https://img.shields.io/badge/PDF-PyMuPDF%201.27-E63946?style=flat-square" alt="PyMuPDF" />
   <img src="https://img.shields.io/badge/OCR-RapidOCR%20ONNX-7C3AED?style=flat-square" alt="RapidOCR" />
   <img src="https://img.shields.io/badge/Network-100%25%20Offline-059669?style=flat-square" alt="Offline" />
+  <img src="https://img.shields.io/badge/Web-zonkey.pages.dev-0D9488?style=flat-square&logo=cloudflare&logoColor=white" alt="Web Version" />
   <img src="https://img.shields.io/badge/License-MIT-059669?style=flat-square" alt="MIT" />
 </p>
 
@@ -24,6 +26,43 @@
   读入客户 PDF 工程图纸与办公文档，在<strong>框线约束内</strong>精准抹除敏感词、Logo 与保密标记。<br/>
   同一工作台还集成了 PDF、PPT、图像、音视频、文本、计算与系统硬件工具——<strong>70+ 项全部本地离线运行</strong>。<br/>
   文件不出本机，不修改原始文件，脱敏输出 <code>原名_desensitized</code> 后缀副本。
+</p>
+
+<p align="center">
+  <img src="assets/readme/home.jpg" width="92%" alt="ZonKey 首页（8 大中心宫格）" />
+  <br/>
+  <sub>ZonKey 桌面版首页 —— 8 大中心宫格，全部工具本机离线运行</sub>
+</p>
+
+---
+
+## ✨ 最新发布 — v2.2.0（2026-09-07）
+
+- **手机「打开」弹窗内直接预览**：PDF 转 Word/Excel 的成果点「打开」在任务弹窗内直接渲染（docx/xlsx），本机处理、文件零上传，不跳转、不白屏
+- **转换交付收口**：转换完成不再自动下载——打开 = 预览 / 下载 = 按需存档
+- **二维码 / 证件照手机网页版**：浏览器引擎兜底（qrcode MIT / jsQR Apache-2.0），离线也能用；证件照支持手机竖拍 EXIF 自动转正与「仅裁剪尺寸」模式
+- **PPT 转 PDF / 长图**：纯浏览器环境明确引导使用桌面版，不再报 405
+
+> 历史版本：[v2.1.0](https://github.com/zonlic0925-boop/ZonKey/releases/tag/v2.1.0)（PPT 工坊首页 · 手机顶栏修复 · 下载/访问统计）· [v2.0.1](https://github.com/zonlic0925-boop/ZonKey/releases/tag/v2.0.1)（壳内导出根治 · IME 打字修复 · 图标真透明 · 窗口自愈 · macOS 自动构建）
+
+---
+
+## 界面一览
+
+<p align="center">
+  <img src="assets/readme/redact.jpg" width="24%" alt="智能脱敏中心" />
+  <img src="assets/readme/pdf.jpg" width="24%" alt="PDF 工坊" />
+  <img src="assets/readme/ppt.jpg" width="24%" alt="PPT 工坊" />
+  <img src="assets/readme/image.jpg" width="24%" alt="图像工坊" />
+  <br/>
+  <img src="assets/readme/media.jpg" width="24%" alt="音视频中心" />
+  <img src="assets/readme/text.jpg" width="24%" alt="文本工坊" />
+  <img src="assets/readme/calc.jpg" width="24%" alt="计算开发中心" />
+  <img src="assets/readme/system.jpg" width="24%" alt="系统硬件中心" />
+</p>
+
+<p align="center">
+  <sub>Windows 桌面版实拍界面。手机网页版（<a href="https://zonkey.pages.dev">zonkey.pages.dev</a>）为同源响应式界面，文件只在浏览器内处理。</sub>
 </p>
 
 ---
@@ -53,7 +92,7 @@ flowchart TB
   subgraph Backend["⚙️ Python 后端引擎"]
     direction LR
     Redact["智能脱敏引擎<br/>三通道检测 · 框线归位 · 字形级抹除"]
-    Tools["工坊工具集<br/>PDF 24项 · PPT 7项 · 转换 · OCR<br/>图像 · 音视频 · 系统硬件"]
+    Tools["工坊工具集<br/>PDF 28项 · PPT 8项 · 图像 11项<br/>音视频 · 文本 · 计算 · 系统"]
     Office["Office COM 桥<br/>Word · Excel · PowerPoint<br/>〈Windows 原生 COM 互操作〉"]
   end
 
@@ -88,14 +127,16 @@ flowchart TB
 
 | 中心 | 能力 |
 | --- | --- |
-| 🛡️ **智能脱敏** | 工程图纸 / 行政 PDF / Word 三入口，三通道检测 + 框线归位，规则中心 + 审计日志 |
-| 📄 **PDF 工坊** | 24 项：合并、拆分、提取、旋转、裁剪、页码、压缩、转 Word/Excel/PPT、OCR 导出、编辑、水印、增强、填表、加密、解密、证书签名 |
-| 📊 **PPT 工坊** | 转 PDF / 图片、图片批量导入、文字提取、压缩、大纲、AI 底稿 |
-| 🖼️ **图像工坊** | 裁剪、换色、格式转换、压缩、拼接、图标生成、取色、色彩空间对比 |
-| 🎵 **音视频中心** | BPM 检测、音频剪辑 / 转码 / 提取、视频转码 / 抽帧 / 转 GIF |
-| ✍️ **文本工坊** | Markdown 编辑器、字数统计、文本格式化、语音转写、打字测速 |
-| 🧮 **计算开发** | BMI、时间戳、房贷、复利、密码生成、JSON、Base64、URL 编解码、UUID、JWT、哈希加密 |
-| 💻 **系统硬件** | 硬件总览、CPU / 内存、GPU / 显示器、主板、存储、功耗传感器、大文件 / C 盘清理 |
+| 🛡️ **智能脱敏** | 工程图纸 / 行政 PDF / Word 三入口，三通道检测 + 框线归位 + 内容验证，规则中心 + 审计日志 |
+| 📄 **PDF 工坊**（28 项） | 整理 8：批量 / 页面整理 / 合并 / 拆分 / 提取 / 旋转 / 裁剪 / 页码；编辑 5：书签 / 编辑器 / 水印 / 增强 / 填表；转换 12：转 Word/Excel/PPT/HTML/图片、OCR 导出、修复、压缩 / 深压缩；安全 3：加密 / 解密 / 证书签名 |
+| 📊 **PPT 工坊**（8 项） | 批量图片导入建 PPT、转 PDF / 图片、图片 / 文字提取、压缩、大纲生成、AI 底稿 |
+| 🖼️ **图像工坊**（11 项） | 批量处理、格式转换、压缩、裁剪、图片打码、证件照换底 / 裁剪、颜色替换、拼接、图标生成、取色、色彩空间对比 |
+| 🎵 **音视频中心**（7 项） | BPM 检测、音频剪辑 / 转码 / 提取、视频转码 / 抽帧 / 转 GIF |
+| ✍️ **文本工坊**（9 项） | Markdown 编辑器、字数统计、文本格式化、文本 diff、正则测试、批量重命名、文字朗读（TTS）、语音转写、打字测速 |
+| 🧮 **计算开发**（15 项） | BMI、时间戳、房贷、复利、密码生成、JSON、Base64、URL 编解码、UUID、JWT、哈希加密、单位换算、进制换算、二维码生成 / 识别 |
+| 💻 **系统硬件**（9 项） | 硬件总览、CPU / 内存、GPU / 显示器、主板、存储、功耗传感器、大文件清理、重复文件查找、C 盘清理 |
+
+> 括号内为当前版本的工具有效数，与软件内「8 大中心」导航一一对应（首页 / 规则 / 审计等管理页不计入），随版本持续增长。
 
 ---
 
@@ -104,10 +145,10 @@ flowchart TB
 | 维度 | ZonKey |
 | --- | --- |
 | **数据安全** | 零云端、零外网请求，图纸与文档不出本机 |
-| **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位后抹除，不污染尺寸与公差 |
+| **工程图纸** | 矢量 + OCR + 视觉三通道融合，框线归位 + 内容验证后抹除，不污染尺寸与公差 |
 | **办公文档** | 通用行政 PDF、Word 文档同一工作台处理 |
 | **规则治理** | 规则中心 + 外部词表 / Logo 模板，按需自选公司名等脱敏规则，支持 GUI 热重载 |
-| **交付形态** | Windows EXE 一键启动 · 手机网页版（浏览器内处理，无需安装） |
+| **交付形态** | Windows EXE 一键启动 · macOS DMG（GitHub Actions 自动构建）· 手机网页版（浏览器内处理，无需安装） |
 
 ---
 
@@ -115,7 +156,7 @@ flowchart TB
 
 | | 桌面版 EXE | 手机网页版 |
 | --- | --- | --- |
-| 形态 | Windows 一键启动 | 手机浏览器直接打开，无需安装 |
+| 形态 | Windows / macOS 一键启动 | 手机浏览器直接打开，无需安装 |
 | 引擎 | 本机完整引擎（FastAPI + PyMuPDF + RapidOCR + Office COM） | 浏览器内引擎（pdf-lib / PDF.js / Web Crypto 等纯前端实现） |
 | 能力 | 全部功能 | 全部「纯前端可实现」的工具；需本机引擎的（脱敏、Office 转换、OCR 等）会提示改用桌面版 |
 | 文件流 | 全程本机 | 文件只在浏览器内处理，不上传任何服务器 |
@@ -130,7 +171,7 @@ flowchart TB
 
 | 下载源 | 说明 |
 | --- | --- |
-| [**GitHub Release**](https://github.com/zonlic0925-boop/ZonKey/releases)（主） | 仓库已公开，无需登录；含 **Setup 安装包**（推荐）与便携压缩包两种 |
+| [**GitHub Release**](https://github.com/zonlic0925-boop/ZonKey/releases/latest)（主） | 仓库已公开，无需登录；含 **Setup 安装包**（推荐）、便携压缩包与 macOS DMG |
 | [**Gitee Release**](https://gitee.com/zonlic/ZonKey/releases)（国内镜像） | 国内下载更快；大文件分卷时合并命令见 Release 说明 |
 
 - **Setup 安装包**（`ZonKey_Setup_x64_*.exe`）：双击一路下一步，自动创建桌面/开始菜单快捷方式，卸载干净。
@@ -218,7 +259,7 @@ ZonKey/
 ├── frontend/                # React 现代化 UI
 │   ├── src/
 │   │   ├── components/      #   视图组件（8 大中心 + 通用组件）
-│   │   ├── lib/zonkey/      #   纯前端工具引擎（15+ 模块）
+│   │   ├── lib/zonkey/      #   纯前端工具引擎（20+ 模块）
 │   │   └── i18n/            #   三语国际化（zh-CN / zh-TW / en）
 │   └── public/              #   静态资产（图标 · 字体 · PWA manifest）
 ├── server_bridge.py         # FastAPI 本地桥接（REST API + Job 轮询）
@@ -238,7 +279,7 @@ ZonKey/
 - **不联网**：运行时无外部 API、无云 OCR、无模型上传
 - **不改原文件**：只在用户指定目录写入 `_desensitized` 副本
 - **样本隔离**：客户图纸目录 `Testing Drawings/` 已加入 `.gitignore`，不会进入版本库
-- **开源公开**：本仓库已公开（MIT），面向公开发布与通用客户场景
+- **开源公开**：MIT 许可，本仓库已公开，面向公开发布与通用客户场景
 
 ---
 
@@ -250,10 +291,22 @@ ZonKey/
 
 ---
 
+## 更新历史
+
+| 版本 | 日期 | 亮点 |
+| --- | --- | --- |
+| **v2.2.0**（Latest） | 2026-09-07 | 手机「打开」弹窗内直接预览 · 转换交付收口 · 二维码 / 证件照浏览器引擎 · What's New 补课 |
+| v2.1.0 | 2026-09-03 | PPT 工坊首页 · 手机顶栏修复 · 下载 / 访问统计（本地隐私口径） |
+| v2.0.1 | 2026-09-02 | 壳内导出根治 · IME 打字修复 · 图标真透明（小尺寸）· 窗口自愈 · macOS 自动构建 |
+
+完整变更说明见 [GitHub Releases](https://github.com/zonlic0925-boop/ZonKey/releases) 与 [Gitee Releases](https://gitee.com/zonlic/ZonKey/releases)。
+
+---
+
 ## 作者
 
 **zonlic** — 一個在香港生存的普通人
 
 <p align="center">
-  <sub>Public repository · ZonKey © zonlic</sub>
+  <sub>Public repository · ZonKey © zonlic · 手机网页版 <a href="https://zonkey.pages.dev">zonkey.pages.dev</a></sub>
 </p>
